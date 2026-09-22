@@ -1,0 +1,10 @@
+name = "Subsp"
+version = "0.1.0"
+defaultTargets = ["subsp"]
+
+[[lean_lib]]
+name = "Subsp"
+
+[[lean_exe]]
+name = "subsp"
+root = "Main"
