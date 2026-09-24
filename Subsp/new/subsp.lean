@@ -4406,7 +4406,10 @@ theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
     T.isNFComp (T.fund s t) := by
-  sorry
+  obtain ⟨hnf, hsd⟩ :=
+    T.fund_omega_master s t hs.1 hd
+  exact T.NFComp_of_SDom_Z_or_eq
+    (T.fund s t) s hnf hs hsd
 
 theorem T.fund_iter_NFComp {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
@@ -4415,10 +4418,88 @@ theorem T.fund_iter_NFComp {lam : Nat} (s t : T lam)
       (T.fund s (T.iter (fun x => T.fund s x) t)) := by
   exact T.fund_iter_NFComp_core s t hs hd
 
+theorem T.fund_one_arg_irrel {lam : Nat}
+    (s t : T lam) (hd : T.dom s = .one) :
+    T.fund s t = T.fund s T.Z := by
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ a u : T lam, T.size a = n →
+        T.dom a = .one →
+          T.fund a u = T.fund a T.Z
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro a u hn hdom
+      cases a with
+      | Z =>
+        change Dom.zero = Dom.one at hdom
+        cases hdom
+      | P ls add =>
+        by_cases hadd : add = T.Z
+        · subst add
+          have hnone : T.domVecMinIdx ls = none := by
+            cases hmin : T.domVecMinIdx ls with
+            | none =>
+              rfl
+            | some md =>
+              obtain ⟨m, d⟩ := md
+              have hd' := hdom
+              conv at hd' =>
+                lhs
+                rw [T.dom, if_pos rfl]
+                rw [hmin]
+              change
+                (if d = Dom.one then
+                  if m.val = 0 then Dom.omega else Dom.Omega
+                else Dom.omega) = Dom.one at hd'
+              by_cases hd1 : d = .one
+              · rw [if_pos hd1] at hd'
+                by_cases hm0 : m.val = 0
+                · rw [if_pos hm0] at hd'
+                  cases hd'
+                · rw [if_neg hm0] at hd'
+                  cases hd'
+              · rw [if_neg hd1] at hd'
+                cases hd'
+          rw [
+            T.fund_PZ_none ls u hnone,
+            T.fund_PZ_none ls T.Z hnone]
+        · have hdadd : T.dom add = .one := by
+            conv at hdom =>
+              lhs
+              rw [T.dom, if_neg hadd]
+            exact hdom
+          have hsz : T.size add < n := by
+            rw [← hn]
+            exact T.add_size_lt_P ls add
+          have hrec :=
+            ih (T.size add) hsz add u rfl hdadd
+          rw [
+            T.fund_P_tail_eq ls add u hadd,
+            T.fund_P_tail_eq ls add T.Z hadd,
+            hrec])
+  exact main (T.size s) s t rfl hd
+
 theorem T.fund_NF_closed {lam : Nat} (s t : T lam)
     (hs : T.isNF s)
     (ht : T.dom s = .Omega → T.isNFComp t) :
     T.isNF (T.fund s t) := by
-  sorry
+  cases hdom : T.dom s with
+  | zero =>
+    have hsZ : s = T.Z :=
+      T.dom_zero_eq_Z s hdom
+    rw [hsZ, T.fund]
+    exact T.isNF.z
+  | one =>
+    have hirrel :=
+      T.fund_one_arg_irrel s t hdom
+    rw [hirrel]
+    exact (T.fund_one_master s hs hdom).1
+  | omega =>
+    exact (T.fund_omega_master s t hs hdom).1
+  | Omega =>
+    exact
+      (T.fund_dom_master s hs).2
+        hdom t (ht hdom) |>.1
 
 end new
