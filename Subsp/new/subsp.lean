@@ -1956,19 +1956,23 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
             have hnone : T.domVecMinIdx ls = none := by
               cases hmin : T.domVecMinIdx ls with
               | none =>
-                exact hmin
+                rfl
               | some md =>
                 obtain ⟨m, d⟩ := md
-                rw [T.dom, if_pos rfl, hmin] at hd
+                have hd' := hd
+                conv at hd' =>
+                  lhs
+                  rw [T.dom, if_pos rfl]
+                  rw [hmin]
                 by_cases hd1 : d = .one
-                · rw [if_pos hd1] at hd
+                · rw [if_pos hd1] at hd'
                   by_cases hm0 : m.val = 0
-                  · rw [if_pos hm0] at hd
-                    cases hd
-                  · rw [if_neg hm0] at hd
-                    cases hd
-                · rw [if_neg hd1] at hd
-                  cases hd
+                  · rw [if_pos hm0] at hd'
+                    cases hd'
+                  · rw [if_neg hm0] at hd'
+                    cases hd'
+                · rw [if_neg hd1] at hd'
+                  cases hd'
             rw [T.fund_PZ_none ls T.Z hnone]
             constructor
             · exact T.isNF.z
