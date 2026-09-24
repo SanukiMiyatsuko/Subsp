@@ -1,12 +1,6 @@
 import Subsp
 import Subsp.new.subsp
 
-#print axioms new.T.Z_le
-#print axioms new.T_total
-#print axioms new.T.le_refl
-#print axioms new.T.le_trans
-#print axioms new.T.lt_of_le_of_lt
-#print axioms new.T.lt_of_lt_of_le
 #print axioms new.T.isNF_G_isNFComp
 #print axioms new.T.NFComp_of_ZeroDom
 #print axioms new.T.G_size_lt
