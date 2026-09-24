@@ -1935,62 +1935,70 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
     ∀ (hs : T.isNF s), T.dom s = .one →
       T.isNF (T.fund s T.Z) ∧
         T.ZeroDom (T.fund s T.Z) s := by
-  generalize hn : T.size s = n
-  induction n using Nat.strongRecOn generalizing s with
-  | h n ih =>
-    intro hs hd
-    cases s with
-    | Z =>
-      cases hd
-    | P ls add =>
-      cases hs with
-      | p _ _ h0 h1 h2 h3 =>
-        by_cases hadd : add = T.Z
-        · subst add
-          have hnone : T.domVecMinIdx ls = none := by
-            cases hmin : T.domVecMinIdx ls with
-            | none =>
-              exact hmin
-            | some md =>
-              obtain ⟨m, d⟩ := md
-              rw [T.dom, if_pos rfl, hmin] at hd
-              by_cases hd1 : d = .one
-              · rw [if_pos hd1] at hd
-                by_cases hm0 : m.val = 0
-                · rw [if_pos hm0] at hd
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ a : T lam, T.size a = n →
+        T.isNF a → T.dom a = .one →
+          T.isNF (T.fund a T.Z) ∧
+            T.ZeroDom (T.fund a T.Z) a
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro a hn hs hd
+      cases a with
+      | Z =>
+        cases hd
+      | P ls add =>
+        cases hs with
+        | p _ _ h0 h1 h2 h3 =>
+          by_cases hadd : add = T.Z
+          · subst add
+            have hnone : T.domVecMinIdx ls = none := by
+              cases hmin : T.domVecMinIdx ls with
+              | none =>
+                exact hmin
+              | some md =>
+                obtain ⟨m, d⟩ := md
+                rw [T.dom, if_pos rfl, hmin] at hd
+                by_cases hd1 : d = .one
+                · rw [if_pos hd1] at hd
+                  by_cases hm0 : m.val = 0
+                  · rw [if_pos hm0] at hd
+                    cases hd
+                  · rw [if_neg hm0] at hd
+                    cases hd
+                · rw [if_neg hd1] at hd
                   cases hd
-                · rw [if_neg hm0] at hd
-                  cases hd
-              · rw [if_neg hd1] at hd
-                cases hd
-          rw [T.fund_PZ_none ls T.Z hnone]
-          constructor
-          · exact T.isNF.z
-          · constructor
-            · rfl
-            · intro c hzc hcs x hx
-              change x ∈ ([] : List (T lam)) at hx
-              cases hx
-        · have hdadd : T.dom add = .one := by
-            rw [T.dom, if_neg hadd] at hd
-            exact hd
-          have hsz : T.size add < n := by
-            rw [← hn]
-            exact T.add_size_lt_P ls add
-          obtain ⟨hnf, hrel⟩ :=
-            ih (T.size add) hsz add rfl h1 hdadd
-          rw [T.fund, if_neg hadd]
-          constructor
-          · apply T.isNF.p ls (T.fund add T.Z)
-            · exact h0
-            · exact hnf
-            · exact h2
-            · exact T.le_trans
-                (T.head (T.fund add T.Z))
-                (T.head add) (T.P ls T.Z)
-                (T.head_fund_le add T.Z) h3
-          · exact T.ZeroDom_tail ls add
-              (T.fund add T.Z) hrel
+            rw [T.fund_PZ_none ls T.Z hnone]
+            constructor
+            · exact T.isNF.z
+            · constructor
+              · rfl
+              · intro c hzc hcs x hx
+                change x ∈ ([] : List (T lam)) at hx
+                cases hx
+          · have hdadd : T.dom add = .one := by
+              rw [T.dom, if_neg hadd] at hd
+              exact hd
+            have hsz : T.size add < n := by
+              rw [← hn]
+              exact T.add_size_lt_P ls add
+            obtain ⟨hnf, hrel⟩ :=
+              ih (T.size add) hsz add rfl h1 hdadd
+            rw [T.fund, if_neg hadd]
+            constructor
+            · apply T.isNF.p ls (T.fund add T.Z)
+              · exact h0
+              · exact hnf
+              · exact h2
+              · exact T.le_trans
+                  (T.head (T.fund add T.Z))
+                  (T.head add) (T.P ls T.Z)
+                  (T.head_fund_le add T.Z) h3
+            · exact T.ZeroDom_tail ls add
+                (T.fund add T.Z) hrel)
+  intro hs hd
+  exact main (T.size s) s rfl hs hd
 
 theorem T.fund_one_NFComp_closed {lam : Nat} (s : T lam)
     (hs : T.isNFComp s) (hd : T.dom s = .one) :
@@ -1999,26 +2007,6 @@ theorem T.fund_one_NFComp_closed {lam : Nat} (s : T lam)
     T.fund_one_master s hs.1 hd
   exact T.NFComp_of_ZeroDom
     s (T.fund s T.Z) hnf hs hdom
-
-theorem T.lt_of_le_of_lt {lam : Nat} (a b c : T lam)
-    (hab : a ≤ b) (hbc : b < c) : a < c := by
-  cases hab with
-  | inl hablt =>
-    exact T_trans a b c hablt hbc
-  | inr habeq =>
-    have habEq : a = b := T_eq_sound a b habeq
-    rw [habEq]
-    exact hbc
-
-theorem T.lt_of_lt_of_le {lam : Nat} (a b c : T lam)
-    (hab : a < b) (hbc : b ≤ c) : a < c := by
-  cases hbc with
-  | inl hbclt =>
-    exact T_trans a b c hab hbclt
-  | inr hbceq =>
-    have hbcEq : b = c := T_eq_sound b c hbceq
-    rw [← hbcEq]
-    exact hab
 
 def T.GZ {lam : Nat} (z : T lam) : List (T lam) :=
   [z] ++ T.G z ++ [T.Z]
@@ -2267,7 +2255,7 @@ theorem T.SDom_G_closed {lam : Nat}
         | inr heq =>
           apply Or.inr
           rw [← heq]
-          exact T_refl b
+          exact T_refl y
     obtain ⟨c, hcG, hbc, hcBound⟩ :=
       T.find_violating_source b b y hy hby
     have hca : c < a :=
