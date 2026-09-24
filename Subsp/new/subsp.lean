@@ -2021,6 +2021,86 @@ theorem T.single_rplc_PZ_NFComp_closed {lam : Nat}
         · exact hOldLt q
   exact T.isNFComp_PZ_of_coords_lt newv hNewComp hNewLt
 
+theorem T.between_same_vector {lam : Nat}
+    (ls : Vec (T lam) lam) (a b c : T lam)
+    (hac : T.P ls a ≤ c) (hcb : c ≤ T.P ls b) :
+    ∃ d : T lam, c = T.P ls d ∧ a ≤ d ∧ d ≤ b := by
+  cases c with
+  | Z =>
+    cases hac with
+    | inl hlt =>
+      show compareT (T.P ls a) T.Z = Ordering.lt at hlt
+      cases hlt
+    | inr heq =>
+      cases heq
+  | P vs d =>
+    cases Vec_total vs ls with
+    | inl hvlt =>
+      have hcLower : T.P vs d < T.P ls a :=
+        T.P_lt_P_of_compareVec_lt vs ls d a hvlt
+      cases hac with
+      | inl hLowerC =>
+        exact False.elim
+          (strict_partial_order.irrefl (T.P ls a)
+            (strict_partial_order.trans
+              (T.P ls a) (T.P vs d) (T.P ls a)
+              hLowerC hcLower))
+      | inr heq =>
+        rw [← heq] at hcLower
+        exact False.elim
+          (strict_partial_order.irrefl (T.P vs d) hcLower)
+    | inr hv =>
+      cases hv with
+      | inl hvlt =>
+        have hUpperC : T.P ls b < T.P vs d :=
+          T.P_lt_P_of_compareVec_lt ls vs b d hvlt
+        cases hcb with
+        | inl hCUpper =>
+          exact False.elim
+            (strict_partial_order.irrefl (T.P vs d)
+              (strict_partial_order.trans
+                (T.P vs d) (T.P ls b) (T.P vs d)
+                hCUpper hUpperC))
+        | inr heq =>
+          rw [heq] at hUpperC
+          exact False.elim
+            (strict_partial_order.irrefl (T.P vs d) hUpperC)
+      | inr hveq =>
+        subst vs
+        have had : a ≤ d := by
+          cases hac with
+          | inl hlt =>
+            apply Or.inl
+            show compareT a d = Ordering.lt
+            show compareT (T.P ls a) (T.P ls d) =
+              Ordering.lt at hlt
+            rw [show compareVec ls ls = Ordering.eq from Vec_refl ls] at hlt
+            exact hlt
+          | inr heq =>
+            apply Or.inr
+            have hcmp : compareT a d = Ordering.eq := by
+              have hpEq : T.P ls a = T.P ls d := heq
+              cases hpEq
+              exact T_refl a
+            exact T_eq_sound a d hcmp
+        have hdb : d ≤ b := by
+          cases hcb with
+          | inl hlt =>
+            apply Or.inl
+            show compareT d b = Ordering.lt
+            show compareT (T.P ls d) (T.P ls b) =
+              Ordering.lt at hlt
+            rw [show compareVec ls ls = Ordering.eq from Vec_refl ls] at hlt
+            exact hlt
+          | inr heq =>
+            apply Or.inr
+            have hcmp : compareT d b = Ordering.eq := by
+              have hpEq : T.P ls d = T.P ls b := heq
+              cases hpEq
+              exact T_refl d
+            exact T_eq_sound d b hcmp
+        exact ⟨d, rfl, had, hdb⟩
+
 theorem T.P_le_P_same {lam : Nat} (ls : Vec (T lam) lam)
     (a b : T lam) (h : a ≤ b) :
     T.P ls a ≤ T.P ls b := by
