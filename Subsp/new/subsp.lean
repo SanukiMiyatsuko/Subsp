@@ -597,6 +597,14 @@ theorem T.fund_lt_self {lam : Nat}
                   T.iter
                     (fun x =>
                       T.fund (ls.idx m) x) b
+                conv =>
+                  lhs
+                  rw [T.fund, if_pos rfl]
+                  rw [hmin]
+                  change (if d = .one then _ else _)
+                  rw [if_neg hd1]
+                  change (if d = .Omega then _ else _)
+                  rw [if_pos hdO]
                 change
                   T.P
                     (ls.rplc m
