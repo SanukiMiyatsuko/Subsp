@@ -105,6 +105,84 @@ theorem T.add_size_lt_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
   rw [← h4]
   exact h3
 
+theorem T.domVecMinIdx_spec {lam m : Nat} (v : Vec (T lam) m) :
+    match T.domVecMinIdx v with
+    | none => ∀ i : Fin m, T.dom (v.idx i) = .zero
+    | some (i, d) =>
+        d ≠ .zero ∧ T.dom (v.idx i) = d ∧
+          ∀ j : Fin m, j.val < i.val →
+            T.dom (v.idx j) = .zero := by
+  induction v with
+  | nil =>
+      intro i
+      exact i.elim0
+  | snoc k xs x ih =>
+      rw [T.domVecMinIdx]
+      cases hrec : T.domVecMinIdx xs with
+      | some p =>
+          obtain ⟨i, d⟩ := p
+          rw [hrec] at ih
+          refine ⟨ih.1, ?_, ?_⟩
+          · show T.dom
+              (if h : i.val < k then
+                Vec.idx xs ⟨i.val, h⟩ else x) = d
+            rw [dite_eq_left i.isLt]
+            exact ih.2.1
+          · intro j hj
+            have hjk : j.val < k :=
+              Nat.lt_trans hj i.isLt
+            show T.dom
+                (if h : j.val < k then
+                  Vec.idx xs ⟨j.val, h⟩ else x) = .zero
+            rw [dite_eq_left hjk]
+            exact ih.2.2 ⟨j.val, hjk⟩ hj
+      | none =>
+          rw [hrec] at ih
+          by_cases hx : T.dom x = .zero
+          · rw [if_pos hx]
+            intro i
+            by_cases hik : i.val < k
+            · show T.dom
+                (if h : i.val < k then
+                  Vec.idx xs ⟨i.val, h⟩ else x) = .zero
+              rw [dite_eq_left hik]
+              exact ih ⟨i.val, hik⟩
+            · show T.dom
+                (if h : i.val < k then
+                  Vec.idx xs ⟨i.val, h⟩ else x) = .zero
+              rw [dite_eq_right hik]
+              exact hx
+          · rw [if_neg hx]
+            refine ⟨hx, ?_, ?_⟩
+            · show T.dom
+                (if h : k < k then Vec.idx xs ⟨k, h⟩ else x) =
+                  T.dom x
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            · intro j hj
+              change j.val < k at hj
+              show T.dom
+                  (if h : j.val < k then
+                    Vec.idx xs ⟨j.val, h⟩ else x) = .zero
+              rw [dite_eq_left hj]
+              exact ih ⟨j.val, hj⟩
+
+theorem T.domVecMinIdx_none_all_zero {lam m : Nat}
+    (v : Vec (T lam) m) (h : T.domVecMinIdx v = none) :
+    ∀ i : Fin m, T.dom (v.idx i) = .zero := by
+  have hs := T.domVecMinIdx_spec v
+  rw [h] at hs
+  exact hs
+
+theorem T.domVecMinIdx_some_spec {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m) (d : Dom)
+    (h : T.domVecMinIdx v = some (i, d)) :
+    d ≠ .zero ∧ T.dom (v.idx i) = d ∧
+      ∀ j : Fin m, j.val < i.val →
+        T.dom (v.idx j) = .zero := by
+  have hs := T.domVecMinIdx_spec v
+  rw [h] at hs
+  exact hs
+
 def T.fund {lam : Nat} (s t : T lam) : T lam :=
   match s with
   | Z => Z
