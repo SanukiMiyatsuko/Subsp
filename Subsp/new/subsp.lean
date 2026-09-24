@@ -2868,15 +2868,16 @@ theorem T.fund_P_tail_eq {lam : Nat}
 
 theorem T.fund_PZ_one_succ_eq {lam : Nat}
     (ls : Vec (T lam) lam) (k : Nat)
-    (hk : k + 1 < lam)
+    (hk : Nat.succ k < lam)
     (hmin :
       T.domVecMinIdx ls =
-        some (⟨k + 1, hk⟩, Dom.one))
+        some (⟨Nat.succ k, hk⟩, Dom.one))
     (t : T lam) :
     T.fund (T.P ls T.Z) t =
       T.P
-        ((ls.rplc ⟨k + 1, hk⟩
-          (T.fund (ls.idx ⟨k + 1, hk⟩) T.Z)).rplc
+        ((ls.rplc ⟨Nat.succ k, hk⟩
+          (T.fund
+            (ls.idx ⟨Nat.succ k, hk⟩) T.Z)).rplc
             ⟨k, Nat.lt_of_succ_lt hk⟩ t)
         T.Z := by
   conv =>
@@ -2886,6 +2887,8 @@ theorem T.fund_PZ_one_succ_eq {lam : Nat}
     change
       (if Dom.one = Dom.one then _ else _)
     rw [if_pos rfl]
+  rw [Vec.getElem_eq_idx
+    ls ⟨Nat.succ k, hk⟩]
 
 theorem T.fund_Omega_ne_Z {lam : Nat}
     (s t : T lam) (hd : T.dom s = .Omega) :
@@ -3014,7 +3017,7 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                     exact False.elim (hm0 rfl)
                   | succ k =>
                     let mi : Fin lam :=
-                      ⟨k + 1, mh⟩
+                      ⟨Nat.succ k, mh⟩
                     let mj : Fin lam :=
                       ⟨k, Nat.lt_of_succ_lt mh⟩
                     let base :=
