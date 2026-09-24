@@ -1900,9 +1900,13 @@ theorem T.NFComp_of_ZeroDom {lam : Nat}
           exact T_trans T.Z b a hzb hdom.1
       have hxa : x < a :=
         T.lt_of_le_of_lt x w a hxw hwa
-      by_cases hxb : x < b
-      · exact hxb
-      · have hbx : b ≤ x := by
+      cases
+          (inferInstanceAs
+            (Decidable (T.lt x b))) with
+      | isTrue hxb =>
+        exact hxb
+      | isFalse hxb =>
+        have hbx : b ≤ x := by
           cases T_total b x with
           | inl hlt =>
             exact Or.inl hlt
@@ -2146,8 +2150,11 @@ theorem T.exists_G_not_lt {lam : Nat} (s b : T lam)
         (hn (fun x hx => by cases hx))
     | cons a as ih =>
       intro hn
-      by_cases ha : a < b
-      · have htail : ¬ (∀ x ∈ as, x < b) := by
+      cases
+          (inferInstanceAs
+            (Decidable (T.lt a b))) with
+      | isTrue ha =>
+        have htail : ¬ (∀ x ∈ as, x < b) := by
           intro hall
           apply hn
           intro x hx
@@ -2159,7 +2166,8 @@ theorem T.exists_G_not_lt {lam : Nat} (s b : T lam)
             exact hall x hmem
         obtain ⟨x, hx, hnx⟩ := ih htail
         exact ⟨x, List.mem_cons_of_mem a hx, hnx⟩
-      · exact ⟨a, List.mem_cons_self, ha⟩
+      | isFalse ha =>
+        exact ⟨a, List.mem_cons_self, ha⟩
   exact main (T.G s) h
 
 theorem T.find_violating_source {lam : Nat}
@@ -2255,9 +2263,13 @@ theorem T.SDom_G_closed {lam : Nat}
     (hGz : ∀ x ∈ T.GZ z, x < b) :
     ∀ y ∈ T.G b, y < b := by
   intro y hy
-  by_cases hyb : y < b
-  · exact hyb
-  · have hby : b ≤ y := by
+  cases
+      (inferInstanceAs
+        (Decidable (T.lt y b))) with
+  | isTrue hyb =>
+    exact hyb
+  | isFalse hyb =>
+    have hby : b ≤ y := by
       cases strict_linear_order.total y b with
       | inl hylt =>
         exact False.elim (hyb hylt)
