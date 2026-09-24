@@ -2253,6 +2253,125 @@ theorem T.SDom_to_G_lt {lam : Nat}
       lt_of_lt_of_le_thm T y b y hylt hby
     exact False.elim (strict_partial_order.irrefl y hyy)
 
+
+def T.GVec {lam m : Nat} (v : Vec (T lam) m) : List (T lam) :=
+  let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+    match vt with
+    | .nil => []
+    | .snoc n xs last => res xs ++ [last] ++ T.G last
+  res v
+
+theorem T.G_P_eq {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
+    T.G (T.P ls add) = T.GVec ls ++ T.G add := by
+  rfl
+
+theorem T.listLe_append_congr {lam : Nat}
+    (pre l₁ l₂ : List (T lam))
+    (h : T.listLe l₁ l₂) :
+    T.listLe (pre ++ l₁) (pre ++ l₂) := by
+  intro x hx
+  cases List.mem_append.mp hx with
+  | inl hp =>
+    exact ⟨x, List.mem_append_left l₂ hp, Or.inr rfl⟩
+  | inr hl =>
+    obtain ⟨y, hy, hxy⟩ := h x hl
+    exact ⟨y, List.mem_append_right pre hy, hxy⟩
+
+theorem T.P_same_vec_lt {lam : Nat}
+    (ls : Vec (T lam) lam) (a b : T lam)
+    (h : a < b) :
+    T.P ls a < T.P ls b := by
+  show compareT (T.P ls a) (T.P ls b) = Ordering.lt
+  rw [show compareVec ls ls = Ordering.eq from Vec_refl ls]
+  exact h
+
+theorem T.same_vec_le_tail {lam : Nat}
+    (ls : Vec (T lam) lam) (a b : T lam)
+    (h : T.P ls a ≤ T.P ls b) :
+    a ≤ b := by
+  cases h with
+  | inl hlt =>
+    apply Or.inl
+    show compareT (T.P ls a) (T.P ls b) = Ordering.lt at hlt
+    rw [show compareVec ls ls = Ordering.eq from Vec_refl ls] at hlt
+    exact hlt
+  | inr heq =>
+    apply Or.inr
+    cases heq
+    rfl
+
+theorem T.sandwich_same_vector {lam : Nat}
+    (ls : Vec (T lam) lam) (low high c : T lam)
+    (hlc : T.P ls low ≤ c)
+    (hch : c ≤ T.P ls high) :
+    ∃ mid, c = T.P ls mid ∧ low ≤ mid ∧ mid ≤ high := by
+  cases c with
+  | Z =>
+    cases hlc with
+    | inl hlt =>
+      show compareT (T.P ls low) T.Z = Ordering.lt at hlt
+      cases hlt
+    | inr heq =>
+      cases heq
+  | P cs cadd =>
+    cases Vec_total cs ls with
+    | inl hcslt =>
+      have hclow : T.P cs cadd < T.P ls low :=
+        T.P_lt_P_of_compareVec_lt cs ls cadd low hcslt
+      have hbad : T.P cs cadd < T.P cs cadd := by
+        cases hlc with
+        | inl hlower =>
+          exact strict_partial_order.trans
+            (T.P cs cadd) (T.P ls low) (T.P cs cadd)
+            hclow hlower
+        | inr heq =>
+          rw [heq] at hclow
+          exact hclow
+      exact False.elim (strict_partial_order.irrefl _ hbad)
+    | inr hrest =>
+      cases hrest with
+      | inl hlslt =>
+        have hhC : T.P ls high < T.P cs cadd :=
+          T.P_lt_P_of_compareVec_lt ls cs high cadd hlslt
+        have hbad : T.P ls high < T.P ls high := by
+          cases hch with
+          | inl hupper =>
+            exact strict_partial_order.trans
+              (T.P ls high) (T.P cs cadd) (T.P ls high)
+              hhC hupper
+          | inr heq =>
+            rw [heq] at hhC
+            exact hhC
+        exact False.elim (strict_partial_order.irrefl _ hbad)
+      | inr heqVec =>
+        rw [heqVec]
+        refine ⟨cadd, rfl, ?_, ?_⟩
+        · exact T.same_vec_le_tail ls low cadd hlc
+        · exact T.same_vec_le_tail ls cadd high hch
+
+theorem T.SDom_tail {lam : Nat}
+    (z b₀ b : T lam) (ls : Vec (T lam) lam)
+    (hdom : T.SDom z b₀ b) :
+    T.SDom z (T.P ls b₀) (T.P ls b) := by
+  constructor
+  · exact T.P_same_vec_lt ls b₀ b hdom.1
+  · intro c hlow hhigh
+    obtain ⟨mid, hceq, hbmid, hmidb⟩ :=
+      T.sandwich_same_vector ls b₀ b c hlow hhigh
+    rw [hceq]
+    have htail :
+        T.listLe (T.G b₀) (T.G mid ++ T.GZ z) :=
+      hdom.2 mid hbmid hmidb
+    rw [T.G_P_eq, T.G_P_eq]
+    have hpref :
+        T.listLe
+          (T.GVec ls ++ T.G b₀)
+          (T.GVec ls ++ (T.G mid ++ T.GZ z)) :=
+      T.listLe_append_congr (T.GVec ls)
+        (T.G b₀) (T.G mid ++ T.GZ z) htail
+    rw [← List.append_assoc] at hpref
+    exact hpref
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
