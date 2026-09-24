@@ -3213,6 +3213,159 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
           exact Or.inl hqLt
     exact ⟨hhigh, hlower, hupper⟩
 
+
+theorem T.vector_rel_of_P_le_P {lam : Nat}
+    (v w : Vec (T lam) lam) (a b : T lam)
+    (h : T.P v a ≤ T.P w b) :
+    compareVec v w = Ordering.lt ∨ v = w := by
+  cases h with
+  | inl hlt =>
+    show
+      (match compareVec v w with
+      | Ordering.eq => compareT a b
+      | ord => ord) = Ordering.lt at hlt
+    cases hc : compareVec v w with
+    | lt =>
+      exact Or.inl hc
+    | eq =>
+      exact Or.inr (Vec_eq_sound v w hc)
+    | gt =>
+      rw [hc] at hlt
+      cases hlt
+  | inr heq =>
+    cases heq
+    exact Or.inr rfl
+
+theorem T.SDom_PZ_pivot {lam : Nat}
+    (z : T lam) (low high : Vec (T lam) lam) (i : Fin lam)
+    (hAbove : ∀ j : Fin lam, i.val < j.val → low.idx j = high.idx j)
+    (hPivot : T.SDom z (low.idx i) (high.idx i))
+    (hBelow :
+      ∀ q : Fin lam, q.val < i.val →
+        low.idx q = T.Z ∨ low.idx q = z) :
+    T.SDom z (T.P low T.Z) (T.P high T.Z) := by
+  constructor
+  · exact T.P_lt_P_of_compareVec_lt low high T.Z T.Z
+      (Vec.compare_lt_of_pivot low high i hAbove hPivot.1)
+  · intro c hlc hch
+    cases c with
+    | Z =>
+      cases hlc with
+      | inl hlt =>
+        show compareT (T.P low T.Z) T.Z = Ordering.lt at hlt
+        cases hlt
+      | inr heq =>
+        cases heq
+    | P mid add =>
+      have hLowVec :
+          compareVec low mid = Ordering.lt ∨ low = mid :=
+        T.vector_rel_of_P_le_P low mid T.Z add hlc
+      have hHighVec :
+          compareVec mid high = Ordering.lt ∨ mid = high :=
+        T.vector_rel_of_P_le_P mid high add T.Z hch
+      have hBetween :=
+        Vec.between_pivot low mid high i hAbove hPivot.1
+          hLowVec hHighVec
+      intro x hx
+      cases (T.mem_G_P low T.Z x).mp hx with
+      | inl hcoord =>
+        obtain ⟨u, hu, hxu⟩ := hcoord
+        obtain ⟨q, hq⟩ := (Vec.mem_toList_iff_idx low u).mp hu
+        cases Nat.lt_trichotomy q.val i.val with
+        | inl hqi =>
+          have hlower := hBelow q hqi
+          cases hxu with
+          | inl hxuEq =>
+            rw [hxuEq, ← hq]
+            cases hlower with
+            | inl hz =>
+              rw [hz]
+              refine ⟨T.Z, ?_, Or.inr rfl⟩
+              apply List.mem_append_right (T.G (T.P mid add))
+              rw [T.GZ]
+              apply List.mem_append_right ([z] ++ T.G z)
+              exact List.mem_singleton_self T.Z
+            | inr hz =>
+              rw [hz]
+              refine ⟨z, ?_, Or.inr rfl⟩
+              apply List.mem_append_right (T.G (T.P mid add))
+              rw [T.GZ]
+              apply List.mem_append_left (T.G z ++ [T.Z])
+              exact List.mem_singleton_self z
+          | inr hG =>
+            rw [← hq] at hG
+            cases hlower with
+            | inl hz =>
+              rw [hz, T.G] at hG
+              exact False.elim (List.not_mem_nil x hG)
+            | inr hz =>
+              rw [hz] at hG
+              refine ⟨x, ?_, partial_order.refl x⟩
+              apply List.mem_append_right (T.G (T.P mid add))
+              rw [T.GZ]
+              apply List.mem_append_left [T.Z]
+              apply List.mem_append_right [z]
+              exact hG
+        | inr hrest =>
+          cases hrest with
+          | inl hiq =>
+            have hLowMid : low.idx i ≤ mid.idx i :=
+              hBetween.2.1
+            have hMidHigh : mid.idx i ≤ high.idx i :=
+              hBetween.2.2
+            have huEq : u = low.idx i := by
+              rw [← hq]
+              exact congrArg low.idx (Fin.eq_of_val_eq hiq.symm)
+            cases hxu with
+            | inl hxuEq =>
+              have hxLow : x = low.idx i := hxuEq.trans huEq
+              rw [hxLow]
+              refine ⟨mid.idx i, ?_, hLowMid⟩
+              apply List.mem_append_left (T.GZ z)
+              apply (T.mem_G_P mid add (mid.idx i)).mpr
+              have hmem : mid.idx i ∈ Vec.toList mid :=
+                (Vec.mem_toList_iff_idx mid (mid.idx i)).mpr ⟨i, rfl⟩
+              exact Or.inl ⟨mid.idx i, hmem, Or.inl rfl⟩
+            | inr hG =>
+              rw [huEq] at hG
+              obtain ⟨y, hy, hxy⟩ :=
+                hPivot.2 (mid.idx i) hLowMid hMidHigh x hG
+              cases List.mem_append.mp hy with
+              | inl hyG =>
+                refine ⟨y, ?_, hxy⟩
+                apply List.mem_append_left (T.GZ z)
+                apply (T.mem_G_P mid add y).mpr
+                have hmem : mid.idx i ∈ Vec.toList mid :=
+                  (Vec.mem_toList_iff_idx mid (mid.idx i)).mpr ⟨i, rfl⟩
+                exact Or.inl ⟨mid.idx i, hmem, Or.inr hyG⟩
+              | inr hyZ =>
+                exact ⟨y, List.mem_append_right (T.G (T.P mid add)) hyZ, hxy⟩
+          | inr hiq =>
+            have hqi : i.val < q.val := hiq
+            have hmidHigh : mid.idx q = high.idx q :=
+              hBetween.1 q hqi
+            have hlowHigh : low.idx q = high.idx q :=
+              hAbove q hqi
+            have hlowMid : low.idx q = mid.idx q :=
+              hlowHigh.trans hmidHigh.symm
+            have huMid : u = mid.idx q := by
+              rw [← hq]
+              exact hlowMid
+            refine ⟨x, ?_, partial_order.refl x⟩
+            apply List.mem_append_left (T.GZ z)
+            apply (T.mem_G_P mid add x).mpr
+            have hmem : mid.idx q ∈ Vec.toList mid :=
+              (Vec.mem_toList_iff_idx mid (mid.idx q)).mpr ⟨q, rfl⟩
+            cases hxu with
+            | inl hxuEq =>
+              exact Or.inl ⟨mid.idx q, hmem, Or.inl (hxuEq.trans huMid)⟩
+            | inr hG =>
+              rw [huMid] at hG
+              exact Or.inl ⟨mid.idx q, hmem, Or.inr hG⟩
+      | inr htail =>
+        rw [T.G] at htail
+        exact False.elim (List.not_mem_nil x htail)
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
