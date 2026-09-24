@@ -1580,6 +1580,111 @@ theorem T.P_tail_NFComp_closed {lam : Nat}
         exact strict_partial_order.trans y newAdd
           (T.P ls newAdd) hyltNew hnewlt
 
+
+theorem T.isNFComp_PZ_of_coords_lt {lam : Nat}
+    (ls : Vec (T lam) lam)
+    (hcomp : ∀ i : Fin lam, T.isNFComp (ls.idx i))
+    (hlt : ∀ i : Fin lam, ls.idx i < T.P ls T.Z) :
+    T.isNFComp (T.P ls T.Z) := by
+  constructor
+  · exact T.isNF_PZ_of_coords ls hcomp
+  · intro y hy
+    cases (T.mem_G_P ls T.Z y).mp hy with
+    | inl hv =>
+      obtain ⟨x, hx, hcase⟩ := hv
+      obtain ⟨i, hi⟩ := (Vec.mem_toList_iff_idx ls x).mp hx
+      cases hcase with
+      | inl hyx =>
+        rw [hyx]
+        rw [← hi]
+        exact hlt i
+      | inr hyg =>
+        have hyxlt : y < x := by
+          rw [← hi] at hyg
+          have hc := (hcomp i).2 y hyg
+          rw [hi] at hc
+          exact hc
+        have hxparent : x < T.P ls T.Z := by
+          rw [← hi]
+          exact hlt i
+        exact strict_partial_order.trans y x (T.P ls T.Z)
+          hyxlt hxparent
+    | inr hz =>
+      rw [T.G] at hz
+      exact False.elim (List.not_mem_nil y hz)
+
+theorem T.single_rplc_PZ_NFComp_closed {lam : Nat}
+    (ls : Vec (T lam) lam) (m : Fin lam) (z : T lam)
+    (hold : T.isNFComp (T.P ls T.Z))
+    (hz : T.isNFComp z)
+    (hzx : z < ls.idx m)
+    (hlow : ∀ q : Fin lam, q.val < m.val → ls.idx q = T.Z) :
+    T.isNFComp (T.P (ls.rplc m z) T.Z) := by
+  let newv := ls.rplc m z
+  have hOldCoord : ∀ q : Fin lam, T.isNFComp (ls.idx q) :=
+    T.isNF_P_coord_NFComp ls T.Z hold.1
+  have hOldLt : ∀ q : Fin lam, ls.idx q < T.P ls T.Z := by
+    intro q
+    have hmem : ls.idx q ∈ T.G (T.P ls T.Z) := by
+      apply (T.mem_G_P ls T.Z (ls.idx q)).mpr
+      have hqmem : ls.idx q ∈ Vec.toList ls :=
+        (Vec.mem_toList_iff_idx ls (ls.idx q)).mpr ⟨q, rfl⟩
+      exact Or.inl ⟨ls.idx q, hqmem, Or.inl rfl⟩
+    exact hold.2 (ls.idx q) hmem
+  have hNewComp : ∀ q : Fin lam, T.isNFComp (newv.idx q) := by
+    intro q
+    by_cases hqm : q.val = m.val
+    · have hq : q = m := Fin.eq_of_val_eq hqm
+      rw [hq]
+      show T.isNFComp ((ls.rplc m z).idx m)
+      rw [Vec.rplc_idx_same]
+      exact hz
+    · show T.isNFComp ((ls.rplc m z).idx q)
+      rw [Vec.rplc_idx_of_ne ls m q z hqm]
+      exact hOldCoord q
+  have hNewLt : ∀ q : Fin lam, newv.idx q < T.P newv T.Z := by
+    intro q
+    by_cases hqm : q.val = m.val
+    · have hq : q = m := Fin.eq_of_val_eq hqm
+      rw [hq]
+      have hnewm : newv.idx m = z := by
+        show (ls.rplc m z).idx m = z
+        exact Vec.rplc_idx_same ls m z
+      have hzold :
+          z < T.P ls T.Z :=
+        strict_partial_order.trans z (ls.idx m) (T.P ls T.Z)
+          hzx (hOldLt m)
+      exact T.pivot_term_lt_updated_parent
+        ls newv m z
+        (fun j hj => by
+          show ls.idx j = (ls.rplc m z).idx j
+          rw [Vec.rplc_idx_of_ne ls m j z (Nat.ne_of_gt hj)])
+        hnewm hzold hz
+    · by_cases hqmLt : q.val < m.val
+      · have hqz : ls.idx q = T.Z := hlow q hqmLt
+        have hnewq : newv.idx q = T.Z := by
+          show (ls.rplc m z).idx q = T.Z
+          rw [Vec.rplc_idx_of_ne ls m q z hqm]
+          exact hqz
+        rw [hnewq]
+        show compareT T.Z (T.P newv T.Z) = Ordering.lt
+        rfl
+      · have hmq : m.val < q.val := by
+          have hle : m.val ≤ q.val := Nat.not_lt.mp hqmLt
+          exact Nat.lt_of_le_of_ne hle (Ne.symm hqm)
+        have hnewq : newv.idx q = ls.idx q := by
+          show (ls.rplc m z).idx q = ls.idx q
+          rw [Vec.rplc_idx_of_ne ls m q z (Nat.ne_of_gt hmq)]
+        rw [hnewq]
+        apply T.coord_lt_preserved_below_update ls newv q
+        · intro j hqj
+          show ls.idx j = (ls.rplc m z).idx j
+          have hmj : m.val < j.val :=
+            Nat.lt_of_lt_of_le hmq hqj
+          rw [Vec.rplc_idx_of_ne ls m j z (Nat.ne_of_gt hmj)]
+        · exact hOldLt q
+  exact T.isNFComp_PZ_of_coords_lt newv hNewComp hNewLt
+
 theorem T.P_le_P_same {lam : Nat} (ls : Vec (T lam) lam)
     (a b : T lam) (h : a ≤ b) :
     T.P ls a ≤ T.P ls b := by
