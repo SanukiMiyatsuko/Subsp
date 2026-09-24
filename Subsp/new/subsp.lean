@@ -143,7 +143,7 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
     T.dom (v.idx i) = d ∧
       ∀ j : Fin m, j.val < i.val →
         T.dom (v.idx j) = .zero := by
-  induction v generalizing i d with
+  induction v generalizing d with
   | nil =>
       exact i.elim0
   | snoc k xs x ih =>
@@ -162,7 +162,7 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
             exact hspec.1
           · intro j hj
             have hjk : j.val < k :=
-              Nat.lt_of_lt_of_le hj (Nat.le_of_lt_succ i'.isLt)
+              Nat.lt_trans hj i'.isLt
             show T.dom
                 (if hlt : j.val < k then
                   Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
@@ -192,7 +192,7 @@ theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
     (v : Vec (T lam) m) (i : Fin m) (d : Dom)
     (h : T.domVecMinIdx v = some (i, d)) :
     d ≠ .zero := by
-  induction v generalizing i d with
+  induction v generalizing d with
   | nil =>
       exact i.elim0
   | snoc k xs x ih =>
