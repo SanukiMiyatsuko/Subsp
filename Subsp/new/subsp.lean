@@ -3570,6 +3570,517 @@ theorem T.SDom_rplc_lower {lam : Nat}
       exact T.dom_zero_eq_Z
         (ls.idx q) (hspec.2.2 q hqm)
 
+theorem T.fund_dom_master {lam : Nat} (s : T lam)
+    (hs : T.isNF s) :
+    (T.dom s = .omega →
+      ∀ t : T lam,
+        T.isNF (T.fund s t) ∧
+          T.SDom T.Z (T.fund s t) s) ∧
+    (T.dom s = .Omega →
+      ∀ z : T lam, T.isNFComp z →
+        T.isNF (T.fund s z) ∧
+          T.SDom z (T.fund s z) s) := by
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ a : T lam, T.size a = n →
+        T.isNF a →
+        (T.dom a = .omega →
+          ∀ t : T lam,
+            T.isNF (T.fund a t) ∧
+              T.SDom T.Z (T.fund a t) a) ∧
+        (T.dom a = .Omega →
+          ∀ z : T lam, T.isNFComp z →
+            T.isNF (T.fund a z) ∧
+              T.SDom z (T.fund a z) a)
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro a hn ha
+      cases a with
+      | Z =>
+        constructor
+        · intro hd
+          change Dom.zero = Dom.omega at hd
+          cases hd
+        · intro hd
+          change Dom.zero = Dom.Omega at hd
+          cases hd
+      | P ls add =>
+        cases ha with
+        | p _ _ h0 h1 h2 h3 =>
+          by_cases hadd : add = T.Z
+          · subst add
+            have hparentNF :
+                T.isNF (T.P ls T.Z) :=
+              T.isNF.p ls T.Z h0 h1 h2 h3
+            cases hmin : T.domVecMinIdx ls with
+            | none =>
+              constructor
+              · intro hd
+                have hd' := hd
+                conv at hd' =>
+                  lhs
+                  rw [T.dom, if_pos rfl]
+                  rw [hmin]
+                change Dom.one = Dom.omega at hd'
+                cases hd'
+              · intro hd
+                have hd' := hd
+                conv at hd' =>
+                  lhs
+                  rw [T.dom, if_pos rfl]
+                  rw [hmin]
+                change Dom.one = Dom.Omega at hd'
+                cases hd'
+            | some md =>
+              obtain ⟨m, d⟩ := md
+              have hspec :=
+                T.domVecMinIdx_some_spec ls m d hmin
+              have hchildComp :
+                  T.isNFComp (ls.idx m) :=
+                T.isNF_P_coord_NFComp
+                  ls T.Z hparentNF m
+              have hmsz :
+                  T.size (ls.idx m) < n := by
+                rw [← hn]
+                rw [← Vec.getElem_eq_idx ls m]
+                exact T.idx_size_lt_P ls T.Z m
+              have hchildRec :=
+                ih (T.size (ls.idx m)) hmsz
+                  (ls.idx m) rfl hchildComp.1
+              have hchildNe :
+                  ls.idx m ≠ T.Z := by
+                intro heq
+                have hdchild := hspec.2.1
+                rw [heq] at hdchild
+                change Dom.zero = d at hdchild
+                exact hspec.1 hdchild.symm
+              cases d with
+              | zero =>
+                exact False.elim (hspec.1 rfl)
+              | omega =>
+                constructor
+                · intro hd t
+                  have hchildDom :
+                      T.dom (ls.idx m) = .omega :=
+                    hspec.2.1
+                  obtain ⟨hfnf, hfrel⟩ :=
+                    hchildRec.1 hchildDom t
+                  have hfcomp :
+                      T.isNFComp
+                        (T.fund (ls.idx m) t) :=
+                    T.NFComp_of_SDom_Z_or_eq
+                      (T.fund (ls.idx m) t)
+                      (ls.idx m) hfnf
+                      hchildComp hfrel
+                  have hflt :
+                      T.fund (ls.idx m) t <
+                        ls.idx m :=
+                    T.fund_lt_self
+                      (ls.idx m) t hchildNe
+                  let low :=
+                    ls.rplc m
+                      (T.fund (ls.idx m) t)
+                  have hnf :
+                      T.isNF (T.P low T.Z) := by
+                    exact T.rplc_NF_closed
+                      ls m
+                      (T.fund (ls.idx m) t)
+                      hparentNF hfcomp
+                  have hrel :
+                      T.SDom T.Z
+                        (T.P low T.Z)
+                        (T.P ls T.Z) := by
+                    exact T.SDom_rplc_min_Z
+                      ls m Dom.omega
+                      (T.fund (ls.idx m) t)
+                      hmin hfcomp hflt
+                  have hfund :
+                      T.fund (T.P ls T.Z) t =
+                        T.P low T.Z := by
+                    conv =>
+                      lhs
+                      rw [T.fund, if_pos rfl]
+                      rw [hmin]
+                      change
+                        (if Dom.omega = Dom.one then _
+                        else _) =
+                          T.P low T.Z
+                      rw [if_neg (by intro h; cases h)]
+                      change
+                        (if Dom.omega = Dom.Omega then _
+                        else _) =
+                          T.P low T.Z
+                      rw [if_neg (by intro h; cases h)]
+                    rfl
+                  rw [hfund]
+                  exact ⟨hnf, hrel⟩
+                · intro hd
+                  have hd' := hd
+                  conv at hd' =>
+                    lhs
+                    rw [T.dom, if_pos rfl]
+                    rw [hmin]
+                  change Dom.omega = Dom.Omega at hd'
+                  cases hd'
+              | Omega =>
+                constructor
+                · intro hd t
+                  have hchildDom :
+                      T.dom (ls.idx m) = .Omega :=
+                    hspec.2.1
+                  have hOmegaRec :
+                      ∀ z : T lam, T.isNFComp z →
+                        T.isNF
+                            (T.fund (ls.idx m) z) ∧
+                          T.SDom z
+                            (T.fund (ls.idx m) z)
+                            (ls.idx m) :=
+                    hchildRec.2 hchildDom
+                  let imotive : Nat → Prop :=
+                    fun k =>
+                      ∀ u : T lam, T.size u = k →
+                        T.isNFComp
+                          (T.iter
+                            (fun x =>
+                              T.fund (ls.idx m) x) u) ∧
+                        T.isNFComp
+                          (T.fund (ls.idx m)
+                            (T.iter
+                              (fun x =>
+                                T.fund (ls.idx m) x) u))
+                  have imain :
+                      ∀ k : Nat, imotive k := by
+                    intro k
+                    exact Nat.strongRecOn k
+                      (motive := imotive) (fun k iih => by
+                        intro u hu
+                        cases u with
+                        | Z =>
+                          rw [T.iter]
+                          obtain ⟨hznf, hzrel⟩ :=
+                            hOmegaRec T.Z
+                              T.isNFComp_Z
+                          exact
+                            ⟨T.isNFComp_Z,
+                              T.NFComp_of_SDom_Z_or_eq
+                                (T.fund (ls.idx m) T.Z)
+                                (ls.idx m)
+                                hznf hchildComp hzrel⟩
+                        | P us uadd =>
+                          have husz :
+                              T.size uadd < k := by
+                            rw [← hu]
+                            exact
+                              T.add_size_lt_P us uadd
+                          obtain ⟨hprev, hcur⟩ :=
+                            iih (T.size uadd) husz
+                              uadd rfl
+                          rw [T.iter]
+                          obtain ⟨hnxtNF, hnxtRel⟩ :=
+                            hOmegaRec
+                              (T.fund (ls.idx m)
+                                (T.iter
+                                  (fun x =>
+                                    T.fund (ls.idx m) x)
+                                  uadd))
+                              hcur
+                          have hstep :
+                              T.fund (ls.idx m)
+                                  (T.iter
+                                    (fun x =>
+                                      T.fund (ls.idx m) x)
+                                    uadd) <
+                                T.fund (ls.idx m)
+                                  (T.fund (ls.idx m)
+                                    (T.iter
+                                      (fun x =>
+                                        T.fund (ls.idx m) x)
+                                      uadd)) := by
+                            have hh :=
+                              T.iter_fund_lt_next
+                                (ls.idx m)
+                                (T.P us uadd)
+                                hchildDom
+                            rw [T.iter] at hh
+                            exact hh
+                          exact
+                            ⟨hcur,
+                              T.NFComp_of_SDom
+                                (T.fund (ls.idx m)
+                                  (T.iter
+                                    (fun x =>
+                                      T.fund (ls.idx m) x)
+                                    uadd))
+                                (T.fund (ls.idx m)
+                                  (T.fund (ls.idx m)
+                                    (T.iter
+                                      (fun x =>
+                                        T.fund (ls.idx m) x)
+                                      uadd)))
+                                (ls.idx m)
+                                hnxtNF hchildComp hcur
+                                hnxtRel hstep⟩)
+                  obtain ⟨hwcomp, hfwcomp⟩ :=
+                    imain (T.size t) t rfl
+                  let w :=
+                    T.iter
+                      (fun x =>
+                        T.fund (ls.idx m) x) t
+                  have hflt :
+                      T.fund (ls.idx m) w <
+                        ls.idx m :=
+                    T.fund_lt_self
+                      (ls.idx m) w hchildNe
+                  let low :=
+                    ls.rplc m
+                      (T.fund (ls.idx m) w)
+                  have hnf :
+                      T.isNF (T.P low T.Z) := by
+                    exact T.rplc_NF_closed
+                      ls m
+                      (T.fund (ls.idx m) w)
+                      hparentNF hfwcomp
+                  have hrel :
+                      T.SDom T.Z
+                        (T.P low T.Z)
+                        (T.P ls T.Z) := by
+                    exact T.SDom_rplc_min_Z
+                      ls m Dom.Omega
+                      (T.fund (ls.idx m) w)
+                      hmin hfwcomp hflt
+                  have hfund :
+                      T.fund (T.P ls T.Z) t =
+                        T.P low T.Z := by
+                    conv =>
+                      lhs
+                      rw [T.fund, if_pos rfl]
+                      rw [hmin]
+                      change
+                        (if Dom.Omega = Dom.one then _
+                        else _) =
+                          T.P low T.Z
+                      rw [if_neg (by intro h; cases h)]
+                      change
+                        (if Dom.Omega = Dom.Omega then _
+                        else _) =
+                          T.P low T.Z
+                      rw [if_pos rfl]
+                    rfl
+                  rw [hfund]
+                  exact ⟨hnf, hrel⟩
+                · intro hd
+                  have hd' := hd
+                  conv at hd' =>
+                    lhs
+                    rw [T.dom, if_pos rfl]
+                    rw [hmin]
+                  change Dom.omega = Dom.Omega at hd'
+                  cases hd'
+              | one =>
+                have hchildDom :
+                    T.dom (ls.idx m) = .one :=
+                  hspec.2.1
+                have hfcomp :
+                    T.isNFComp
+                      (T.fund (ls.idx m) T.Z) :=
+                  T.fund_one_NFComp_closed
+                    (ls.idx m) hchildComp hchildDom
+                have hflt :
+                    T.fund (ls.idx m) T.Z <
+                      ls.idx m :=
+                  T.fund_lt_self
+                    (ls.idx m) T.Z hchildNe
+                cases m with
+                | mk mv mh =>
+                  cases mv with
+                  | zero =>
+                    let mi : Fin lam := ⟨0, mh⟩
+                    let low :=
+                      ls.rplc mi
+                        (T.fund (ls.idx mi) T.Z)
+                    constructor
+                    · intro hd t
+                      have hbaseNF :
+                          T.isNF (T.P low T.Z) := by
+                        exact T.rplc_NF_closed
+                          ls mi
+                          (T.fund (ls.idx mi) T.Z)
+                          hparentNF hfcomp
+                      have hbaseRel :
+                          T.SDom T.Z
+                            (T.P low T.Z)
+                            (T.P ls T.Z) := by
+                        exact T.SDom_rplc_min_Z
+                          ls mi Dom.one
+                          (T.fund (ls.idx mi) T.Z)
+                          hmin hfcomp hflt
+                      have hvec :
+                          compareVec low ls =
+                            Ordering.lt := by
+                        exact Vec.compare_rplc_lt
+                          ls mi
+                          (T.fund (ls.idx mi) T.Z)
+                          hflt
+                      have hnf :
+                          T.isNF
+                            (T.mul (T.P low T.Z) t) :=
+                        T.mul_PZ_NF_closed
+                          low hbaseNF t
+                      have hrel :
+                          T.SDom T.Z
+                            (T.mul (T.P low T.Z) t)
+                            (T.P ls T.Z) :=
+                        T.SDom_mul_PZ
+                          low ls t hvec hbaseRel
+                      have hfund :
+                          T.fund (T.P ls T.Z) t =
+                            T.mul (T.P low T.Z) t := by
+                        conv =>
+                          lhs
+                          rw [T.fund, if_pos rfl]
+                          rw [hmin]
+                          change
+                            (if Dom.one = Dom.one then _
+                            else _) =
+                              T.mul (T.P low T.Z) t
+                          rw [if_pos rfl]
+                        rfl
+                      rw [hfund]
+                      exact ⟨hnf, hrel⟩
+                    · intro hd
+                      have hd' := hd
+                      conv at hd' =>
+                        lhs
+                        rw [T.dom, if_pos rfl]
+                        rw [hmin]
+                      change Dom.omega = Dom.Omega at hd'
+                      cases hd'
+                  | succ k =>
+                    let mi : Fin lam :=
+                      ⟨Nat.succ k, mh⟩
+                    let mj : Fin lam :=
+                      ⟨k, Nat.lt_of_succ_lt mh⟩
+                    constructor
+                    · intro hd
+                      have hd' := hd
+                      conv at hd' =>
+                        lhs
+                        rw [T.dom, if_pos rfl]
+                        rw [hmin]
+                      change Dom.Omega = Dom.omega at hd'
+                      cases hd'
+                    · intro hd z hz
+                      let low :=
+                        (ls.rplc mi
+                          (T.fund (ls.idx mi) T.Z)).rplc
+                            mj z
+                      have hnf :
+                          T.isNF (T.P low T.Z) := by
+                        exact T.rplc_two_NF_closed
+                          ls mi mj
+                          (T.fund (ls.idx mi) T.Z)
+                          z
+                          (Nat.ne_of_gt
+                            (Nat.lt_succ_self k))
+                          hparentNF hfcomp hz
+                      have hrel :
+                          T.SDom z
+                            (T.P low T.Z)
+                            (T.P ls T.Z) := by
+                        exact T.SDom_rplc_lower
+                          z ls mi mj Dom.one
+                          (T.fund (ls.idx mi) T.Z)
+                          (Nat.lt_succ_self k)
+                          hmin hfcomp hflt
+                      have hfund :
+                          T.fund (T.P ls T.Z) z =
+                            T.P low T.Z := by
+                        conv =>
+                          lhs
+                          rw [T.fund, if_pos rfl]
+                          rw [hmin]
+                          change
+                            (if Dom.one = Dom.one then _
+                            else _) =
+                              T.P low T.Z
+                          rw [if_pos rfl]
+                        change
+                          T.P
+                            ((ls.rplc mi
+                              (T.fund (ls.idx mi) T.Z)).rplc
+                                mj z)
+                            T.Z =
+                              T.P low T.Z
+                        rfl
+                      rw [hfund]
+                      exact ⟨hnf, hrel⟩
+          · have hsz :
+                T.size add < n := by
+              rw [← hn]
+              exact T.add_size_lt_P ls add
+            have hrec :=
+              ih (T.size add) hsz
+                add rfl h1
+            constructor
+            · intro hd t
+              have hdadd :
+                  T.dom add = .omega := by
+                conv at hd =>
+                  lhs
+                  rw [T.dom, if_neg hadd]
+                exact hd
+              obtain ⟨hfnf, hfrel⟩ :=
+                hrec.1 hdadd t
+              have hnf :
+                  T.isNF
+                    (T.P ls (T.fund add t)) :=
+                T.isNF.p ls (T.fund add t)
+                  h0 hfnf h2
+                  (T.le_trans
+                    (T.head (T.fund add t))
+                    (T.head add)
+                    (T.P ls T.Z)
+                    (T.head_fund_le add t) h3)
+              have hrel :
+                  T.SDom T.Z
+                    (T.P ls (T.fund add t))
+                    (T.P ls add) :=
+                T.SDom_tail
+                  T.Z (T.fund add t)
+                  add ls hfrel
+              rw [T.fund_P_tail_eq ls add t hadd]
+              exact ⟨hnf, hrel⟩
+            · intro hd z hz
+              have hdadd :
+                  T.dom add = .Omega := by
+                conv at hd =>
+                  lhs
+                  rw [T.dom, if_neg hadd]
+                exact hd
+              obtain ⟨hfnf, hfrel⟩ :=
+                hrec.2 hdadd z hz
+              have hnf :
+                  T.isNF
+                    (T.P ls (T.fund add z)) :=
+                T.isNF.p ls (T.fund add z)
+                  h0 hfnf h2
+                  (T.le_trans
+                    (T.head (T.fund add z))
+                    (T.head add)
+                    (T.P ls T.Z)
+                    (T.head_fund_le add z) h3)
+              have hrel :
+                  T.SDom z
+                    (T.P ls (T.fund add z))
+                    (T.P ls add) :=
+                T.SDom_tail
+                  z (T.fund add z)
+                  add ls hfrel
+              rw [T.fund_P_tail_eq ls add z hadd]
+              exact ⟨hnf, hrel⟩)
+  exact main (T.size s) s rfl hs
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
