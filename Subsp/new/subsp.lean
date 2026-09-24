@@ -560,7 +560,6 @@ theorem Vec.Gres_cases {lam m : Nat}
               (if h : i.val < k then
                 Vec.idx xs ⟨i.val, h⟩ else last) = xs.idx i
             rw [dite_eq_left i.isLt]
-            rfl
           rw [hidx]
           exact hcase
         | inr hlast =>
