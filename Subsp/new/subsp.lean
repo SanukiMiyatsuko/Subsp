@@ -224,21 +224,26 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat} (v : Vec (T lam) m)
 theorem T.domVecMinIdx_some_ne_zero {lam m : Nat} (v : Vec (T lam) m)
     (i : Fin m) (d : Dom) (h : T.domVecMinIdx v = some (i, d)) :
     d ≠ .zero := by
-  intro hd
-  have hspec := T.domVecMinIdx_some_spec v i d h
-  have hzi : T.dom (v.idx i) = .zero := hd ▸ hspec.1
-  have heq : v.idx i = T.Z := T.dom_zero_eq_Z (v.idx i) hzi
-  rw [heq] at hspec
-  have hdz : T.dom T.Z = .zero := rfl
-  exact (by
-    cases d with
-    | zero => exact False.elim (by
-        have := hspec.1
-        rw [hdz] at this
-        exact False.elim (by cases this))
-    | one => cases hd
-    | omega => cases hd
-    | Omega => cases hd)
+  induction v with
+  | nil =>
+    exact i.elim0
+  | snoc k xs x ih =>
+    rw [T.domVecMinIdx] at h
+    cases hrec : T.domVecMinIdx xs with
+    | some md =>
+      cases md with
+      | mk i' d' =>
+        rw [hrec] at h
+        cases h
+        exact ih i' d' hrec
+    | none =>
+      rw [hrec] at h
+      by_cases hdx : T.dom x = .zero
+      · rw [if_pos hdx] at h
+        cases h
+      · rw [if_neg hdx] at h
+        cases h
+        exact hdx
 
 theorem Vec.rplc_idx_same {A : Type} {n : Nat} (v : Vec A n) (i : Fin n) (a : A) :
     (v.rplc i a).idx i = a := by
