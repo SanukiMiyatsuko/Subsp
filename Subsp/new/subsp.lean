@@ -1464,6 +1464,63 @@ theorem T.isNF_G_isNFComp {lam : Nat} (s : T lam)
     | inr hxG =>
       exact ih1 x hxG
 
+theorem T.NFComp_of_zero_domination {lam : Nat}
+    (a b : T lam) (hb : T.isNF b) (ha : T.isNFComp a)
+    (hdom :
+      b < a ∧
+        ∀ c : T lam, b ≤ c → c ≤ a →
+          ∀ x ∈ T.G b,
+            ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y) :
+    T.isNFComp b := by
+  by_cases hbz : b = T.Z
+  · rw [hbz]
+    exact T.isNFComp_Z
+  · have hzb : T.Z < b := by
+      cases T.Z_le b with
+      | inl hlt => exact hlt
+      | inr heq => exact False.elim (hbz heq.symm)
+    constructor
+    · exact hb
+    · intro x hx
+      have hba : b ≤ a := Or.inl hdom.1
+      have haa : a ≤ a := partial_order.refl a
+      obtain ⟨w, hw, hxw⟩ :=
+        hdom.2 a hba haa x hx
+      have hwa : w < a := by
+        cases List.mem_append.mp hw with
+        | inl hGa =>
+          exact ha.2 w hGa
+        | inr hZ =>
+          have hwz : w = T.Z := List.mem_singleton.mp hZ
+          rw [hwz]
+          exact strict_partial_order.trans T.Z b a hzb hdom.1
+      have hxa : x < a :=
+        lt_of_le_of_lt_thm T x w a hxw hwa
+      by_cases hxb : x < b
+      · exact hxb
+      · have hbx : b ≤ x := by
+          cases linear_order.total b x with
+          | inl h => exact h
+          | inr h =>
+            cases h with
+            | inl hlt => exact False.elim (hxb hlt)
+            | inr heq => exact Or.inr heq.symm
+        obtain ⟨v, hv, hxv⟩ :=
+          hdom.2 x hbx (Or.inl hxa) x hx
+        have hvx : v < x := by
+          cases List.mem_append.mp hv with
+          | inl hGx =>
+            have hxc : T.isNFComp x :=
+              T.isNF_G_isNFComp b hb x hx
+            exact hxc.2 v hGx
+          | inr hZ =>
+            have hvz : v = T.Z := List.mem_singleton.mp hZ
+            rw [hvz]
+            exact lt_of_lt_of_le_thm T T.Z b x hzb hbx
+        have hxx : x < x :=
+          lt_of_le_of_lt_thm T x v x hxv hvx
+        exact False.elim (strict_partial_order.irrefl x hxx)
+
 theorem T.isNFComp_Z {lam : Nat} : T.isNFComp (T.Z : T lam) := by
   constructor
   · exact T.isNF.z
