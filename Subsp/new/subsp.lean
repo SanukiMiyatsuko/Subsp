@@ -3702,6 +3702,10 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       lhs
                       rw [T.fund, if_pos rfl]
                       rw [hmin]
+                    change
+                      (if Dom.omega = Dom.one then _
+                      else if Dom.omega = Dom.Omega then _
+                      else _) = T.P low T.Z
                     rw [if_neg (by intro h; cases h)]
                     rw [if_neg (by intro h; cases h)]
                     rfl
@@ -3848,6 +3852,10 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       lhs
                       rw [T.fund, if_pos rfl]
                       rw [hmin]
+                    change
+                      (if Dom.Omega = Dom.one then _
+                      else if Dom.Omega = Dom.Omega then _
+                      else _) = T.P low T.Z
                     rw [if_neg (by intro h; cases h)]
                     rw [if_pos rfl]
                     rfl
@@ -3924,6 +3932,10 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                           lhs
                           rw [T.fund, if_pos rfl]
                           rw [hmin]
+                        change
+                          (if Dom.one = Dom.one then _
+                          else _) =
+                            T.mul (T.P low T.Z) t
                         rw [if_pos rfl]
                         rfl
                       rw [hfund]
@@ -3980,6 +3992,9 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                           lhs
                           rw [T.fund, if_pos rfl]
                           rw [hmin]
+                        change
+                          (if Dom.one = Dom.one then _
+                          else _) = T.P low T.Z
                         rw [if_pos rfl]
                         change
                           T.P
@@ -4062,7 +4077,7 @@ theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hd : T.dom s = .omega) :
     T.isNFComp (T.fund s t) := by
   obtain ⟨hnf, hsd⟩ :=
-    T.fund_omega_master s t hs.1 hd
+    (T.fund_dom_master s hs.1).1 hd t
   exact T.NFComp_of_SDom_Z_or_eq
     (T.fund s t) s hnf hs hsd
 
@@ -4151,7 +4166,7 @@ theorem T.fund_NF_closed {lam : Nat} (s t : T lam)
     rw [hirrel]
     exact (T.fund_one_master s hs hdom).1
   | omega =>
-    exact (T.fund_omega_master s t hs hdom).1
+    exact ((T.fund_dom_master s hs).1 hdom t).1
   | Omega =>
     exact
       (T.fund_dom_master s hs).2
