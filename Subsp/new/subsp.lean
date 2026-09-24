@@ -374,7 +374,7 @@ theorem Vec.Gres_mem_G_of_idx {lam m : Nat}
           exact hy
         exact List.mem_append_left (T.G last)
           (List.mem_append_left [last]
-            (ih ⟨i.val, h⟩ y hy'))
+            (ih ⟨i.val, h⟩ hy'))
       · have hy' : y ∈ T.G last := by
           change
             y ∈ T.G
