@@ -1690,6 +1690,38 @@ theorem T.le_antisymm {lam : Nat} (a b : T lam)
       exact False.elim
         (strict_partial_order.irrefl a haa)
 
+theorem T.le_refl {lam : Nat} (a : T lam) : a ≤ a := by
+  exact Or.inr (T_refl a)
+
+theorem T.le_trans {lam : Nat} (a b c : T lam)
+    (hab : a ≤ b) (hbc : b ≤ c) : a ≤ c := by
+  cases hab with
+  | inl hablt =>
+    cases hbc with
+    | inl hbclt =>
+      exact Or.inl (T_trans a b c hablt hbclt)
+    | inr hbceq =>
+      have hbcEq : b = c := T_eq_sound b c hbceq
+      rw [← hbcEq]
+      exact Or.inl hablt
+  | inr habeq =>
+    have habEq : a = b := T_eq_sound a b habeq
+    rw [habEq]
+    exact hbc
+
+theorem T.le_antisymm {lam : Nat} (a b : T lam)
+    (hab : a ≤ b) (hba : b ≤ a) : a = b := by
+  cases hab with
+  | inl hablt =>
+    cases hba with
+    | inl hbalt =>
+      have haa : a < a := T_trans a b a hablt hbalt
+      exact False.elim (strict_partial_order.irrefl a haa)
+    | inr hbaeq =>
+      exact (T_eq_sound b a hbaeq).symm
+  | inr habeq =>
+    exact T_eq_sound a b habeq
+
 theorem T.P_le_P_same {lam : Nat} (ls : Vec (T lam) lam)
     (a b : T lam) (h : a ≤ b) :
     T.P ls a ≤ T.P ls b := by
@@ -1697,13 +1729,9 @@ theorem T.P_le_P_same {lam : Nat} (ls : Vec (T lam) lam)
   | inl hlt =>
     exact Or.inl (T.P_tail_lt ls a b hlt)
   | inr heq =>
-    apply Or.inr
-    show
-      (match compareVec ls ls with
-      | Ordering.eq => compareT a b
-      | ord => ord) = Ordering.eq
-    rw [Vec_refl ls]
-    exact heq
+    have hab : a = b := T_eq_sound a b heq
+    rw [hab]
+    exact T.le_refl (T.P ls b)
 
 theorem T.isNF_G_isNFComp {lam : Nat} (s : T lam)
     (hs : T.isNF s) :
@@ -1747,8 +1775,7 @@ theorem T.P_same_le_iff {lam : Nat} (ls : Vec (T lam) lam)
     cases h with
     | inl hlt =>
       apply Or.inl
-      show compareT a b = Ordering.lt
-      show
+      change
         (match compareVec ls ls with
         | Ordering.eq => compareT a b
         | ord => ord) = Ordering.lt at hlt
@@ -1756,12 +1783,11 @@ theorem T.P_same_le_iff {lam : Nat} (ls : Vec (T lam) lam)
       exact hlt
     | inr heq =>
       apply Or.inr
-      show
-        (match compareVec ls ls with
-        | Ordering.eq => compareT a b
-        | ord => ord) = Ordering.eq at heq
-      rw [Vec_refl ls] at heq
-      exact heq
+      have hpEq : T.P ls a = T.P ls b :=
+        T_eq_sound (T.P ls a) (T.P ls b) heq
+      injection hpEq with hab
+      rw [hab]
+      exact T_refl b
   · intro h
     exact T.P_le_P_same ls a b h
 
@@ -1799,7 +1825,7 @@ theorem T.vector_rel_of_P_le_P {lam : Nat}
     compareVec v w = Ordering.lt ∨ v = w := by
   cases h with
   | inl hlt =>
-    show
+    change
       (match compareVec v w with
       | Ordering.eq => compareT a b
       | ord => ord) = Ordering.lt at hlt
@@ -1812,19 +1838,10 @@ theorem T.vector_rel_of_P_le_P {lam : Nat}
       rw [hc] at hlt
       cases hlt
   | inr heq =>
-    show
-      (match compareVec v w with
-      | Ordering.eq => compareT a b
-      | ord => ord) = Ordering.eq at heq
-    cases hc : compareVec v w with
-    | lt =>
-      rw [hc] at heq
-      cases heq
-    | eq =>
-      exact Or.inr (Vec_eq_sound v w hc)
-    | gt =>
-      rw [hc] at heq
-      cases heq
+    have hpEq : T.P v a = T.P w b :=
+      T_eq_sound (T.P v a) (T.P w b) heq
+    injection hpEq with hv
+    exact Or.inr hv
 
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
