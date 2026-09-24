@@ -419,10 +419,8 @@ theorem Vec.compare_rplc_rplc_lt {lam m : Nat} (v : Vec (T lam) m)
   apply Vec.compare_lt_of_pivot ((v.rplc i a).rplc j b) v i
   · intro q hiq
     have hqi : q.val ≠ i.val := Nat.ne_of_gt hiq
-    have hqj : q.val ≠ j.val := by
-      intro heq
-      have : q.val < i.val := heq ▸ hji
-      exact (Nat.lt_asymm hiq this) hiq
+    have hqj : q.val ≠ j.val :=
+      Nat.ne_of_gt (Nat.lt_trans hji hiq)
     rw [Vec.rplc_idx_of_ne (v.rplc i a) j q b hqj]
     rw [Vec.rplc_idx_of_ne v i q a hqi]
   · have hij : i.val ≠ j.val := Nat.ne_of_gt hji
