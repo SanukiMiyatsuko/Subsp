@@ -1811,6 +1811,195 @@ theorem T.vector_rel_of_P_le_P {lam : Nat}
     injection hpEq with hv
     exact Or.inr hv
 
+theorem T.lt_of_le_of_lt {lam : Nat} (a b c : T lam)
+    (hab : a ≤ b) (hbc : b < c) : a < c := by
+  cases hab with
+  | inl hablt =>
+    exact T_trans a b c hablt hbc
+  | inr habeq =>
+    have habEq : a = b := T_eq_sound a b habeq
+    rw [habEq]
+    exact hbc
+
+theorem T.lt_of_lt_of_le {lam : Nat} (a b c : T lam)
+    (hab : a < b) (hbc : b ≤ c) : a < c := by
+  cases hbc with
+  | inl hbclt =>
+    exact T_trans a b c hab hbclt
+  | inr hbceq =>
+    have hbcEq : b = c := T_eq_sound b c hbceq
+    rw [← hbcEq]
+    exact hab
+
+def T.ZeroDom {lam : Nat} (b a : T lam) : Prop :=
+  b < a ∧
+    ∀ c : T lam, b ≤ c → c ≤ a →
+      ∀ x ∈ T.G b,
+        ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y
+
+theorem T.ZeroDom_tail {lam : Nat}
+    (ls : Vec (T lam) lam) (a b : T lam)
+    (hdom : T.ZeroDom b a) :
+    T.ZeroDom (T.P ls b) (T.P ls a) := by
+  constructor
+  · exact T.P_tail_lt ls b a hdom.1
+  · intro c hbc hca x hx
+    obtain ⟨d, hceq, hbd, hda⟩ :=
+      T.sandwich_same_vector ls b a c
+        (Or.inl hdom.1) hbc hca
+    rw [hceq]
+    cases (T.mem_G_P ls b x).mp hx with
+    | inl hvec =>
+      refine ⟨x, ?_, T.le_refl x⟩
+      apply List.mem_append_left [T.Z]
+      apply (T.mem_G_P ls d x).mpr
+      exact Or.inl hvec
+    | inr htail =>
+      obtain ⟨y, hy, hxy⟩ :=
+        hdom.2 d hbd hda x htail
+      refine ⟨y, ?_, hxy⟩
+      cases List.mem_append.mp hy with
+      | inl hGd =>
+        apply List.mem_append_left [T.Z]
+        apply (T.mem_G_P ls d y).mpr
+        exact Or.inr hGd
+      | inr hZ =>
+        exact List.mem_append_right
+          (T.G (T.P ls d)) hZ
+
+theorem T.NFComp_of_ZeroDom {lam : Nat}
+    (a b : T lam) (hb : T.isNF b)
+    (ha : T.isNFComp a) (hdom : T.ZeroDom b a) :
+    T.isNFComp b := by
+  by_cases hbz : b = T.Z
+  · rw [hbz]
+    exact T.isNFComp_Z
+  · have hzb : T.Z < b := by
+      cases T.Z_le b with
+      | inl hlt =>
+        exact hlt
+      | inr heq =>
+        have hzEq : T.Z = b :=
+          T_eq_sound T.Z b heq
+        exact False.elim (hbz hzEq.symm)
+    constructor
+    · exact hb
+    · intro x hx
+      have hba : b ≤ a := Or.inl hdom.1
+      have haa : a ≤ a := T.le_refl a
+      obtain ⟨w, hw, hxw⟩ :=
+        hdom.2 a hba haa x hx
+      have hwa : w < a := by
+        cases List.mem_append.mp hw with
+        | inl hGa =>
+          exact ha.2 w hGa
+        | inr hZ =>
+          have hwz : w = T.Z :=
+            List.mem_singleton.mp hZ
+          rw [hwz]
+          exact T_trans T.Z b a hzb hdom.1
+      have hxa : x < a :=
+        T.lt_of_le_of_lt x w a hxw hwa
+      by_cases hxb : x < b
+      · exact hxb
+      · have hbx : b ≤ x := by
+          cases T_total b x with
+          | inl hlt =>
+            exact Or.inl hlt
+          | inr hr =>
+            cases hr with
+            | inl hlt =>
+              exact False.elim (hxb hlt)
+            | inr heq =>
+              rw [heq]
+              exact T.le_refl x
+        obtain ⟨v, hv, hxv⟩ :=
+          hdom.2 x hbx (Or.inl hxa) x hx
+        have hvx : v < x := by
+          cases List.mem_append.mp hv with
+          | inl hGx =>
+            have hxc : T.isNFComp x :=
+              T.isNF_G_isNFComp b hb x hx
+            exact hxc.2 v hGx
+          | inr hZ =>
+            have hvz : v = T.Z :=
+              List.mem_singleton.mp hZ
+            rw [hvz]
+            exact T.lt_of_lt_of_le T.Z b x hzb hbx
+        have hxx : x < x :=
+          T.lt_of_le_of_lt x v x hxv hvx
+        exact False.elim
+          (strict_partial_order.irrefl x hxx)
+
+theorem T.fund_one_master {lam : Nat} (s : T lam) :
+    ∀ (hs : T.isNF s), T.dom s = .one →
+      T.isNF (T.fund s T.Z) ∧
+        T.ZeroDom (T.fund s T.Z) s := by
+  generalize hn : T.size s = n
+  induction n using Nat.strongRecOn generalizing s with
+  | h n ih =>
+    intro hs hd
+    cases s with
+    | Z =>
+      cases hd
+    | P ls add =>
+      cases hs with
+      | p _ _ h0 h1 h2 h3 =>
+        by_cases hadd : add = T.Z
+        · subst add
+          have hnone : T.domVecMinIdx ls = none := by
+            cases hmin : T.domVecMinIdx ls with
+            | none =>
+              exact hmin
+            | some md =>
+              obtain ⟨m, d⟩ := md
+              rw [T.dom, if_pos rfl, hmin] at hd
+              by_cases hd1 : d = .one
+              · rw [if_pos hd1] at hd
+                by_cases hm0 : m.val = 0
+                · rw [if_pos hm0] at hd
+                  cases hd
+                · rw [if_neg hm0] at hd
+                  cases hd
+              · rw [if_neg hd1] at hd
+                cases hd
+          rw [T.fund_PZ_none ls T.Z hnone]
+          constructor
+          · exact T.isNF.z
+          · constructor
+            · rfl
+            · intro c hzc hcs x hx
+              change x ∈ ([] : List (T lam)) at hx
+              cases hx
+        · have hdadd : T.dom add = .one := by
+            rw [T.dom, if_neg hadd] at hd
+            exact hd
+          have hsz : T.size add < n := by
+            rw [← hn]
+            exact T.add_size_lt_P ls add
+          obtain ⟨hnf, hrel⟩ :=
+            ih (T.size add) hsz add rfl h1 hdadd
+          rw [T.fund, if_neg hadd]
+          constructor
+          · apply T.isNF.p ls (T.fund add T.Z)
+            · exact h0
+            · exact hnf
+            · exact h2
+            · exact T.le_trans
+                (T.head (T.fund add T.Z))
+                (T.head add) (T.P ls T.Z)
+                (T.head_fund_le add T.Z) h3
+          · exact T.ZeroDom_tail ls add
+              (T.fund add T.Z) hrel
+
+theorem T.fund_one_NFComp_closed {lam : Nat} (s : T lam)
+    (hs : T.isNFComp s) (hd : T.dom s = .one) :
+    T.isNFComp (T.fund s T.Z) := by
+  obtain ⟨hnf, hdom⟩ :=
+    T.fund_one_master s hs.1 hd
+  exact T.NFComp_of_ZeroDom
+    s (T.fund s T.Z) hnf hs hdom
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
