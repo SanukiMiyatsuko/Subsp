@@ -166,4 +166,26 @@ inductive T.isNF {lam : Nat} : T lam → Prop where
 
 instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) := sorry
 
+def T.isNFComp {lam : Nat} (s : T lam) : Prop :=
+  T.isNF s ∧ ∀ y ∈ T.G s, y < s
+
+theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
+    (hs : T.isNFComp s)
+    (hd : T.dom s = .omega) :
+    T.isNFComp (T.fund s t) := by
+  sorry
+
+theorem T.fund_iter_NFComp {lam : Nat} (s t : T lam)
+    (hs : T.isNFComp s)
+    (hd : T.dom s = .Omega) :
+    T.isNFComp
+      (T.fund s (T.iter (fun x => T.fund s x) t)) := by
+  sorry
+
+theorem T.fund_NF_closed {lam : Nat} (s t : T lam)
+    (hs : T.isNF s)
+    (ht : T.dom s = .Omega → T.isNFComp t) :
+    T.isNF (T.fund s t) := by
+  sorry
+
 end new
