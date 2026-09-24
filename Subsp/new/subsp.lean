@@ -2496,6 +2496,53 @@ theorem T.iter_fund_lt_next {lam : Nat} (s t : T lam)
       (T.fund s (T.iter (fun x => T.fund s x) add))
       hd ih
 
+
+theorem T.GZ_lt_of_NFComp_lt {lam : Nat} (z b : T lam)
+    (hz : T.isNFComp z) (hzb : z < b) :
+    ∀ x ∈ T.GZ z, x < b := by
+  intro x hx
+  rw [T.GZ] at hx
+  cases List.mem_append.mp hx with
+  | inl hleft =>
+    cases List.mem_append.mp hleft with
+    | inl hzmem =>
+      have heq : x = z := List.mem_singleton.mp hzmem
+      rw [heq]
+      exact hzb
+    | inr hG =>
+      have hxz : x < z := hz.2 x hG
+      exact strict_partial_order.trans x z b hxz hzb
+  | inr hzero =>
+    have heq : x = T.Z := List.mem_singleton.mp hzero
+    rw [heq]
+    have hle : T.Z ≤ z := T.Z_le z
+    exact lt_of_le_of_lt_thm T T.Z z b hle hzb
+
+theorem T.NFComp_of_SDom {lam : Nat} (z b a : T lam)
+    (hb : T.isNF b) (ha : T.isNFComp a)
+    (hz : T.isNFComp z)
+    (hdom : T.SDom z b a)
+    (hzb : z < b) :
+    T.isNFComp b := by
+  constructor
+  · exact hb
+  · exact T.SDom_G_closed z b a hdom ha.2
+      (T.GZ_lt_of_NFComp_lt z b hz hzb)
+
+theorem T.NFComp_of_SDom_Z_or_eq {lam : Nat} (b a : T lam)
+    (hb : T.isNF b) (ha : T.isNFComp a)
+    (hdom : T.SDom T.Z b a) :
+    T.isNFComp b := by
+  by_cases hbz : b = T.Z
+  · rw [hbz]
+    exact T.isNFComp_Z
+  · have hzb : T.Z < b := by
+      cases T.Z_le b with
+      | inl hlt => exact hlt
+      | inr heq => exact False.elim (hbz heq.symm)
+    exact T.NFComp_of_SDom T.Z b a hb ha
+      T.isNFComp_Z hdom hzb
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
