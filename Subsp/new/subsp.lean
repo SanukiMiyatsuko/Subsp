@@ -1431,6 +1431,201 @@ theorem T.coord_lt_of_NFComp_P {lam : Nat}
   apply (T.mem_G_P ls add (ls.idx i)).mpr
   exact Or.inl ⟨i, Or.inl rfl⟩
 
+theorem T.term_lt_P_of_self_at {lam : Nat}
+    (x : T lam) (v w : Vec (T lam) lam)
+    (q : Fin lam)
+    (hx : T.isNFComp x)
+    (hold : x < T.P v T.Z)
+    (hwq : w.idx q = x)
+    (hhigh : ∀ j : Fin lam, q.val < j.val →
+      w.idx j = v.idx j) :
+    x < T.P w T.Z := by
+  cases x with
+  | Z =>
+      rfl
+  | P xs xadd =>
+    have hvlt : compareVec xs v = Ordering.lt := by
+      change
+        (match compareVec xs v with
+        | Ordering.eq => compareT xadd T.Z
+        | ord => ord) = Ordering.lt at hold
+      cases hc : compareVec xs v with
+      | lt =>
+          exact hc
+      | eq =>
+          rw [hc] at hold
+          cases xadd with
+          | Z =>
+              rw [T_refl T.Z] at hold
+              cases hold
+          | P als aadd =>
+              cases hold
+      | gt =>
+          rw [hc] at hold
+          cases hold
+    obtain ⟨p, hpAbove, hpLt⟩ :=
+      Vec.compare_lt_has_pivot xs v hvlt
+    by_cases hqp : q.val < p.val
+    · have hcmp : compareVec xs w = Ordering.lt := by
+        apply Vec.compare_lt_of_pivot xs w p
+        · intro j hpj
+          have hqj : q.val < j.val :=
+            Nat.lt_trans hqp hpj
+          rw [hhigh j hqj]
+          exact hpAbove j hpj
+        · have hpw : w.idx p = v.idx p :=
+            hhigh p hqp
+          rw [hpw]
+          exact hpLt
+      exact T.P_lt_P_of_compareVec_lt
+        xs w xadd T.Z hcmp
+    · have hpq : p.val ≤ q.val :=
+        Nat.not_lt.mp hqp
+      have hself :
+          xs.idx q < T.P xs xadd := by
+        apply hx.2 (xs.idx q)
+        apply (T.mem_G_P xs xadd (xs.idx q)).mpr
+        exact Or.inl ⟨q, Or.inl rfl⟩
+      have hcmp : compareVec xs w = Ordering.lt := by
+        apply Vec.compare_lt_of_pivot xs w q
+        · intro j hqj
+          have hpj : p.val < j.val :=
+            Nat.lt_of_le_of_lt hpq hqj
+          rw [hhigh j hqj]
+          exact hpAbove j hpj
+        · rw [hwq]
+          exact hself
+      exact T.P_lt_P_of_compareVec_lt
+        xs w xadd T.Z hcmp
+
+theorem T.rplc_min_NFComp_closed {lam : Nat}
+    (ls : Vec (T lam) lam) (m : Fin lam)
+    (d : Dom) (a : T lam)
+    (hs : T.isNFComp (T.P ls T.Z))
+    (hmin : T.domVecMinIdx ls = some (m, d))
+    (ha : T.isNFComp a)
+    (halt : a < ls.idx m) :
+    T.isNFComp (T.P (ls.rplc m a) T.Z) := by
+  have hspec :=
+    T.domVecMinIdx_some_spec ls m d hmin
+  have holdCoord :=
+    T.isNF_P_coord_NFComp ls T.Z hs.1
+  have hcoord :
+      ∀ i : Fin lam,
+        T.isNFComp ((ls.rplc m a).idx i) := by
+    intro i
+    by_cases him : i.val = m.val
+    · have hieq : i = m :=
+        Fin.eq_of_val_eq him
+      rw [hieq, Vec.rplc_idx_same]
+      exact ha
+    · rw [Vec.rplc_idx_of_ne ls m i a him]
+      exact holdCoord i
+  have hnf :
+      T.isNF (T.P (ls.rplc m a) T.Z) :=
+    T.isNF_PZ_of_coords (ls.rplc m a) hcoord
+  constructor
+  · exact hnf
+  · intro y hy
+    cases
+      (T.mem_G_P (ls.rplc m a) T.Z y).mp hy with
+    | inl hv =>
+      obtain ⟨i, hcase⟩ := hv
+      have hilt :
+          (ls.rplc m a).idx i <
+            T.P (ls.rplc m a) T.Z := by
+        by_cases him : i.val < m.val
+        · have hdom0 :
+              T.dom (ls.idx i) = .zero :=
+            hspec.2.2 i him
+          have hzi : ls.idx i = T.Z :=
+            T.dom_zero_eq_Z (ls.idx i) hdom0
+          have hine : i.val ≠ m.val :=
+            Nat.ne_of_lt him
+          have hr :
+              (ls.rplc m a).idx i = ls.idx i :=
+            Vec.rplc_idx_of_ne ls m i a hine
+          rw [hr, hzi]
+          rfl
+        · by_cases hmi : m.val < i.val
+          · have hine : i.val ≠ m.val :=
+              Nat.ne_of_gt hmi
+            have hr :
+                (ls.rplc m a).idx i = ls.idx i :=
+              Vec.rplc_idx_of_ne ls m i a hine
+            have holdLt :
+                ls.idx i < T.P ls T.Z := by
+              apply hs.2 (ls.idx i)
+              apply
+                (T.mem_G_P ls T.Z
+                  (ls.idx i)).mpr
+              exact Or.inl ⟨i, Or.inl rfl⟩
+            have hhigh :
+                ∀ j : Fin lam, i.val < j.val →
+                  (ls.rplc m a).idx j =
+                    ls.idx j := by
+              intro j hij
+              have hmj : m.val < j.val :=
+                Nat.lt_trans hmi hij
+              exact Vec.rplc_idx_of_ne
+                ls m j a (Nat.ne_of_gt hmj)
+            have hb :=
+              T.term_lt_P_of_self_at
+                (ls.idx i) ls (ls.rplc m a) i
+                (holdCoord i) holdLt hr hhigh
+            rw [hr]
+            exact hb
+          · have himle : i.val ≤ m.val :=
+              Nat.not_lt.mp hmi
+            have hmile : m.val ≤ i.val :=
+              Nat.not_lt.mp him
+            have hval : i.val = m.val :=
+              Nat.le_antisymm himle hmile
+            have hieq : i = m :=
+              Fin.eq_of_val_eq hval
+            rw [hieq]
+            have hr :
+                (ls.rplc m a).idx m = a :=
+              Vec.rplc_idx_same ls m a
+            have holdLt :
+                ls.idx m < T.P ls T.Z := by
+              apply hs.2 (ls.idx m)
+              apply
+                (T.mem_G_P ls T.Z
+                  (ls.idx m)).mpr
+              exact Or.inl ⟨m, Or.inl rfl⟩
+            have haold :
+                a < T.P ls T.Z :=
+              strict_partial_order.trans
+                a (ls.idx m) (T.P ls T.Z)
+                halt holdLt
+            have hhigh :
+                ∀ j : Fin lam, m.val < j.val →
+                  (ls.rplc m a).idx j =
+                    ls.idx j := by
+              intro j hmj
+              exact Vec.rplc_idx_of_ne
+                ls m j a (Nat.ne_of_gt hmj)
+            exact
+              T.term_lt_P_of_self_at
+                a ls (ls.rplc m a) m
+                ha haold hr hhigh
+      cases hcase with
+      | inl heq =>
+          rw [heq]
+          exact hilt
+      | inr hyg =>
+          have hyi :
+              y < (ls.rplc m a).idx i :=
+            (hcoord i).2 y hyg
+          exact strict_partial_order.trans
+            y ((ls.rplc m a).idx i)
+            (T.P (ls.rplc m a) T.Z)
+            hyi hilt
+    | inr hz =>
+      change y ∈ ([] : List (T lam)) at hz
+      cases hz
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
