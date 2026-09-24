@@ -403,6 +403,328 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat} (v w : Vec (T lam) m) (i : Fin m)
           rw [hxy]
           exact hrec
 
+
+theorem Vec.compare_lt_preserve_from_index {lam m : Nat}
+    (a v w : Vec (T lam) m) (q : Fin m)
+    (hvw : ∀ j : Fin m, q.val ≤ j.val → v.idx j = w.idx j)
+    (hne : a.idx q ≠ v.idx q)
+    (hlt : compareVec a v = Ordering.lt) :
+    compareVec a w = Ordering.lt := by
+  induction m with
+  | zero =>
+    exact q.elim0
+  | succ k ih =>
+    cases a with
+    | snoc _ as aLast =>
+      cases v with
+      | snoc _ vs vLast =>
+        cases w with
+        | snoc _ ws wLast =>
+          have hlastV :
+              (Vec.snoc k vs vLast).idx (Fin.last k) = vLast := by
+            show
+              (if h : k < k then Vec.idx vs ⟨k, h⟩ else vLast) = vLast
+            rw [dite_eq_right (Nat.lt_irrefl k)]
+          have hlastW :
+              (Vec.snoc k ws wLast).idx (Fin.last k) = wLast := by
+            show
+              (if h : k < k then Vec.idx ws ⟨k, h⟩ else wLast) = wLast
+            rw [dite_eq_right (Nat.lt_irrefl k)]
+          have hvwLast :
+              vLast = wLast := by
+            have hqk : q.val ≤ k := Nat.le_of_lt_succ q.isLt
+            have h := hvw (Fin.last k) hqk
+            rw [hlastV, hlastW] at h
+            exact h
+          show
+            (match compareT aLast wLast with
+            | Ordering.eq => compareVec as ws
+            | ord => ord) = Ordering.lt
+          show
+            (match compareT aLast vLast with
+            | Ordering.eq => compareVec as vs
+            | ord => ord) = Ordering.lt at hlt
+          cases hc : compareT aLast vLast with
+          | lt =>
+            have hc' : compareT aLast wLast = Ordering.lt := by
+              rw [← hvwLast]
+              exact hc
+            rw [hc']
+          | gt =>
+            rw [hc] at hlt
+            cases hlt
+          | eq =>
+            have hc' : compareT aLast wLast = Ordering.eq := by
+              rw [← hvwLast]
+              exact hc
+            rw [hc']
+            rw [hc] at hlt
+            by_cases hq : q.val = k
+            · have hqe : q = Fin.last k := Fin.eq_of_val_eq hq
+              have haLast :
+                  (Vec.snoc k as aLast).idx (Fin.last k) = aLast := by
+                show
+                  (if h : k < k then Vec.idx as ⟨k, h⟩ else aLast) = aLast
+                rw [dite_eq_right (Nat.lt_irrefl k)]
+              rw [hqe, haLast, hlastV] at hne
+              have heq : aLast = vLast := T_eq_sound aLast vLast hc
+              exact False.elim (hne heq)
+            · have hqk : q.val < k := by
+                have hle : q.val ≤ k := Nat.le_of_lt_succ q.isLt
+                exact Nat.lt_of_le_of_ne hle hq
+              let q' : Fin k := ⟨q.val, hqk⟩
+              have hne' : as.idx q' ≠ vs.idx q' := by
+                intro heq
+                apply hne
+                show
+                  (if h : q.val < k then Vec.idx as ⟨q.val, h⟩ else aLast) ≠
+                    (if h : q.val < k then Vec.idx vs ⟨q.val, h⟩ else vLast)
+                rw [dite_eq_left hqk, dite_eq_left hqk]
+                exact heq
+              have hvw' :
+                  ∀ j : Fin k, q'.val ≤ j.val →
+                    vs.idx j = ws.idx j := by
+                intro j hj
+                have hv :
+                    (Vec.snoc k vs vLast).idx j.castSucc = vs.idx j := by
+                  show
+                    (if h : j.val < k then Vec.idx vs ⟨j.val, h⟩ else vLast) =
+                      Vec.idx vs j
+                  rw [dite_eq_left j.isLt]
+                  rfl
+                have hw :
+                    (Vec.snoc k ws wLast).idx j.castSucc = ws.idx j := by
+                  show
+                    (if h : j.val < k then Vec.idx ws ⟨j.val, h⟩ else wLast) =
+                      Vec.idx ws j
+                  rw [dite_eq_left j.isLt]
+                  rfl
+                have hh := hvw j.castSucc hj
+                rw [hv, hw] at hh
+                exact hh
+              exact ih as vs ws q' hvw' hne' hlt
+
+theorem Vec.compare_lt_after_pivot_update {lam m : Nat}
+    (a old newv : Vec (T lam) m) (i : Fin m)
+    (heqAbove :
+      ∀ j : Fin m, i.val < j.val → old.idx j = newv.idx j)
+    (hold : compareVec a old = Ordering.lt)
+    (hpivot : a.idx i < newv.idx i) :
+    compareVec a newv = Ordering.lt := by
+  induction m with
+  | zero =>
+    exact i.elim0
+  | succ k ih =>
+    cases a with
+    | snoc _ as aLast =>
+      cases old with
+      | snoc _ os oLast =>
+        cases newv with
+        | snoc _ ns nLast =>
+          show
+            (match compareT aLast nLast with
+            | Ordering.eq => compareVec as ns
+            | ord => ord) = Ordering.lt
+          show
+            (match compareT aLast oLast with
+            | Ordering.eq => compareVec as os
+            | ord => ord) = Ordering.lt at hold
+          by_cases hik : i.val = k
+          · have hieq : i = Fin.last k := Fin.eq_of_val_eq hik
+            have haLast :
+                (Vec.snoc k as aLast).idx (Fin.last k) = aLast := by
+              show
+                (if h : k < k then Vec.idx as ⟨k, h⟩ else aLast) = aLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hnLast :
+                (Vec.snoc k ns nLast).idx (Fin.last k) = nLast := by
+              show
+                (if h : k < k then Vec.idx ns ⟨k, h⟩ else nLast) = nLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            rw [hieq, haLast, hnLast] at hpivot
+            rw [hpivot]
+          · have hiklt : i.val < k := by
+              have hle : i.val ≤ k := Nat.le_of_lt_succ i.isLt
+              exact Nat.lt_of_le_of_ne hle hik
+            have hoLast :
+                (Vec.snoc k os oLast).idx (Fin.last k) = oLast := by
+              show
+                (if h : k < k then Vec.idx os ⟨k, h⟩ else oLast) = oLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hnLast :
+                (Vec.snoc k ns nLast).idx (Fin.last k) = nLast := by
+              show
+                (if h : k < k then Vec.idx ns ⟨k, h⟩ else nLast) = nLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hon : oLast = nLast := by
+              have hh := heqAbove (Fin.last k) hiklt
+              rw [hoLast, hnLast] at hh
+              exact hh
+            cases hc : compareT aLast oLast with
+            | lt =>
+              have hc' : compareT aLast nLast = Ordering.lt := by
+                rw [← hon]
+                exact hc
+              rw [hc']
+            | gt =>
+              rw [hc] at hold
+              cases hold
+            | eq =>
+              have hc' : compareT aLast nLast = Ordering.eq := by
+                rw [← hon]
+                exact hc
+              rw [hc']
+              rw [hc] at hold
+              let i' : Fin k := ⟨i.val, hiklt⟩
+              have hpivot' : as.idx i' < ns.idx i' := by
+                show
+                  (if h : i.val < k then Vec.idx as ⟨i.val, h⟩ else aLast) <
+                    (if h : i.val < k then Vec.idx ns ⟨i.val, h⟩ else nLast) at hpivot
+                rw [dite_eq_left hiklt, dite_eq_left hiklt] at hpivot
+                exact hpivot
+              have heqAbove' :
+                  ∀ j : Fin k, i'.val < j.val →
+                    os.idx j = ns.idx j := by
+                intro j hj
+                have ho :
+                    (Vec.snoc k os oLast).idx j.castSucc = os.idx j := by
+                  show
+                    (if h : j.val < k then Vec.idx os ⟨j.val, h⟩ else oLast) =
+                      Vec.idx os j
+                  rw [dite_eq_left j.isLt]
+                  rfl
+                have hn :
+                    (Vec.snoc k ns nLast).idx j.castSucc = ns.idx j := by
+                  show
+                    (if h : j.val < k then Vec.idx ns ⟨j.val, h⟩ else nLast) =
+                      Vec.idx ns j
+                  rw [dite_eq_left j.isLt]
+                  rfl
+                have hh := heqAbove j.castSucc hj
+                rw [ho, hn] at hh
+                exact hh
+              exact ih as os ns i' heqAbove' hold hpivot'
+
+theorem T.P_vector_field_ne_self {lam : Nat}
+    (xs : Vec (T lam) lam) (add : T lam) (q : Fin lam) :
+    xs.idx q ≠ T.P xs add := by
+  intro heq
+  have hlt : T.size (xs.idx q) < Vec.size xs :=
+    Vec.idx_size_lt xs q
+  rw [heq] at hlt
+  have hge : Vec.size xs ≤ T.size (T.P xs add) := by
+    show Vec.size xs ≤ 1 + Vec.size xs + T.size add
+    have h1 : Vec.size xs ≤ 1 + Vec.size xs :=
+      Nat.le_add_left (Vec.size xs) 1
+    have h2 :
+        1 + Vec.size xs ≤ 1 + Vec.size xs + T.size add :=
+      Nat.le_add_right _ _
+    exact Nat.le_trans h1 h2
+  exact (Nat.not_lt_of_ge hge) hlt
+
+theorem T.coord_lt_preserved_below_update {lam : Nat}
+    (old newv : Vec (T lam) lam) (q : Fin lam)
+    (heq :
+      ∀ j : Fin lam, q.val ≤ j.val → old.idx j = newv.idx j)
+    (hold : old.idx q < T.P old T.Z) :
+    old.idx q < T.P newv T.Z := by
+  cases hx : old.idx q with
+  | Z =>
+    show compareT T.Z (T.P newv T.Z) = Ordering.lt
+    rfl
+  | P xs add =>
+    show
+      (match compareVec xs newv with
+      | Ordering.eq => compareT add T.Z
+      | ord => ord) = Ordering.lt
+    have hold' :
+      (match compareVec xs old with
+      | Ordering.eq => compareT add T.Z
+      | ord => ord) = Ordering.lt := by
+      rw [← hx]
+      exact hold
+    cases hc : compareVec xs old with
+    | lt =>
+      have hne : xs.idx q ≠ old.idx q := by
+        rw [hx]
+        exact T.P_vector_field_ne_self xs add q
+      have hpres :
+          compareVec xs newv = Ordering.lt :=
+        Vec.compare_lt_preserve_from_index xs old newv q
+          heq hne hc
+      rw [hpres]
+    | gt =>
+      rw [hc] at hold'
+      cases hold'
+    | eq =>
+      rw [hc] at hold'
+      cases add with
+      | Z =>
+        show compareT T.Z T.Z = Ordering.lt at hold'
+        rw [T_refl T.Z] at hold'
+        cases hold'
+      | P als aadd =>
+        show compareT (T.P als aadd) T.Z = Ordering.lt at hold'
+        cases hold'
+
+theorem T.pivot_term_lt_updated_parent {lam : Nat}
+    (old newv : Vec (T lam) lam) (i : Fin lam)
+    (z : T lam)
+    (heqAbove :
+      ∀ j : Fin lam, i.val < j.val → old.idx j = newv.idx j)
+    (hnewi : newv.idx i = z)
+    (hzold : z < T.P old T.Z)
+    (hzcomp : T.isNFComp z) :
+    z < T.P newv T.Z := by
+  cases hz : z with
+  | Z =>
+    show compareT T.Z (T.P newv T.Z) = Ordering.lt
+    rfl
+  | P zs zadd =>
+    have hzold' :
+        (match compareVec zs old with
+        | Ordering.eq => compareT zadd T.Z
+        | ord => ord) = Ordering.lt := by
+      rw [← hz]
+      exact hzold
+    have hcmpOld : compareVec zs old = Ordering.lt := by
+      cases hc : compareVec zs old with
+      | lt => exact hc
+      | gt =>
+        rw [hc] at hzold'
+        cases hzold'
+      | eq =>
+        rw [hc] at hzold'
+        cases zadd with
+        | Z =>
+          show compareT T.Z T.Z = Ordering.lt at hzold'
+          rw [T_refl T.Z] at hzold'
+          cases hzold'
+        | P als aadd =>
+          show compareT (T.P als aadd) T.Z = Ordering.lt at hzold'
+          cases hzold'
+    have hziMem : zs.idx i ∈ Vec.toList zs := by
+      apply (Vec.mem_toList_iff_idx zs (zs.idx i)).mpr
+      exact ⟨i, rfl⟩
+    have hziG : zs.idx i ∈ T.G z := by
+      rw [hz]
+      apply (T.mem_G_P zs zadd (zs.idx i)).mpr
+      exact Or.inl ⟨zs.idx i, hziMem, Or.inl rfl⟩
+    have hpivot0 : zs.idx i < z :=
+      hzcomp.2 (zs.idx i) hziG
+    have hpivot : zs.idx i < newv.idx i := by
+      rw [hnewi]
+      exact hpivot0
+    have hcmpNew :
+        compareVec zs newv = Ordering.lt :=
+      Vec.compare_lt_after_pivot_update
+        zs old newv i heqAbove hcmpOld hpivot
+    show
+      (match compareVec zs newv with
+      | Ordering.eq => compareT zadd T.Z
+      | ord => ord) = Ordering.lt
+    rw [hcmpNew]
+
 theorem Vec.compare_rplc_lt {lam m : Nat} (v : Vec (T lam) m)
     (i : Fin m) (a : T lam) (h : a < v.idx i) :
     compareVec (v.rplc i a) v = Ordering.lt := by
