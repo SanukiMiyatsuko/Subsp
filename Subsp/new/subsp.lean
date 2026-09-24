@@ -278,6 +278,165 @@ theorem Vec.mem_toList_exists_idx {A : Type} {n : Nat}
           rw [dite_eq_right (Nat.lt_irrefl k)]
           exact heq.symm
 
+theorem Vec.compare_lt_of_pivot {lam m : Nat}
+    (v w : Vec (T lam) m) (i : Fin m)
+    (heq : ∀ j : Fin m, i.val < j.val →
+      v.idx j = w.idx j)
+    (hlt : v.idx i < w.idx i) :
+    compareVec v w = Ordering.lt := by
+  induction m with
+  | zero =>
+      exact i.elim0
+  | succ k ih =>
+      cases v with
+      | snoc _ xs x =>
+        cases w with
+        | snoc _ ys y =>
+          by_cases hik : i.val = k
+          · have hieq : i = Fin.last k :=
+              Fin.eq_of_val_eq hik
+            have hx :
+                (Vec.snoc k xs x).idx (Fin.last k) = x := by
+              show
+                (if h : k < k then
+                  Vec.idx xs ⟨k, h⟩ else x) = x
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hy :
+                (Vec.snoc k ys y).idx (Fin.last k) = y := by
+              show
+                (if h : k < k then
+                  Vec.idx ys ⟨k, h⟩ else y) = y
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            rw [hieq, hx, hy] at hlt
+            show
+              (match compareT x y with
+              | Ordering.eq => compareVec xs ys
+              | ord => ord) = Ordering.lt
+            rw [hlt]
+          · have hiklt : i.val < k := by
+              have hle : i.val ≤ k :=
+                Nat.lt_succ_iff.mp i.isLt
+              exact Nat.lt_of_le_of_ne hle hik
+            let i' : Fin k := ⟨i.val, hiklt⟩
+            have hxy : x = y := by
+              have hh := heq (Fin.last k) hiklt
+              have hx :
+                  (Vec.snoc k xs x).idx (Fin.last k) = x := by
+                show
+                  (if h : k < k then
+                    Vec.idx xs ⟨k, h⟩ else x) = x
+                rw [dite_eq_right (Nat.lt_irrefl k)]
+              have hy :
+                  (Vec.snoc k ys y).idx (Fin.last k) = y := by
+                show
+                  (if h : k < k then
+                    Vec.idx ys ⟨k, h⟩ else y) = y
+                rw [dite_eq_right (Nat.lt_irrefl k)]
+              rw [hx, hy] at hh
+              exact hh
+            have hlt' : xs.idx i' < ys.idx i' := by
+              have hv :
+                  (Vec.snoc k xs x).idx i = xs.idx i' := by
+                show
+                  (if h : i.val < k then
+                    Vec.idx xs ⟨i.val, h⟩ else x) =
+                    Vec.idx xs i'
+                rw [dite_eq_left hiklt]
+                rfl
+              have hw :
+                  (Vec.snoc k ys y).idx i = ys.idx i' := by
+                show
+                  (if h : i.val < k then
+                    Vec.idx ys ⟨i.val, h⟩ else y) =
+                    Vec.idx ys i'
+                rw [dite_eq_left hiklt]
+                rfl
+              rw [hv, hw] at hlt
+              exact hlt
+            have heq' :
+                ∀ j : Fin k, i'.val < j.val →
+                  xs.idx j = ys.idx j := by
+              intro j hj
+              have hv :
+                  (Vec.snoc k xs x).idx j.castSucc =
+                    xs.idx j := by
+                show
+                  (if h : j.val < k then
+                    Vec.idx xs ⟨j.val, h⟩ else x) =
+                    Vec.idx xs j
+                rw [dite_eq_left j.isLt]
+                rfl
+              have hw :
+                  (Vec.snoc k ys y).idx j.castSucc =
+                    ys.idx j := by
+                show
+                  (if h : j.val < k then
+                    Vec.idx ys ⟨j.val, h⟩ else y) =
+                    Vec.idx ys j
+                rw [dite_eq_left j.isLt]
+                rfl
+              have hh := heq j.castSucc hj
+              rw [hv, hw] at hh
+              exact hh
+            have hrec :=
+              ih xs ys i' heq' hlt'
+            show
+              (match compareT x y with
+              | Ordering.eq => compareVec xs ys
+              | ord => ord) = Ordering.lt
+            have hceq : compareT x y = Ordering.eq := by
+              rw [hxy]
+              exact T_refl y
+            rw [hceq]
+            exact hrec
+
+theorem Vec.compare_rplc_lt {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m) (a : T lam)
+    (h : a < v.idx i) :
+    compareVec (v.rplc i a) v = Ordering.lt := by
+  apply Vec.compare_lt_of_pivot (v.rplc i a) v i
+  · intro j hij
+    exact Vec.rplc_idx_of_ne v i j a
+      (Nat.ne_of_gt hij)
+  · rw [Vec.rplc_idx_same]
+    exact h
+
+theorem Vec.compare_rplc_rplc_lt {lam m : Nat}
+    (v : Vec (T lam) m) (i j : Fin m)
+    (a b : T lam) (hji : j.val < i.val)
+    (ha : a < v.idx i) :
+    compareVec ((v.rplc i a).rplc j b) v =
+      Ordering.lt := by
+  apply Vec.compare_lt_of_pivot
+    ((v.rplc i a).rplc j b) v i
+  · intro q hiq
+    have hqi : q.val ≠ i.val := Nat.ne_of_gt hiq
+    have hqj : q.val ≠ j.val :=
+      Nat.ne_of_gt (Nat.lt_trans hji hiq)
+    rw [Vec.rplc_idx_of_ne (v.rplc i a) j q b hqj]
+    rw [Vec.rplc_idx_of_ne v i q a hqi]
+  · have hij : i.val ≠ j.val := Nat.ne_of_gt hji
+    rw [Vec.rplc_idx_of_ne (v.rplc i a) j i b hij]
+    rw [Vec.rplc_idx_same]
+    exact ha
+
+theorem T.P_lt_P_of_compareVec_lt {lam : Nat}
+    (v w : Vec (T lam) lam) (a b : T lam)
+    (h : compareVec v w = Ordering.lt) :
+    T.P v a < T.P w b := by
+  show
+    (match compareVec v w with
+    | Ordering.eq => compareT a b
+    | ord => ord) = Ordering.lt
+  rw [h]
+
+theorem T.Z_le {lam : Nat} (s : T lam) : T.Z ≤ s := by
+  cases s with
+  | Z =>
+      exact Or.inr rfl
+  | P ls add =>
+      exact Or.inl rfl
+
 def T.fund {lam : Nat} (s t : T lam) : T lam :=
   match s with
   | Z => Z
