@@ -2360,21 +2360,35 @@ theorem T.mul_PZ_lt_next {lam : Nat}
       T.mul (T.P ls T.Z) t <
         T.P ls (T.mul (T.P ls T.Z) t) := by
   intro t
-  induction t with
-  | Z =>
-    rw [T.mul]
-    rfl
-  | P tls add ih =>
-    rw [T.mul, T.oplus]
-    show
-      (match compareVec ls ls with
-      | Ordering.eq =>
-          compareT
-            (T.mul (T.P ls T.Z) add)
-            (T.P ls (T.mul (T.P ls T.Z) add))
-      | ord => ord) = Ordering.lt
-    rw [Vec_refl ls]
-    exact ih
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ u : T lam, T.size u = n →
+        T.mul (T.P ls T.Z) u <
+          T.P ls (T.mul (T.P ls T.Z) u)
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro u hn
+      cases u with
+      | Z =>
+        rw [T.mul]
+        rfl
+      | P us add =>
+        have hsz : T.size add < n := by
+          rw [← hn]
+          exact T.add_size_lt_P us add
+        have hrec :=
+          ih (T.size add) hsz add rfl
+        rw [T.mul]
+        change
+          T.P ls (T.mul (T.P ls T.Z) add) <
+            T.P ls
+              (T.P ls (T.mul (T.P ls T.Z) add))
+        exact T.P_tail_lt ls
+          (T.mul (T.P ls T.Z) add)
+          (T.P ls (T.mul (T.P ls T.Z) add))
+          hrec)
+  exact main (T.size t) t rfl
 
 theorem T.head_mul_PZ_le {lam : Nat}
     (ls : Vec (T lam) lam) :
@@ -2387,8 +2401,9 @@ theorem T.head_mul_PZ_le {lam : Nat}
     rw [T.mul]
     exact T.Z_le (T.P ls T.Z)
   | P tls add =>
-    rw [T.mul, T.oplus]
-    exact Or.inr (T_refl (T.P ls T.Z))
+    rw [T.mul]
+    change T.P ls T.Z ≤ T.P ls T.Z
+    exact T.le_refl (T.P ls T.Z)
 
 theorem T.mul_PZ_NF_closed {lam : Nat}
     (ls : Vec (T lam) lam)
@@ -2396,17 +2411,34 @@ theorem T.mul_PZ_NF_closed {lam : Nat}
     ∀ t : T lam,
       T.isNF (T.mul (T.P ls T.Z) t) := by
   intro t
-  induction t with
-  | Z =>
-    rw [T.mul]
-    exact T.isNF.z
-  | P tls add ih =>
-    rw [T.mul, T.oplus]
-    cases hbase with
-    | p _ _ h0 hz h2 h3 =>
-      exact T.isNF.p ls
-        (T.mul (T.P ls T.Z) add)
-        h0 ih h2 (T.head_mul_PZ_le ls add)
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ u : T lam, T.size u = n →
+        T.isNF (T.mul (T.P ls T.Z) u)
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro u hn
+      cases u with
+      | Z =>
+        rw [T.mul]
+        exact T.isNF.z
+      | P us add =>
+        have hsz : T.size add < n := by
+          rw [← hn]
+          exact T.add_size_lt_P us add
+        have hrec :=
+          ih (T.size add) hsz add rfl
+        rw [T.mul]
+        change
+          T.isNF
+            (T.P ls (T.mul (T.P ls T.Z) add))
+        cases hbase with
+        | p _ _ h0 hz h2 h3 =>
+          exact T.isNF.p ls
+            (T.mul (T.P ls T.Z) add)
+            h0 hrec h2 (T.head_mul_PZ_le ls add))
+  exact main (T.size t) t rfl
 
 theorem T.mul_PZ_NFComp_closed {lam : Nat}
     (ls : Vec (T lam) lam)
@@ -2414,52 +2446,70 @@ theorem T.mul_PZ_NFComp_closed {lam : Nat}
     ∀ t : T lam,
       T.isNFComp (T.mul (T.P ls T.Z) t) := by
   intro t
-  induction t with
-  | Z =>
-    rw [T.mul]
-    exact T.isNFComp_Z
-  | P tls add ih =>
-    rw [T.mul, T.oplus]
-    have hnf :
-        T.isNF
-          (T.P ls (T.mul (T.P ls T.Z) add)) := by
-      cases hbase.1 with
-      | p _ _ h0 hz h2 h3 =>
-        exact T.isNF.p ls
-          (T.mul (T.P ls T.Z) add)
-          h0 ih.1 h2 (T.head_mul_PZ_le ls add)
-    constructor
-    · exact hnf
-    · intro y hy
-      cases
-          (T.mem_G_P ls
-            (T.mul (T.P ls T.Z) add) y).mp hy with
-      | inl hvec =>
-        have hybase :
-            y ∈ T.G (T.P ls T.Z) := by
-          apply (T.mem_G_P ls T.Z y).mpr
-          exact Or.inl hvec
-        have hya : y < T.P ls T.Z :=
-          hbase.2 y hybase
-        have hle :
-            T.P ls T.Z ≤
-              T.P ls
-                (T.mul (T.P ls T.Z) add) :=
-          T.P_le_P_same ls T.Z
-            (T.mul (T.P ls T.Z) add)
-            (T.Z_le (T.mul (T.P ls T.Z) add))
-        exact T.lt_of_lt_of_le y
-          (T.P ls T.Z)
-          (T.P ls (T.mul (T.P ls T.Z) add))
-          hya hle
-      | inr htail =>
-        have hyu :
-            y < T.mul (T.P ls T.Z) add :=
-          ih.2 y htail
-        exact T_trans y
-          (T.mul (T.P ls T.Z) add)
-          (T.P ls (T.mul (T.P ls T.Z) add))
-          hyu (T.mul_PZ_lt_next ls add)
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ u : T lam, T.size u = n →
+        T.isNFComp (T.mul (T.P ls T.Z) u)
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro u hn
+      cases u with
+      | Z =>
+        rw [T.mul]
+        exact T.isNFComp_Z
+      | P us add =>
+        have hsz : T.size add < n := by
+          rw [← hn]
+          exact T.add_size_lt_P us add
+        have hrec :=
+          ih (T.size add) hsz add rfl
+        rw [T.mul]
+        change
+          T.isNFComp
+            (T.P ls (T.mul (T.P ls T.Z) add))
+        have hnf :
+            T.isNF
+              (T.P ls (T.mul (T.P ls T.Z) add)) := by
+          cases hbase.1 with
+          | p _ _ h0 hz h2 h3 =>
+            exact T.isNF.p ls
+              (T.mul (T.P ls T.Z) add)
+              h0 hrec.1 h2
+              (T.head_mul_PZ_le ls add)
+        constructor
+        · exact hnf
+        · intro y hy
+          cases
+              (T.mem_G_P ls
+                (T.mul (T.P ls T.Z) add) y).mp hy with
+          | inl hvec =>
+            have hybase :
+                y ∈ T.G (T.P ls T.Z) := by
+              apply (T.mem_G_P ls T.Z y).mpr
+              exact Or.inl hvec
+            have hya : y < T.P ls T.Z :=
+              hbase.2 y hybase
+            have hle :
+                T.P ls T.Z ≤
+                  T.P ls
+                    (T.mul (T.P ls T.Z) add) :=
+              T.P_le_P_same ls T.Z
+                (T.mul (T.P ls T.Z) add)
+                (T.Z_le (T.mul (T.P ls T.Z) add))
+            exact T.lt_of_lt_of_le y
+              (T.P ls T.Z)
+              (T.P ls (T.mul (T.P ls T.Z) add))
+              hya hle
+          | inr htail =>
+            have hyu :
+                y < T.mul (T.P ls T.Z) add :=
+              hrec.2 y htail
+            exact T_trans y
+              (T.mul (T.P ls T.Z) add)
+              (T.P ls (T.mul (T.P ls T.Z) add))
+              hyu (T.mul_PZ_lt_next ls add))
+  exact main (T.size t) t rfl
 
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
