@@ -1541,6 +1541,131 @@ theorem T.term_lt_P_of_self_at {lam : Nat}
           exact hself
       exact T.P_lt_P_of_compareVec_lt xs w xadd T.Z hcmp
 
+theorem T.rplc_min_NFComp_closed {lam : Nat}
+    (ls : Vec (T lam) lam) (m : Fin lam) (d : Dom) (a : T lam)
+    (hs : T.isNFComp (T.P ls T.Z))
+    (hmin : T.domVecMinIdx ls = some (m, d))
+    (ha : T.isNFComp a)
+    (halt : a < ls.idx m) :
+    T.isNFComp (T.P (ls.rplc m a) T.Z) := by
+  have hspec := T.domVecMinIdx_some_spec ls m d hmin
+  have holdCoord := T.isNF_P_coord_NFComp ls T.Z hs.1
+  have hcoord :
+      ∀ i : Fin lam, T.isNFComp ((ls.rplc m a).idx i) := by
+    intro i
+    by_cases him : i.val = m.val
+    · have hieq : i = m := Fin.eq_of_val_eq him
+      rw [hieq]
+      rw [Vec.rplc_idx_same]
+      exact ha
+    · rw [Vec.rplc_idx_of_ne ls m i a him]
+      exact holdCoord i
+  have hnf : T.isNF (T.P (ls.rplc m a) T.Z) :=
+    T.isNF_PZ_of_coords (ls.rplc m a) hcoord
+  constructor
+  · exact hnf
+  · intro y hy
+    cases (T.mem_G_P (ls.rplc m a) T.Z y).mp hy with
+    | inl hv =>
+      obtain ⟨x, hx, hxy⟩ := hv
+      obtain ⟨i, hi⟩ :=
+        (Vec.mem_toList_iff_idx (ls.rplc m a) x).mp hx
+      have hxic : T.isNFComp x := by
+        rw [← hi]
+        exact hcoord i
+      have hxlt : x < T.P (ls.rplc m a) T.Z := by
+        by_cases him : i.val < m.val
+        · have hdom0 : T.dom (ls.idx i) = .zero :=
+            hspec.2 i him
+          have hzi : ls.idx i = T.Z :=
+            T.dom_zero_eq_Z (ls.idx i) hdom0
+          have hine : i.val ≠ m.val := Nat.ne_of_lt him
+          have hr :
+              (ls.rplc m a).idx i = ls.idx i :=
+            Vec.rplc_idx_of_ne ls m i a hine
+          rw [← hi, hr, hzi]
+          show compareT T.Z (T.P (ls.rplc m a) T.Z) =
+            Ordering.lt
+          rfl
+        · by_cases hmi : m.val < i.val
+          · have hine : i.val ≠ m.val := Nat.ne_of_gt hmi
+            have hr :
+                (ls.rplc m a).idx i = ls.idx i :=
+              Vec.rplc_idx_of_ne ls m i a hine
+            have holdMem :
+                ls.idx i ∈ T.G (T.P ls T.Z) := by
+              apply (T.mem_G_P ls T.Z (ls.idx i)).mpr
+              have himem : ls.idx i ∈ Vec.toList ls := by
+                apply (Vec.mem_toList_iff_idx ls (ls.idx i)).mpr
+                exact ⟨i, rfl⟩
+              exact Or.inl
+                ⟨ls.idx i, himem, Or.inl rfl⟩
+            have holdLt : ls.idx i < T.P ls T.Z :=
+              hs.2 (ls.idx i) holdMem
+            have hhigh :
+                ∀ j : Fin lam, i.val < j.val →
+                  (ls.rplc m a).idx j = ls.idx j := by
+              intro j hij
+              have hmj : m.val < j.val :=
+                Nat.lt_trans hmi hij
+              have hjne : j.val ≠ m.val :=
+                Nat.ne_of_gt hmj
+              exact Vec.rplc_idx_of_ne ls m j a hjne
+            have hb :=
+              T.term_lt_P_of_self_at
+                (ls.idx i) ls (ls.rplc m a) i
+                (holdCoord i) holdLt hr hhigh
+            rw [← hi, hr]
+            exact hb
+          · have himle : i.val ≤ m.val := Nat.not_lt.mp hmi
+            have hmile : m.val ≤ i.val := Nat.not_lt.mp him
+            have hval : i.val = m.val :=
+              Nat.le_antisymm himle hmile
+            have hieq : i = m := Fin.eq_of_val_eq hval
+            rw [hieq] at hi
+            have hr :
+                (ls.rplc m a).idx m = a :=
+              Vec.rplc_idx_same ls m a
+            have hia : a = x := by
+              rw [← hi]
+              exact hr.symm.symm
+            have holdMem :
+                ls.idx m ∈ T.G (T.P ls T.Z) := by
+              apply (T.mem_G_P ls T.Z (ls.idx m)).mpr
+              have hmmem : ls.idx m ∈ Vec.toList ls := by
+                apply (Vec.mem_toList_iff_idx ls (ls.idx m)).mpr
+                exact ⟨m, rfl⟩
+              exact Or.inl
+                ⟨ls.idx m, hmmem, Or.inl rfl⟩
+            have holdLtCoord : ls.idx m < T.P ls T.Z :=
+              hs.2 (ls.idx m) holdMem
+            have haold : a < T.P ls T.Z :=
+              strict_partial_order.trans a (ls.idx m)
+                (T.P ls T.Z) halt holdLtCoord
+            have hhigh :
+                ∀ j : Fin lam, m.val < j.val →
+                  (ls.rplc m a).idx j = ls.idx j := by
+              intro j hmj
+              exact Vec.rplc_idx_of_ne ls m j a
+                (Nat.ne_of_gt hmj)
+            have hb :=
+              T.term_lt_P_of_self_at
+                a ls (ls.rplc m a) m
+                ha haold hr hhigh
+            rw [hia]
+            exact hb
+      cases hxy with
+      | inl hyx =>
+        rw [hyx]
+        exact hxlt
+      | inr hyg =>
+        have hyx : y < x := hxic.2 y hyg
+        exact strict_partial_order.trans y x
+          (T.P (ls.rplc m a) T.Z) hyx hxlt
+    | inr hz =>
+      rw [T.G] at hz
+      exact False.elim (List.not_mem_nil y hz)
+
 theorem T.G_size_lt {lam : Nat} :
     ∀ s y : T lam, y ∈ T.G s → T.size y < T.size s := by
   intro s
