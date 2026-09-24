@@ -593,11 +593,7 @@ theorem T.fund_lt_self {lam : Nat}
                         j b)
                     ls T.Z T.Z hvec
             · by_cases hdO : d = .Omega
-              · let arg :=
-                  T.iter
-                    (fun x =>
-                      T.fund (ls.idx m) x) b
-                conv =>
+              · conv =>
                   lhs
                   rw [T.fund, if_pos rfl]
                   rw [hmin]
@@ -605,26 +601,36 @@ theorem T.fund_lt_self {lam : Nat}
                   rw [if_neg hd1]
                   change (if d = .Omega then _ else _)
                   rw [if_pos hdO]
-                change
-                  T.P
-                    (ls.rplc m
-                      (T.fund (ls.idx m) arg))
-                    T.Z < T.P ls T.Z
                 have hrec :
-                    T.fund (ls.idx m) arg <
+                    T.fund (ls.idx m)
+                      (T.iter
+                        (fun x => T.fund (ls.idx m) x) b) <
                       ls.idx m :=
                   ih (T.size (ls.idx m)) hmsize
-                    (ls.idx m) arg rfl hmne
+                    (ls.idx m)
+                    (T.iter
+                      (fun x => T.fund (ls.idx m) x) b)
+                    rfl hmne
                 have hvec :
                     compareVec
                       (ls.rplc m
-                        (T.fund (ls.idx m) arg))
+                        (T.fund (ls.idx m)
+                          (T.iter
+                            (fun x =>
+                              T.fund (ls.idx m) x) b)))
                       ls = Ordering.lt :=
                   Vec.compare_rplc_lt ls m
-                    (T.fund (ls.idx m) arg) hrec
+                    (T.fund (ls.idx m)
+                      (T.iter
+                        (fun x =>
+                          T.fund (ls.idx m) x) b))
+                    hrec
                 exact T.P_lt_P_of_compareVec_lt
                   (ls.rplc m
-                    (T.fund (ls.idx m) arg))
+                    (T.fund (ls.idx m)
+                      (T.iter
+                        (fun x =>
+                          T.fund (ls.idx m) x) b)))
                   ls T.Z T.Z hvec
               · conv =>
                   lhs
