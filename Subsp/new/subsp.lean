@@ -950,6 +950,203 @@ decreasing_by
     | exact Prod.Lex.right _ (T.add_size_lt_P _ _)
     | exact Prod.Lex.left _ _ (T.add_size_lt_P ls add)
 
+theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
+    (u v : Vec (T lam) lam) (t : T lam)
+    (h : compareVec u v = Ordering.lt) :
+    T.mul (T.P u T.Z) t < T.P v T.Z := by
+  cases t with
+  | Z =>
+    show compareT T.Z (T.P v T.Z) = Ordering.lt
+    rfl
+  | P tls add =>
+    rw [T.mul]
+    rw [T.oplus]
+    exact T.P_lt_P_of_compareVec_lt u v (T.mul (T.P u T.Z) add) T.Z h
+
+theorem T.fund_lt_self {lam : Nat} (s t : T lam) (hne : s ≠ T.Z) :
+    T.fund s t < s := by
+  have main :
+      ∀ n : Nat, ∀ a b : T lam, T.size a = n → a ≠ T.Z →
+        T.fund a b < a := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | h n ih =>
+      intro a b hsize hanz
+      cases a with
+      | Z =>
+        exact False.elim (hanz rfl)
+      | P ls add =>
+        by_cases hadd : add = T.Z
+        · rw [hadd]
+          rw [T.fund]
+          rw [if_pos rfl]
+          cases hmin : T.domVecMinIdx ls with
+          | none =>
+            rw [hmin]
+            show compareT T.Z (T.P ls T.Z) = Ordering.lt
+            rfl
+          | some md =>
+            cases md with
+            | mk m d =>
+              rw [hmin]
+              have hdne : d ≠ .zero :=
+                T.domVecMinIdx_some_ne_zero ls m d hmin
+              have hspec := T.domVecMinIdx_some_spec ls m d hmin
+              have hmne : ls[m] ≠ T.Z := by
+                intro heq
+                have hdom : T.dom (ls.idx m) = d := hspec.1
+                rw [Vec.getElem_eq_idx] at heq
+                rw [heq] at hdom
+                have : d = .zero := hdom.symm
+                exact hdne this
+              have hmsize : T.size ls[m] < n := by
+                have hlt := T.idx_size_lt_P ls T.Z m
+                rw [hsize] at hlt
+                exact hlt
+              by_cases hd1 : d = .one
+              · rw [if_pos hd1]
+                cases m with
+                | mk mv mh =>
+                  cases mv with
+                  | zero =>
+                    have hrec :
+                        T.fund ls[⟨0, mh⟩] T.Z < ls[⟨0, mh⟩] :=
+                      ih (T.size ls[⟨0, mh⟩]) hmsize
+                        ls[⟨0, mh⟩] T.Z rfl hmne
+                    have hrecIdx :
+                        T.fund ls[⟨0, mh⟩] T.Z <
+                          ls.idx ⟨0, mh⟩ := by
+                      rw [← Vec.getElem_eq_idx ls ⟨0, mh⟩]
+                      exact hrec
+                    have hvec :
+                        compareVec
+                          (ls.rplc ⟨0, mh⟩
+                            (T.fund ls[⟨0, mh⟩] T.Z)) ls =
+                          Ordering.lt :=
+                      Vec.compare_rplc_lt ls ⟨0, mh⟩
+                        (T.fund ls[⟨0, mh⟩] T.Z) hrecIdx
+                    exact T.mul_PZ_lt_of_compareVec_lt
+                      (ls.rplc ⟨0, mh⟩ (T.fund ls[⟨0, mh⟩] T.Z))
+                      ls b hvec
+                  | succ m' =>
+                    have hrec :
+                        T.fund ls[⟨m' + 1, mh⟩] T.Z <
+                          ls[⟨m' + 1, mh⟩] :=
+                      ih (T.size ls[⟨m' + 1, mh⟩]) hmsize
+                        ls[⟨m' + 1, mh⟩] T.Z rfl hmne
+                    have hrecIdx :
+                        T.fund ls[⟨m' + 1, mh⟩] T.Z <
+                          ls.idx ⟨m' + 1, mh⟩ := by
+                      rw [← Vec.getElem_eq_idx ls ⟨m' + 1, mh⟩]
+                      exact hrec
+                    let j : Fin lam := ⟨m', Nat.lt_of_succ_lt mh⟩
+                    have hvec :
+                        compareVec
+                          ((ls.rplc ⟨m' + 1, mh⟩
+                            (T.fund ls[⟨m' + 1, mh⟩] T.Z)).rplc j b)
+                          ls = Ordering.lt :=
+                      Vec.compare_rplc_rplc_lt ls
+                        ⟨m' + 1, mh⟩ j
+                        (T.fund ls[⟨m' + 1, mh⟩] T.Z) b
+                        (Nat.lt_succ_self m') hrecIdx
+                    exact T.P_lt_P_of_compareVec_lt
+                      ((ls.rplc ⟨m' + 1, mh⟩
+                        (T.fund ls[⟨m' + 1, mh⟩] T.Z)).rplc j b)
+                      ls T.Z T.Z hvec
+              · rw [if_neg hd1]
+                by_cases hdO : d = .Omega
+                · rw [if_pos hdO]
+                  let arg :=
+                    T.iter (fun x => T.fund ls[m] x) b
+                  have hrec :
+                      T.fund ls[m] arg < ls[m] :=
+                    ih (T.size ls[m]) hmsize
+                      ls[m] arg rfl hmne
+                  have hrecIdx :
+                      T.fund ls[m] arg < ls.idx m := by
+                    rw [← Vec.getElem_eq_idx ls m]
+                    exact hrec
+                  have hvec :
+                      compareVec
+                        (ls.rplc m (T.fund ls[m] arg)) ls =
+                        Ordering.lt :=
+                    Vec.compare_rplc_lt ls m
+                      (T.fund ls[m] arg) hrecIdx
+                  exact T.P_lt_P_of_compareVec_lt
+                    (ls.rplc m (T.fund ls[m] arg))
+                    ls T.Z T.Z hvec
+                · rw [if_neg hdO]
+                  have hrec :
+                      T.fund ls[m] b < ls[m] :=
+                    ih (T.size ls[m]) hmsize
+                      ls[m] b rfl hmne
+                  have hrecIdx :
+                      T.fund ls[m] b < ls.idx m := by
+                    rw [← Vec.getElem_eq_idx ls m]
+                    exact hrec
+                  have hvec :
+                      compareVec
+                        (ls.rplc m (T.fund ls[m] b)) ls =
+                        Ordering.lt :=
+                    Vec.compare_rplc_lt ls m
+                      (T.fund ls[m] b) hrecIdx
+                  exact T.P_lt_P_of_compareVec_lt
+                    (ls.rplc m (T.fund ls[m] b))
+                    ls T.Z T.Z hvec
+        · rw [T.fund]
+          rw [if_neg hadd]
+          have haddsize : T.size add < n := by
+            have hlt := T.add_size_lt_P ls add
+            rw [hsize] at hlt
+            exact hlt
+          have hrec : T.fund add b < add :=
+            ih (T.size add) haddsize add b rfl hadd
+          show compareT (T.P ls (T.fund add b)) (T.P ls add) =
+            Ordering.lt
+          rw [show compareVec ls ls = Ordering.eq from Vec_refl ls]
+          exact hrec
+  exact main (T.size s) s t rfl hne
+
+theorem T.head_mono {lam : Nat} (a b : T lam) (h : a < b) :
+    T.head a ≤ T.head b := by
+  cases a with
+  | Z =>
+    exact T.Z_le (T.head b)
+  | P als aadd =>
+    cases b with
+    | Z =>
+      show compareT (T.P als aadd) T.Z = Ordering.lt at h
+      cases h
+    | P bls badd =>
+      show
+        (match compareVec als bls with
+        | Ordering.eq => compareT aadd badd
+        | ord => ord) = Ordering.lt at h
+      cases hc : compareVec als bls with
+      | lt =>
+        exact Or.inl (T.P_lt_P_of_compareVec_lt als bls T.Z T.Z hc)
+      | eq =>
+        have hls : als = bls := Vec_eq_sound als bls hc
+        rw [hls]
+        exact Or.inr rfl
+      | gt =>
+        rw [hc] at h
+        cases h
+
+theorem T.head_fund_le {lam : Nat} (s t : T lam) :
+    T.head (T.fund s t) ≤ T.head s := by
+  cases s with
+  | Z =>
+    rw [T.fund]
+    exact T.Z_le T.Z
+  | P ls add =>
+    have hne : T.P ls add ≠ T.Z := by
+      intro h
+      cases h
+    exact T.head_mono (T.fund (T.P ls add) t) (T.P ls add)
+      (T.fund_lt_self (T.P ls add) t hne)
+
+
 def T.LF (lam : Nat) : Nat → T lam
 | 0 => Z
 | n + 1 =>
