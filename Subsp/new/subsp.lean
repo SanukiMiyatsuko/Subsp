@@ -1565,6 +1565,29 @@ theorem T.term_lt_P_of_self_at {lam : Nat}
           exact hself
       exact T.P_lt_P_of_compareVec_lt xs w xadd T.Z hcmp
 
+theorem T.rplc_two_NF_closed {lam : Nat}
+    (ls : Vec (T lam) lam) (i j : Fin lam) (a b : T lam)
+    (hij : i.val ≠ j.val)
+    (hs : T.isNF (T.P ls T.Z))
+    (ha : T.isNFComp a) (hb : T.isNFComp b) :
+    T.isNF (T.P ((ls.rplc i a).rplc j b) T.Z) := by
+  have holdCoord := T.isNF_P_coord_NFComp ls T.Z hs
+  apply T.isNF_PZ_of_coords ((ls.rplc i a).rplc j b)
+  intro q
+  by_cases hqj : q.val = j.val
+  · have hqe : q = j := Fin.eq_of_val_eq hqj
+    rw [hqe]
+    rw [Vec.rplc_idx_same]
+    exact hb
+  · rw [Vec.rplc_idx_of_ne (ls.rplc i a) j q b hqj]
+    by_cases hqi : q.val = i.val
+    · have hqe : q = i := Fin.eq_of_val_eq hqi
+      rw [hqe]
+      rw [Vec.rplc_idx_same]
+      exact ha
+    · rw [Vec.rplc_idx_of_ne ls i q a hqi]
+      exact holdCoord q
+
 theorem T.rplc_min_NFComp_closed {lam : Nat}
     (ls : Vec (T lam) lam) (m : Fin lam) (d : Dom) (a : T lam)
     (hs : T.isNFComp (T.P ls T.Z))
