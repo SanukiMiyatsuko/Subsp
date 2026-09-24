@@ -281,6 +281,74 @@ instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) :=
 def T.isNFComp {lam : Nat} (s : T lam) : Prop :=
   T.isNF s ∧ ∀ y ∈ T.G s, y < s
 
+theorem T.Z_le {lam : Nat} (s : T lam) : T.Z ≤ s := by
+  cases s with
+  | Z =>
+    exact Or.inr rfl
+  | P ls add =>
+    exact Or.inl rfl
+
+theorem Vec.rplc_idx_same {A : Type} {n : Nat}
+    (v : Vec A n) (i : Fin n) (a : A) :
+    (v.rplc i a).idx i = a := by
+  rw [Vec.rplc, Vec.ofFn_idx]
+  rw [ite_eq_left rfl]
+
+theorem Vec.rplc_idx_of_ne {A : Type} {n : Nat}
+    (v : Vec A n) (i j : Fin n) (a : A)
+    (hij : j ≠ i) :
+    (v.rplc i a).idx j = v.idx j := by
+  rw [Vec.rplc, Vec.ofFn_idx]
+  have hval : j.val ≠ i.val := by
+    intro h
+    apply hij
+    exact Fin.eq_of_val_eq h
+  rw [ite_eq_right hval]
+  exact Vec.getElem_eq_idx v j
+
+theorem Vec.idx_mem_toList {A : Type} {n : Nat}
+    (v : Vec A n) (i : Fin n) :
+    v.idx i ∈ Vec.toList v := by
+  induction v with
+  | nil =>
+    exact i.elim0
+  | snoc k xs x ih =>
+    by_cases h : i.val < k
+    · change
+        (if h' : i.val < k then
+          Vec.idx xs ⟨i.val, h'⟩
+        else x) ∈ Vec.toList xs ++ [x]
+      rw [dite_eq_left h]
+      exact List.mem_append_left [x] (ih ⟨i.val, h⟩)
+    · change
+        (if h' : i.val < k then
+          Vec.idx xs ⟨i.val, h'⟩
+        else x) ∈ Vec.toList xs ++ [x]
+      rw [dite_eq_right h]
+      exact List.mem_append_right (Vec.toList xs)
+        (List.mem_singleton_self x)
+
+theorem T.isNFComp_Z {lam : Nat} :
+    T.isNFComp (T.Z : T lam) := by
+  constructor
+  · exact T.isNF.z
+  · intro y hy
+    change y ∈ ([] : List (T lam)) at hy
+    exact False.elim (List.not_mem_nil hy)
+
+theorem T.isNF_P_coord_NFComp {lam : Nat}
+    (ls : Vec (T lam) lam) (add : T lam)
+    (h : T.isNF (T.P ls add)) :
+    ∀ i : Fin lam, T.isNFComp (ls.idx i) := by
+  cases h with
+  | p _ _ h0 h1 h2 h3 =>
+    intro i
+    have hmem : ls.idx i ∈ Vec.toList ls :=
+      Vec.idx_mem_toList ls i
+    constructor
+    · exact h0 (ls.idx i) hmem
+    · exact h2 (ls.idx i) hmem
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
