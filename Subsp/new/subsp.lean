@@ -2177,12 +2177,17 @@ theorem T.find_violating_source {lam : Nat}
     intro n
     exact Nat.strongRecOn n (motive := motive) (fun n ih => by
       intro w hn hw hbw
-      by_cases hbound : ∀ x ∈ T.G w, x < b
-      · exact ⟨w, hw, hbw, hbound⟩
-      · obtain ⟨x, hx, hnx⟩ :=
+      match T.decForallMem
+          (T.G w) (fun x => x < b)
+          (fun x =>
+            inferInstanceAs (Decidable (T.lt x b))) with
+      | isTrue hbound =>
+        exact ⟨w, hw, hbw, hbound⟩
+      | isFalse hbound =>
+        obtain ⟨x, hx, hnx⟩ :=
           T.exists_G_not_lt w b hbound
         have hbx : b ≤ x := by
-          cases strict_linear_order.total x b with
+          cases T_total x b with
           | inl hxb =>
             exact False.elim (hnx hxb)
           | inr hr =>
