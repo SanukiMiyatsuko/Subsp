@@ -164,7 +164,119 @@ inductive T.isNF {lam : Nat} : T lam → Prop where
   (h2 : ∀ x ∈ Vec.toList ls, ∀ y ∈ G x, y < x)
   (h3 : head add ≤ P ls Z) : isNF (P ls add)
 
-instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) := sorry
+def T.decForallMem {lam : Nat} (l : List (T lam))
+    (P : T lam → Prop) (dP : ∀ x, Decidable (P x)) :
+    Decidable (∀ x ∈ l, P x) :=
+  match l with
+  | [] =>
+      isTrue (fun x hx => by cases hx)
+  | a :: as =>
+      match dP a with
+      | isFalse hna =>
+          isFalse (fun h => hna (h a List.mem_cons_self))
+      | isTrue ha =>
+          match T.decForallMem as P dP with
+          | isFalse hnas =>
+              isFalse (fun h =>
+                hnas (fun x hx => h x (List.mem_cons_of_mem a hx)))
+          | isTrue has =>
+              isTrue (fun x hx =>
+                match List.mem_cons.mp hx with
+                | Or.inl hxa => hxa ▸ ha
+                | Or.inr hxs => has x hxs)
+
+def T.decGCondition {lam : Nat} (x : T lam) :
+    Decidable (∀ y ∈ T.G x, y < x) :=
+  T.decForallMem (T.G x) (fun y => y < x)
+    (fun y => inferInstance)
+
+mutual
+  def T.decIsNF {lam : Nat} : (s : T lam) → Decidable (T.isNF s)
+    | .Z => isTrue T.isNF.z
+    | .P ls add =>
+      match Vec.decAllNF ls with
+      | isFalse hn0 =>
+          isFalse (fun h =>
+            match h with
+            | .p _ _ h0 _ _ _ => hn0 h0)
+      | isTrue h0 =>
+        match T.decIsNF add with
+        | isFalse hn1 =>
+            isFalse (fun h =>
+              match h with
+              | .p _ _ _ h1 _ _ => hn1 h1)
+        | isTrue h1 =>
+          match Vec.decAllG ls with
+          | isFalse hn2 =>
+              isFalse (fun h =>
+                match h with
+                | .p _ _ _ _ h2 _ => hn2 h2)
+          | isTrue h2 =>
+            match (inferInstance :
+              Decidable (T.head add ≤ T.P ls T.Z)) with
+            | isFalse hn3 =>
+                isFalse (fun h =>
+                  match h with
+                  | .p _ _ _ _ _ h3 => hn3 h3)
+            | isTrue h3 =>
+                isTrue (T.isNF.p ls add h0 h1 h2 h3)
+
+  def Vec.decAllNF {lam m : Nat} :
+      (v : Vec (T lam) m) →
+        Decidable (∀ x ∈ Vec.toList v, T.isNF x)
+    | .nil =>
+        isTrue (fun x hx => by cases hx)
+    | .snoc _ xs x =>
+      match Vec.decAllNF xs with
+      | isFalse hnxs =>
+          isFalse (fun h =>
+            hnxs (fun y hy =>
+              h y (List.mem_append_left [x] hy)))
+      | isTrue hxs =>
+        match T.decIsNF x with
+        | isFalse hnx =>
+            isFalse (fun h =>
+              hnx (h x
+                (List.mem_append_right (Vec.toList xs)
+                  (List.mem_singleton_self x))))
+        | isTrue hx =>
+            isTrue (fun y hy =>
+              match List.mem_append.mp hy with
+              | Or.inl hmem => hxs y hmem
+              | Or.inr hmem =>
+                  have heq : y = x := List.mem_singleton.mp hmem
+                  heq ▸ hx)
+
+  def Vec.decAllG {lam m : Nat} :
+      (v : Vec (T lam) m) →
+        Decidable
+          (∀ x ∈ Vec.toList v, ∀ y ∈ T.G x, y < x)
+    | .nil =>
+        isTrue (fun x hx => by cases hx)
+    | .snoc _ xs x =>
+      match Vec.decAllG xs with
+      | isFalse hnxs =>
+          isFalse (fun h =>
+            hnxs (fun z hz =>
+              h z (List.mem_append_left [x] hz)))
+      | isTrue hxs =>
+        match T.decGCondition x with
+        | isFalse hnx =>
+            isFalse (fun h =>
+              hnx (h x
+                (List.mem_append_right (Vec.toList xs)
+                  (List.mem_singleton_self x))))
+        | isTrue hx =>
+            isTrue (fun z hz =>
+              match List.mem_append.mp hz with
+              | Or.inl hmem => hxs z hmem
+              | Or.inr hmem =>
+                  have heq : z = x := List.mem_singleton.mp hmem
+                  heq ▸ hx)
+end
+
+instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) :=
+  T.decIsNF s
 
 def T.isNFComp {lam : Nat} (s : T lam) : Prop :=
   T.isNF s ∧ ∀ y ∈ T.G s, y < s
