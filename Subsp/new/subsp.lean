@@ -195,10 +195,15 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
         cases hmin : T.domVecMinIdx ls with
         | none =>
             rw [hmin] at hdom
+            change Dom.one = Dom.zero at hdom
             cases hdom
         | some p =>
             obtain ⟨i, d⟩ := p
             rw [hmin] at hdom
+            change
+              (if d = .one then
+                if i.val = 0 then .omega else .Omega
+              else .omega) = .zero at hdom
             by_cases hd1 : d = .one
             · rw [if_pos hd1] at hdom
               by_cases hi : i.val = 0
@@ -214,6 +219,7 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
         exact False.elim (hadd heq)
 termination_by T.size s
 decreasing_by
+  change T.size add < T.size (T.P ls add)
   exact T.add_size_lt_P ls add
 
 theorem Vec.rplc_idx_same {A : Type} {n : Nat}
