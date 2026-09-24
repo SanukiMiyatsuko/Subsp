@@ -2544,92 +2544,65 @@ theorem Vec.between_pivot {lam m : Nat}
               exact hh
             have hmh : midLast = highLast := by
               cases strict_linear_order.total midLast highLast with
-              | inl hmh =>
-                have hcmpLM :
+              | inl hml =>
+                have hmlow : midLast < lowLast := by
+                  rw [hlh]
+                  exact hml
+                have hcmp :
                     compareVec
-                      (Vec.snoc k lows lowLast)
-                      (Vec.snoc k mids midLast) = Ordering.gt := by
+                      (Vec.snoc k mids midLast)
+                      (Vec.snoc k lows lowLast) = Ordering.lt := by
                   show
-                    (match compareT lowLast midLast with
-                    | Ordering.eq => compareVec lows mids
-                    | ord => ord) = Ordering.gt
-                  have hrev : highLast < midLast := by
-                    rw [← hlh]
-                    exact hmh
-                  show
-                    (match compareT lowLast midLast with
-                    | Ordering.eq => compareVec lows mids
-                    | ord => ord) = Ordering.gt
-                  cases htot := strict_linear_order.total lowLast midLast with
-                  | inl hlm =>
-                    exact False.elim
-                      (strict_partial_order.irrefl lowLast
-                        (strict_partial_order.trans lowLast midLast lowLast
-                          hlm (hlh ▸ hmh)))
-                  | inr hr =>
-                    cases hr with
-                    | inl hml =>
-                      have heq :
-                          compareT lowLast midLast = Ordering.gt := by
-                        -- reverse strict comparison has ordering gt
-                        cases hc : compareT lowLast midLast with
-                        | lt =>
-                          exact False.elim
-                            (strict_partial_order.irrefl lowLast
-                              (strict_partial_order.trans lowLast midLast lowLast
-                                hc hml))
-                        | eq =>
-                          have he := T_eq_sound lowLast midLast hc
-                          rw [he] at hml
-                          exact False.elim
-                            (strict_partial_order.irrefl midLast hml)
-                        | gt => exact hc
-                      rw [heq]
-                    | inr heq =>
-                      rw [heq] at hmh
-                      exact False.elim
-                        (strict_partial_order.irrefl highLast hmh)
+                    (match compareT midLast lowLast with
+                    | Ordering.eq => compareVec mids lows
+                    | ord => ord) = Ordering.lt
+                  rw [hmlow]
                 cases hLow with
                 | inl hl =>
-                  rw [hcmpLM] at hl
-                  cases hl
+                  have hbad :=
+                    Vec_trans
+                      (Vec.snoc k lows lowLast)
+                      (Vec.snoc k mids midLast)
+                      (Vec.snoc k lows lowLast) hl hcmp
+                  have hrefl := Vec_refl (Vec.snoc k lows lowLast)
+                  rw [hrefl] at hbad
+                  cases hbad
                 | inr heq =>
                   injection heq with _ hlast
-                  rw [hlast, hlh] at hmh
+                  have heqLast : midLast = highLast := by
+                    rw [← hlast]
+                    exact hlh
+                  rw [heqLast] at hml
                   exact False.elim
-                    (strict_partial_order.irrefl highLast hmh)
+                    (strict_partial_order.irrefl highLast hml)
               | inr hr =>
                 cases hr with
                 | inl hhm =>
-                  have hcmpMH :
+                  have hhighmid : highLast < midLast := hhm
+                  have hcmp :
                       compareVec
-                        (Vec.snoc k mids midLast)
-                        (Vec.snoc k highs highLast) = Ordering.gt := by
+                        (Vec.snoc k highs highLast)
+                        (Vec.snoc k mids midLast) = Ordering.lt := by
                     show
-                      (match compareT midLast highLast with
-                      | Ordering.eq => compareVec mids highs
-                      | ord => ord) = Ordering.gt
-                    cases hc : compareT midLast highLast with
-                    | lt =>
-                      exact False.elim
-                        (strict_partial_order.irrefl midLast
-                          (strict_partial_order.trans midLast highLast midLast
-                            hc hhm))
-                    | eq =>
-                      have he := T_eq_sound midLast highLast hc
-                      rw [he] at hhm
-                      exact False.elim
-                        (strict_partial_order.irrefl highLast hhm)
-                    | gt => exact hc
+                      (match compareT highLast midLast with
+                      | Ordering.eq => compareVec highs mids
+                      | ord => ord) = Ordering.lt
+                    rw [hhighmid]
                   cases hHigh with
                   | inl hh =>
-                    rw [hcmpMH] at hh
-                    cases hh
+                    have hbad :=
+                      Vec_trans
+                        (Vec.snoc k mids midLast)
+                        (Vec.snoc k highs highLast)
+                        (Vec.snoc k mids midLast) hh hcmp
+                    have hrefl := Vec_refl (Vec.snoc k mids midLast)
+                    rw [hrefl] at hbad
+                    cases hbad
                   | inr heq =>
                     injection heq with _ hlast
-                    rw [hlast] at hhm
+                    rw [hlast] at hhighmid
                     exact False.elim
-                      (strict_partial_order.irrefl highLast hhm)
+                      (strict_partial_order.irrefl midLast hhighmid)
                 | inr heq =>
                   exact heq
             have hLowPrefix :
