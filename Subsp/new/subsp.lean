@@ -412,8 +412,10 @@ theorem T.dom_zero_eq_Z {lam : Nat}
         cases p with
         | mk m d =>
           rw [hmin] at h
-          have hdnz :=
-            T.domVecMinIdx_some_ne_zero ls m d hmin
+          change
+            (if d = .one then
+              if m.val = 0 then .omega else .Omega
+            else .omega) = .zero at h
           by_cases hd1 : d = .one
           · rw [ite_eq_left hd1] at h
             by_cases hm0 : m.val = 0
@@ -429,6 +431,7 @@ theorem T.dom_zero_eq_Z {lam : Nat}
       exact False.elim (hadd hz)
 termination_by T.size s
 decreasing_by
+  change T.size add < T.size (T.P ls add)
   exact T.add_size_lt_P ls add
 
 theorem T.Z_le {lam : Nat} (s : T lam) : T.Z ≤ s := by
