@@ -1440,6 +1440,30 @@ theorem T.mem_G_P {lam : Nat} (ls : Vec (T lam) lam) (add y : T lam) :
           | .snoc n xs last => res xs ++ [last] ++ T.G last
         res ls) hadd
 
+theorem T.isNF_G_isNFComp {lam : Nat} (s : T lam)
+    (hs : T.isNF s) :
+    ∀ x ∈ T.G s, T.isNFComp x := by
+  induction hs with
+  | z =>
+    intro x hx
+    rw [T.G] at hx
+    exact False.elim (List.not_mem_nil x hx)
+  | p ls add h0 h1 h2 h3 ih0 ih1 =>
+    intro x hx
+    cases (T.mem_G_P ls add x).mp hx with
+    | inl hv =>
+      obtain ⟨q, hq, hcase⟩ := hv
+      cases hcase with
+      | inl hxq =>
+        rw [hxq]
+        constructor
+        · exact h0 q hq
+        · exact h2 q hq
+      | inr hxG =>
+        exact ih0 q hq x hxG
+    | inr hxG =>
+      exact ih1 x hxG
+
 theorem T.isNFComp_Z {lam : Nat} : T.isNFComp (T.Z : T lam) := by
   constructor
   · exact T.isNF.z
