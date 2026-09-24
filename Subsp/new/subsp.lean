@@ -138,7 +138,7 @@ def T.LF {lam : Nat} : Nat → T lam
 | 0 => Z
 | n + 1 =>
   match lam with
-  | 0 => P Vec.nil Z
+  | 0 => P Vec.nil (LF n)
   | lam' + 1 =>
     P (Vec.ofFn (lam' + 1) (fun i => if i = lam' then LF n else Z)) Z
 
