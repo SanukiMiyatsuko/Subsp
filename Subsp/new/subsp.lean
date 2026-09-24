@@ -152,8 +152,8 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
       | some p =>
           obtain ⟨i', d'⟩ := p
           rw [hrec] at h
-          cases h
           have hspec := ih i' d' hrec
+          cases h
           constructor
           · show T.dom
               (if hlt : i'.val < k then
@@ -181,6 +181,7 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
                   Vec.idx xs ⟨k, hlt⟩ else x) = T.dom x
               rw [dite_eq_right (Nat.lt_irrefl k)]
             · intro j hj
+              change j.val < k at hj
               show T.dom
                   (if hlt : j.val < k then
                     Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
@@ -200,8 +201,9 @@ theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
       | some p =>
           obtain ⟨i', d'⟩ := p
           rw [hrec] at h
+          have hne := ih i' d' hrec
           cases h
-          exact ih i' d' hrec
+          exact hne
       | none =>
           rw [hrec] at h
           by_cases hx : T.dom x = .zero
