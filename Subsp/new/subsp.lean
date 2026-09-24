@@ -2543,6 +2543,99 @@ theorem T.NFComp_of_SDom_Z_or_eq {lam : Nat} (b a : T lam)
     exact T.NFComp_of_SDom T.Z b a hb ha
       T.isNFComp_Z hdom hzb
 
+
+theorem Vec.interval_pivot_properties {lam m : Nat}
+    (low mid high : Vec (T lam) m) (i : Fin m)
+    (heqAbove :
+      ∀ j : Fin m, i.val < j.val → low.idx j = high.idx j)
+    (hpivot : low.idx i < high.idx i)
+    (hlm : compareVec low mid = Ordering.lt ∨ low = mid)
+    (hmh : compareVec mid high = Ordering.lt ∨ mid = high) :
+    (∀ j : Fin m, i.val < j.val → mid.idx j = high.idx j) ∧
+      low.idx i ≤ mid.idx i := by
+  cases hlm with
+  | inr heq =>
+    subst mid
+    constructor
+    · intro j hij
+      exact heqAbove j hij
+    · exact Or.inr rfl
+  | inl hlt =>
+    obtain ⟨p, hpEq, hpLt⟩ :=
+      Vec.compare_lt_has_pivot low mid hlt
+    have hpi : p.val ≤ i.val := by
+      by_cases hip : i.val < p.val
+      · cases hmh with
+        | inr hmeq =>
+          have hmp : mid.idx p = high.idx p := by
+            rw [hmeq]
+          have hlp : low.idx p = high.idx p :=
+            heqAbove p hip
+          have hbad : low.idx p < low.idx p := by
+            rw [hmp, ← hlp] at hpLt
+            exact hpLt
+          exact False.elim
+            (strict_partial_order.irrefl (low.idx p) hbad)
+        | inl hmhlt =>
+          obtain ⟨q, hqEq, hqLt⟩ :=
+            Vec.compare_lt_has_pivot mid high hmhlt
+          cases Nat.lt_trichotomy q.val p.val with
+          | inl hqp =>
+            have hmp : mid.idx p = high.idx p :=
+              hqEq p hqp
+            have hlp : low.idx p = high.idx p :=
+              heqAbove p hip
+            have hbad : low.idx p < low.idx p := by
+              rw [hmp, ← hlp] at hpLt
+              exact hpLt
+            exact False.elim
+              (strict_partial_order.irrefl (low.idx p) hbad)
+          | inr hrest =>
+            cases hrest with
+            | inl heqVal =>
+              have hpq : p = q := Fin.eq_of_val_eq heqVal.symm
+              subst q
+              have hlp : low.idx p = high.idx p :=
+                heqAbove p hip
+              have hcycle : low.idx p < low.idx p := by
+                have htrans :=
+                  strict_partial_order.trans
+                    (low.idx p) (mid.idx p) (high.idx p)
+                    hpLt hqLt
+                rw [← hlp] at htrans
+                exact htrans
+              exact False.elim
+                (strict_partial_order.irrefl (low.idx p) hcycle)
+            | inr hpq =>
+              have hiq : i.val < q.val :=
+                Nat.lt_trans hip hpq
+              have hlq : low.idx q = high.idx q :=
+                heqAbove q hiq
+              have hlmq : low.idx q = mid.idx q :=
+                hpEq q hpq
+              have hbad : high.idx q < high.idx q := by
+                rw [← hlmq, hlq] at hqLt
+                exact hqLt
+              exact False.elim
+                (strict_partial_order.irrefl (high.idx q) hbad)
+      · exact Nat.not_lt.mp hip
+    constructor
+    · intro j hij
+      have hpj : p.val < j.val :=
+        Nat.lt_of_le_of_lt hpi hij
+      have hlmEq : low.idx j = mid.idx j :=
+        hpEq j hpj
+      have hlhEq : low.idx j = high.idx j :=
+        heqAbove j hij
+      exact hlmEq.symm.trans hlhEq
+    · cases Nat.lt_or_eq_of_le hpi with
+      | inl hpiLt =>
+        exact Or.inr (hpEq i hpiLt)
+      | inr hpiEq =>
+        have hpeqi : p = i := Fin.eq_of_val_eq hpiEq
+        rw [hpeqi] at hpLt
+        exact Or.inl hpLt
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
