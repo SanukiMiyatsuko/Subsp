@@ -201,9 +201,9 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
             obtain ⟨i, d⟩ := p
             rw [hmin] at hdom
             change
-              (if d = .one then
-                if i.val = 0 then .omega else .Omega
-              else .omega) = .zero at hdom
+              (if d = Dom.one then
+                if i.val = 0 then Dom.omega else Dom.Omega
+              else Dom.omega) = Dom.zero at hdom
             by_cases hd1 : d = .one
             · rw [if_pos hd1] at hdom
               by_cases hi : i.val = 0
@@ -217,11 +217,6 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
         have heq : add = T.Z :=
           T.dom_zero_eq_Z add hdom
         exact False.elim (hadd heq)
-termination_by T.size s
-decreasing_by
-  change T.size add < T.size (T.P ls add)
-  exact T.add_size_lt_P ls add
-
 theorem Vec.rplc_idx_same {A : Type} {n : Nat}
     (v : Vec A n) (i : Fin n) (a : A) :
     (v.rplc i a).idx i = a := by
