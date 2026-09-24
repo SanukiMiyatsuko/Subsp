@@ -1054,6 +1054,210 @@ theorem T.isNF_PZ_of_coords {lam : Nat} (ls : Vec (T lam) lam)
   · exact T.Z_le (T.P ls T.Z)
 
 
+
+theorem T.G_size_lt {lam : Nat} :
+    ∀ s y : T lam, y ∈ T.G s → T.size y < T.size s := by
+  intro s
+  have main :
+      ∀ n : Nat, ∀ a y : T lam, T.size a = n →
+        y ∈ T.G a → T.size y < T.size a := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | h n ih =>
+      intro a y hsize hy
+      cases a with
+      | Z =>
+        rw [T.G] at hy
+        exact False.elim (List.not_mem_nil y hy)
+      | P ls add =>
+        cases (T.mem_G_P ls add y).mp hy with
+        | inl hv =>
+          obtain ⟨x, hx, hcase⟩ := hv
+          obtain ⟨i, hi⟩ := (Vec.mem_toList_iff_idx ls x).mp hx
+          have hxsize : T.size x < Vec.size ls := by
+            rw [← hi]
+            exact Vec.idx_size_lt ls i
+          have hvec :
+              Vec.size ls < T.size (T.P ls add) := by
+            show Vec.size ls < 1 + Vec.size ls + T.size add
+            have hle :
+                Vec.size ls ≤ Vec.size ls + T.size add :=
+              Nat.le_add_right _ _
+            have hlt :
+                Vec.size ls + T.size add <
+                  1 + (Vec.size ls + T.size add) :=
+              Nat.lt_add_of_pos_left Nat.zero_lt_one
+            have heq :
+                1 + (Vec.size ls + T.size add) =
+                  1 + Vec.size ls + T.size add :=
+              (Nat.add_assoc 1 (Vec.size ls) (T.size add)).symm
+            calc
+              Vec.size ls ≤ Vec.size ls + T.size add := hle
+              _ < 1 + (Vec.size ls + T.size add) := hlt
+              _ = 1 + Vec.size ls + T.size add := heq
+          cases hcase with
+          | inl hyx =>
+            rw [hyx]
+            exact Nat.lt_trans hxsize hvec
+          | inr hyg =>
+            have hxn : T.size x < n := by
+              have hsx : T.size x < T.size (T.P ls add) :=
+                Nat.lt_trans hxsize hvec
+              rw [hsize] at hsx
+              exact hsx
+            have hrec :
+                T.size y < T.size x :=
+              ih (T.size x) hxn x y rfl hyg
+            exact Nat.lt_trans hrec (Nat.lt_trans hxsize hvec)
+        | inr hadd =>
+          have haddsize :
+              T.size add < T.size (T.P ls add) :=
+            T.add_size_lt_P ls add
+          have haddn : T.size add < n := by
+            rw [hsize] at haddsize
+            exact haddsize
+          have hrec :
+              T.size y < T.size add :=
+            ih (T.size add) haddn add y rfl hadd
+          exact Nat.lt_trans hrec (T.add_size_lt_P ls add)
+  exact fun s y hy => main (T.size s) s y rfl hy
+
+theorem T.vec_G_size_lt {lam : Nat} (ls : Vec (T lam) lam)
+    (x y : T lam) (hx : x ∈ Vec.toList ls)
+    (hy : y = x ∨ y ∈ T.G x) :
+    T.size y < Vec.size ls := by
+  obtain ⟨i, hi⟩ := (Vec.mem_toList_iff_idx ls x).mp hx
+  have hxsize : T.size x < Vec.size ls := by
+    rw [← hi]
+    exact Vec.idx_size_lt ls i
+  cases hy with
+  | inl heq =>
+    rw [heq]
+    exact hxsize
+  | inr hyg =>
+    exact Nat.lt_trans (T.G_size_lt x y hyg) hxsize
+
+theorem T.vec_G_lt_same_vector_any {lam : Nat}
+    (ls : Vec (T lam) lam) (oldAdd newAdd y : T lam)
+    (hsize : T.size y < Vec.size ls)
+    (hold : y < T.P ls oldAdd) :
+    y < T.P ls newAdd := by
+  cases y with
+  | Z =>
+    show compareT T.Z (T.P ls newAdd) = Ordering.lt
+    rfl
+  | P ys yadd =>
+    show
+      (match compareVec ys ls with
+      | Ordering.eq => compareT yadd newAdd
+      | ord => ord) = Ordering.lt
+    cases hc : compareVec ys ls with
+    | lt =>
+      rw [hc]
+    | eq =>
+      have hys : ys = ls := Vec_eq_sound ys ls hc
+      rw [hys] at hsize
+      have hge :
+          Vec.size ls ≤
+            T.size (T.P ls yadd) := by
+        show Vec.size ls ≤ 1 + Vec.size ls + T.size yadd
+        have h1 : Vec.size ls ≤ 1 + Vec.size ls :=
+          Nat.le_add_left (Vec.size ls) 1
+        have h2 :
+            1 + Vec.size ls ≤
+              1 + Vec.size ls + T.size yadd :=
+          Nat.le_add_right _ _
+        exact Nat.le_trans h1 h2
+      exact False.elim ((Nat.not_lt_of_ge hge) hsize)
+    | gt =>
+      show compareT (T.P ys yadd) (T.P ls oldAdd) =
+        Ordering.lt at hold
+      rw [hc] at hold
+      cases hold
+
+theorem T.lt_P_self_of_isNF_head_le {lam : Nat}
+    (a : T lam) (ha : T.isNF a) :
+    ∀ ls : Vec (T lam) lam,
+      T.head a ≤ T.P ls T.Z →
+      a < T.P ls a := by
+  induction ha with
+  | z =>
+    intro ls h
+    show compareT T.Z (T.P ls T.Z) = Ordering.lt
+    rfl
+  | p als aadd h0 h1 h2 h3 ih0 ih1 =>
+    intro ls hh
+    show
+      (match compareVec als ls with
+      | Ordering.eq => compareT aadd (T.P als aadd)
+      | ord => ord) = Ordering.lt
+    cases hc : compareVec als ls with
+    | lt =>
+      rw [hc]
+    | eq =>
+      have hals : als = ls := Vec_eq_sound als ls hc
+      rw [← hals]
+      rw [show compareVec als als = Ordering.eq from Vec_refl als]
+      exact ih1 als h3
+    | gt =>
+      have hh' :
+          T.P als T.Z ≤ T.P ls T.Z := hh
+      cases hh' with
+      | inl hlt =>
+        show
+          (match compareVec als ls with
+          | Ordering.eq => compareT T.Z T.Z
+          | ord => ord) = Ordering.lt at hlt
+        rw [hc] at hlt
+        cases hlt
+      | inr heq =>
+        have hcmp :
+            compareT (T.P als T.Z) (T.P ls T.Z) =
+              Ordering.eq := by
+          rw [heq]
+          exact T_refl (T.P ls T.Z)
+        show
+          (match compareVec als ls with
+          | Ordering.eq => compareT T.Z T.Z
+          | ord => ord) = Ordering.eq at hcmp
+        rw [hc] at hcmp
+        cases hcmp
+
+theorem T.P_tail_NFComp_closed {lam : Nat}
+    (ls : Vec (T lam) lam) (oldAdd newAdd : T lam)
+    (hold : T.isNFComp (T.P ls oldAdd))
+    (hnew : T.isNFComp newAdd)
+    (hhead : T.head newAdd ≤ T.P ls T.Z) :
+    T.isNFComp (T.P ls newAdd) := by
+  have holdNF := hold.1
+  cases holdNF with
+  | p _ _ h0 hOldAdd h2 h3 =>
+    have hnf : T.isNF (T.P ls newAdd) :=
+      T.isNF.p ls newAdd h0 hnew.1 h2 hhead
+    constructor
+    · exact hnf
+    · intro y hy
+      cases (T.mem_G_P ls newAdd y).mp hy with
+      | inl hvec =>
+        obtain ⟨x, hx, hxy⟩ := hvec
+        have hyOld : y ∈ T.G (T.P ls oldAdd) := by
+          apply (T.mem_G_P ls oldAdd y).mpr
+          exact Or.inl ⟨x, hx, hxy⟩
+        have hyltOld : y < T.P ls oldAdd :=
+          hold.2 y hyOld
+        have hysize : T.size y < Vec.size ls :=
+          T.vec_G_size_lt ls x y hx hxy
+        exact T.vec_G_lt_same_vector_any
+          ls oldAdd newAdd y hysize hyltOld
+      | inr htail =>
+        have hyltNew : y < newAdd :=
+          hnew.2 y htail
+        have hnewlt :
+            newAdd < T.P ls newAdd :=
+          T.lt_P_self_of_isNF_head_le newAdd hnew.1 ls hhead
+        exact strict_partial_order.trans y newAdd
+          (T.P ls newAdd) hyltNew hnewlt
+
 theorem T.P_le_P_same {lam : Nat} (ls : Vec (T lam) lam)
     (a b : T lam) (h : a ≤ b) :
     T.P ls a ≤ T.P ls b := by
