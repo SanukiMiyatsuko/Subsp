@@ -105,6 +105,117 @@ theorem T.add_size_lt_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
   rw [← h4]
   exact h3
 
+
+theorem T.dom_ne_zero_of_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
+    T.dom (T.P ls add) ≠ .zero := by
+  induction add with
+  | Z =>
+    rw [T.dom]
+    cases hmin : T.domVecMinIdx ls with
+    | none =>
+      intro h
+      cases h
+    | some md =>
+      cases md with
+      | mk m d =>
+        by_cases hd : d = .one
+        · rw [if_pos hd]
+          by_cases hm : m.val = 0
+          · rw [if_pos hm]
+            intro h
+            cases h
+          · rw [if_neg hm]
+            intro h
+            cases h
+        · rw [if_neg hd]
+          intro h
+          cases h
+  | P ls' add' ih =>
+    rw [T.dom]
+    have hne : T.P ls' add' ≠ T.Z := by
+      intro h
+      cases h
+    rw [if_neg hne]
+    exact ih
+
+theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam) (h : T.dom s = .zero) : s = T.Z := by
+  cases s with
+  | Z => rfl
+  | P ls add =>
+    exact False.elim ((T.dom_ne_zero_of_P ls add) h)
+
+theorem Vec.rplc_idx_same {A : Type} {n : Nat} (v : Vec A n) (i : Fin n) (a : A) :
+    (v.rplc i a).idx i = a := by
+  unfold Vec.rplc
+  rw [Vec.ofFn_idx]
+  rw [if_pos rfl]
+
+theorem Vec.rplc_idx_of_ne {A : Type} {n : Nat} (v : Vec A n)
+    (i j : Fin n) (a : A) (h : j.val ≠ i.val) :
+    (v.rplc i a).idx j = v.idx j := by
+  unfold Vec.rplc
+  rw [Vec.ofFn_idx]
+  rw [if_neg h]
+  rfl
+
+theorem Vec.mem_toList_iff_idx {A : Type} {n : Nat} (v : Vec A n) (x : A) :
+    x ∈ Vec.toList v ↔ ∃ i : Fin n, v.idx i = x := by
+  induction v with
+  | nil =>
+    constructor
+    · intro h
+      exact False.elim (List.not_mem_nil x h)
+    · intro h
+      cases h with
+      | intro i _ => exact i.elim0
+  | snoc k xs last ih =>
+    constructor
+    · intro h
+      rw [Vec.toList] at h
+      cases List.mem_append.mp h with
+      | inl hxs =>
+        obtain ⟨i, hi⟩ := ih.mp hxs
+        refine ⟨i.castSucc, ?_⟩
+        show (if hlt : i.val < k then Vec.idx xs ⟨i.val, hlt⟩ else last) = x
+        have hlt : i.val < k := i.isLt
+        rw [dite_eq_left hlt]
+        have heq : (⟨i.val, hlt⟩ : Fin k) = i := Fin.eq_of_val_eq rfl
+        rw [heq]
+        exact hi
+      | inr hlast =>
+        have heq : x = last := List.mem_singleton.mp hlast
+        refine ⟨Fin.last k, ?_⟩
+        show (if hlt : k < k then Vec.idx xs ⟨k, hlt⟩ else last) = x
+        have hnlt : ¬ k < k := Nat.lt_irrefl k
+        rw [dite_eq_right hnlt]
+        exact heq.symm
+    · intro h
+      obtain ⟨i, hi⟩ := h
+      rw [Vec.toList]
+      by_cases hlt : i.val < k
+      · apply List.mem_append_left [last]
+        apply ih.mpr
+        refine ⟨⟨i.val, hlt⟩, ?_⟩
+        show Vec.idx xs ⟨i.val, hlt⟩ = x
+        show (if h' : i.val < k then Vec.idx xs ⟨i.val, h'⟩ else last) = x at hi
+        rw [dite_eq_left hlt] at hi
+        exact hi
+      · apply List.mem_append_right (Vec.toList xs)
+        apply List.mem_singleton.mpr
+        have hik : i.val ≤ k := Nat.lt_succ_iff.mp i.isLt
+        have hki : k ≤ i.val := Nat.not_lt.mp hlt
+        have hval : i.val = k := Nat.le_antisymm hik hki
+        show (if h' : i.val < k then Vec.idx xs ⟨i.val, h'⟩ else last) = x at hi
+        rw [dite_eq_right hlt] at hi
+        exact hi.symm
+
+theorem T.Z_le {lam : Nat} (s : T lam) : T.Z ≤ s := by
+  cases s with
+  | Z =>
+    exact Or.inr rfl
+  | P ls add =>
+    exact Or.inl rfl
+
 def T.fund {lam : Nat} (s t : T lam) : T lam :=
   match s with
   | Z => Z
