@@ -326,24 +326,29 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
     rw [T.domVecMinIdx] at h
     cases hrec : T.domVecMinIdx xs with
     | some p =>
-      obtain ⟨i', d'⟩ := p
-      rw [hrec] at h
-      cases h
-      have hspec := ih i' d' hrec
-      constructor
-      · change T.dom
-          (if hlt : i'.val < k then
-            Vec.idx xs ⟨i'.val, hlt⟩ else x) = d'
-        rw [dite_eq_left i'.isLt]
-        exact hspec.1
-      · intro j hj
-        have hjk : j.val < k :=
-          Nat.lt_of_lt_of_le hj (Nat.le_of_lt_succ i'.isLt)
-        change T.dom
-            (if hlt : j.val < k then
-              Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
-        rw [dite_eq_left hjk]
-        exact hspec.2 ⟨j.val, hjk⟩ hj
+      cases p with
+      | mk i' d' =>
+        rw [hrec] at h
+        have hspec := ih i' d' hrec
+        cases h
+        constructor
+        · have hidx :
+              (Vec.snoc k xs x).idx i'.castSucc = xs.idx i' := by
+            change
+              (if hlt : i'.val < k then
+                Vec.idx xs ⟨i'.val, hlt⟩ else x) = xs.idx i'
+            rw [dite_eq_left i'.isLt]
+            rfl
+          rw [hidx]
+          exact hspec.1
+        · intro j hj
+          have hjk : j.val < k :=
+            Nat.lt_of_lt_of_le hj (Nat.le_of_lt_succ i'.isLt)
+          change T.dom
+              (if hlt : j.val < k then
+                Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
+          rw [dite_eq_left hjk]
+          exact hspec.2 ⟨j.val, hjk⟩ hj
     | none =>
       rw [hrec] at h
       by_cases hx : T.dom x = .zero
@@ -357,11 +362,12 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
               Vec.idx xs ⟨k, hlt⟩ else x) = T.dom x
           rw [dite_eq_right (Nat.lt_irrefl k)]
         · intro j hj
+          have hjk : j.val < k := hj
           change T.dom
               (if hlt : j.val < k then
                 Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
-          rw [dite_eq_left hj]
-          exact T.domVecMinIdx_none_all_zero xs hrec ⟨j.val, hj⟩
+          rw [dite_eq_left hjk]
+          exact T.domVecMinIdx_none_all_zero xs hrec ⟨j.val, hjk⟩
 
 theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
     (v : Vec (T lam) m) (i : Fin m) (d : Dom)
@@ -374,10 +380,12 @@ theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
     rw [T.domVecMinIdx] at h
     cases hrec : T.domVecMinIdx xs with
     | some p =>
-      obtain ⟨i', d'⟩ := p
-      rw [hrec] at h
-      cases h
-      exact ih i' d' hrec
+      cases p with
+      | mk i' d' =>
+        rw [hrec] at h
+        have hne := ih i' d' hrec
+        cases h
+        exact hne
     | none =>
       rw [hrec] at h
       by_cases hx : T.dom x = .zero
