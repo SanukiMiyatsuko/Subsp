@@ -695,6 +695,98 @@ def T.G {lam : Nat} (s : T lam) : List (T lam) :=
       | .snoc n v last => res v ++ [last] ++ G last
     res ls ++ G add
 
+def Vec.GAll {lam m : Nat} : Vec (T lam) m → List (T lam)
+| .nil => []
+| .snoc _ v last => Vec.GAll v ++ [last] ++ T.G last
+
+theorem T.G_P_eq {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
+    T.G (T.P ls add) = Vec.GAll ls ++ T.G add := by
+  rfl
+
+theorem Vec.GAll_mem_iff {lam m : Nat} (v : Vec (T lam) m) (y : T lam) :
+    y ∈ Vec.GAll v ↔
+      ∃ i : Fin m, y = v.idx i ∨ y ∈ T.G (v.idx i) := by
+  induction v with
+  | nil =>
+    constructor
+    · intro h
+      exact False.elim (List.not_mem_nil y h)
+    · intro h
+      obtain ⟨i, _⟩ := h
+      exact i.elim0
+  | snoc k xs x ih =>
+    rw [Vec.GAll]
+    constructor
+    · intro h
+      rw [List.mem_append, List.mem_append] at h
+      cases h with
+      | inl hleft =>
+        cases hleft with
+        | inl hxs =>
+          obtain ⟨i, hi⟩ := ih.mp hxs
+          refine ⟨i.castSucc, ?_⟩
+          have hidx :
+              (Vec.snoc k xs x).idx i.castSucc = xs.idx i := by
+            show
+              (if hlt : i.val < k then Vec.idx xs ⟨i.val, hlt⟩ else x) =
+                Vec.idx xs i
+            rw [dite_eq_left i.isLt]
+            rfl
+          rw [hidx]
+          exact hi
+        | inr hx =>
+          have heq : y = x := List.mem_singleton.mp hx
+          refine ⟨Fin.last k, Or.inl ?_⟩
+          have hidx :
+              (Vec.snoc k xs x).idx (Fin.last k) = x := by
+            show
+              (if hlt : k < k then Vec.idx xs ⟨k, hlt⟩ else x) = x
+            rw [dite_eq_right (Nat.lt_irrefl k)]
+          rw [hidx]
+          exact heq
+      | inr hGx =>
+        refine ⟨Fin.last k, Or.inr ?_⟩
+        have hidx :
+            (Vec.snoc k xs x).idx (Fin.last k) = x := by
+          show
+            (if hlt : k < k then Vec.idx xs ⟨k, hlt⟩ else x) = x
+          rw [dite_eq_right (Nat.lt_irrefl k)]
+        rw [hidx]
+        exact hGx
+    · intro h
+      obtain ⟨i, hi⟩ := h
+      by_cases hik : i.val < k
+      · have hidx :
+            (Vec.snoc k xs x).idx i = xs.idx ⟨i.val, hik⟩ := by
+          show
+            (if hlt : i.val < k then Vec.idx xs ⟨i.val, hlt⟩ else x) =
+              Vec.idx xs ⟨i.val, hik⟩
+          rw [dite_eq_left hik]
+          rfl
+        rw [hidx] at hi
+        apply List.mem_append_left (T.G x)
+        apply List.mem_append_left [x]
+        apply ih.mpr
+        exact ⟨⟨i.val, hik⟩, hi⟩
+      · have hikle : i.val ≤ k := Nat.lt_succ_iff.mp i.isLt
+        have hk : k ≤ i.val := Nat.not_lt.mp hik
+        have hval : i.val = k := Nat.le_antisymm hikle hk
+        have hieq : i = Fin.last k := Fin.eq_of_val_eq hval
+        rw [hieq] at hi
+        have hidx :
+            (Vec.snoc k xs x).idx (Fin.last k) = x := by
+          show
+            (if hlt : k < k then Vec.idx xs ⟨k, hlt⟩ else x) = x
+          rw [dite_eq_right (Nat.lt_irrefl k)]
+        rw [hidx] at hi
+        cases hi with
+        | inl hyx =>
+          apply List.mem_append_left (T.G x)
+          apply List.mem_append_right (Vec.GAll xs)
+          exact List.mem_singleton.mpr hyx
+        | inr hGx =>
+          exact List.mem_append_right (Vec.GAll xs ++ [x]) hGx
+
 inductive T.isNF {lam : Nat} : T lam → Prop where
 | z : isNF Z
 | p (ls : Vec (T lam) lam) (add : T lam)
