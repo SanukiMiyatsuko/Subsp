@@ -494,39 +494,13 @@ theorem T.fund_lt_self {lam : Nat}
       | P ls add =>
         by_cases hadd : add = T.Z
         · subst add
+          rw [T.fund, if_pos rfl]
           cases hmin : T.domVecMinIdx ls with
           | none =>
-            rw [T.fund, if_pos rfl, hmin]
+            rw [hmin]
           | some md =>
             obtain ⟨m, d⟩ := md
-            rw [T.fund, if_pos rfl, hmin]
-            change
-              (if d = .one then
-                match m with
-                | ⟨0, _⟩ =>
-                  T.mul
-                    (T.P
-                      (ls.rplc m
-                        (T.fund ls[m] T.Z))
-                      T.Z)
-                    b
-                | ⟨m' + 1, h⟩ =>
-                  T.P
-                    ((ls.rplc m
-                      (T.fund ls[m] T.Z)).rplc
-                        ⟨m', Nat.lt_of_succ_lt h⟩ b)
-                    T.Z
-              else if d = .Omega then
-                T.P
-                  (ls.rplc m
-                    (T.fund ls[m]
-                      (T.iter
-                        (fun x => T.fund ls[m] x) b)))
-                  T.Z
-              else
-                T.P
-                  (ls.rplc m (T.fund ls[m] b))
-                  T.Z) < T.P ls T.Z
+            rw [hmin]
             have hspec :=
               T.domVecMinIdx_some_spec ls m d hmin
             have hmne : ls[m] ≠ T.Z := by
