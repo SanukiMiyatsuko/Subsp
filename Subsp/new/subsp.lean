@@ -1964,6 +1964,10 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
                   lhs
                   rw [T.dom, if_pos rfl]
                   rw [hmin]
+                change
+                  (if d = .one then
+                    if m.val = 0 then .omega else .Omega
+                  else .omega) = .one at hd'
                 by_cases hd1 : d = .one
                 · rw [if_pos hd1] at hd'
                   by_cases hm0 : m.val = 0
