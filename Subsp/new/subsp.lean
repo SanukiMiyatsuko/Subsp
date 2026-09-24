@@ -475,6 +475,44 @@ instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) := T.decIsNF s
 def T.isNFComp {lam : Nat} (s : T lam) : Prop :=
   T.isNF s ∧ ∀ y ∈ T.G s, y < s
 
+
+theorem T.isNFComp_Z {lam : Nat} : T.isNFComp (T.Z : T lam) := by
+  constructor
+  · exact T.isNF.z
+  · intro y hy
+    rw [T.G] at hy
+    exact False.elim (List.not_mem_nil y hy)
+
+theorem T.isNF_P_coord_NFComp {lam : Nat} (ls : Vec (T lam) lam) (add : T lam)
+    (h : T.isNF (T.P ls add)) :
+    ∀ i : Fin lam, T.isNFComp (ls.idx i) := by
+  cases h with
+  | p _ _ h0 h1 h2 h3 =>
+    intro i
+    have hmem : ls.idx i ∈ Vec.toList ls := by
+      apply (Vec.mem_toList_iff_idx ls (ls.idx i)).mpr
+      exact ⟨i, rfl⟩
+    constructor
+    · exact h0 (ls.idx i) hmem
+    · exact h2 (ls.idx i) hmem
+
+theorem T.isNF_PZ_of_coords {lam : Nat} (ls : Vec (T lam) lam)
+    (h : ∀ i : Fin lam, T.isNFComp (ls.idx i)) :
+    T.isNF (T.P ls T.Z) := by
+  apply T.isNF.p ls T.Z
+  · intro x hx
+    obtain ⟨i, hi⟩ := (Vec.mem_toList_iff_idx ls x).mp hx
+    rw [← hi]
+    exact (h i).1
+  · exact T.isNF.z
+  · intro x hx y hy
+    obtain ⟨i, hi⟩ := (Vec.mem_toList_iff_idx ls x).mp hx
+    rw [← hi] at hy
+    have hc := (h i).2 y hy
+    rw [hi] at hc
+    exact hc
+  · exact T.Z_le (T.P ls T.Z)
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
