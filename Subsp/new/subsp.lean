@@ -233,6 +233,51 @@ theorem Vec.rplc_idx_of_ne {A : Type} {n : Nat}
   rw [if_neg h]
   rfl
 
+theorem Vec.idx_mem_toList {A : Type} {n : Nat}
+    (v : Vec A n) (i : Fin n) :
+    v.idx i ∈ Vec.toList v := by
+  induction v with
+  | nil =>
+      exact i.elim0
+  | snoc k xs last ih =>
+      rw [Vec.toList]
+      change
+        (if h : i.val < k then
+          Vec.idx xs ⟨i.val, h⟩ else last) ∈
+          Vec.toList xs ++ [last]
+      by_cases h : i.val < k
+      · rw [dite_eq_left h]
+        exact List.mem_append_left [last] (ih ⟨i.val, h⟩)
+      · rw [dite_eq_right h]
+        exact List.mem_append_right (Vec.toList xs)
+          (List.mem_singleton_self last)
+
+theorem Vec.mem_toList_exists_idx {A : Type} {n : Nat}
+    (v : Vec A n) (x : A) (hx : x ∈ Vec.toList v) :
+    ∃ i : Fin n, v.idx i = x := by
+  induction v with
+  | nil =>
+      cases hx
+  | snoc k xs last ih =>
+      rw [Vec.toList] at hx
+      cases List.mem_append.mp hx with
+      | inl hxs =>
+          obtain ⟨i, hi⟩ := ih hxs
+          refine ⟨i.castSucc, ?_⟩
+          show
+            (if h : i.val < k then
+              Vec.idx xs ⟨i.val, h⟩ else last) = x
+          rw [dite_eq_left i.isLt]
+          exact hi
+      | inr hlast =>
+          have heq : x = last := List.mem_singleton.mp hlast
+          refine ⟨Fin.last k, ?_⟩
+          show
+            (if h : k < k then
+              Vec.idx xs ⟨k, h⟩ else last) = x
+          rw [dite_eq_right (Nat.lt_irrefl k)]
+          exact heq.symm
+
 def T.fund {lam : Nat} (s t : T lam) : T lam :=
   match s with
   | Z => Z
