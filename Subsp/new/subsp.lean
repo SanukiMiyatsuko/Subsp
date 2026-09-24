@@ -479,26 +479,26 @@ theorem T.fund_PZ_some {lam : Nat}
           T.mul
             (T.P
               (ls.rplc m
-                (T.fund (ls.idx m) T.Z))
+                (T.fund ls[m] T.Z))
               T.Z)
             t
         | ⟨m' + 1, h⟩ =>
           T.P
             ((ls.rplc m
-              (T.fund (ls.idx m) T.Z)).rplc
+              (T.fund ls[m] T.Z)).rplc
                 ⟨m', Nat.lt_of_succ_lt h⟩ t)
             T.Z
       else if d = .Omega then
         T.P
           (ls.rplc m
-            (T.fund (ls.idx m)
+            (T.fund ls[m]
               (T.iter
-                (fun x => T.fund (ls.idx m) x) t)))
+                (fun x => T.fund ls[m] x) t)))
           T.Z
       else
         T.P
           (ls.rplc m
-            (T.fund (ls.idx m) t))
+            (T.fund ls[m] t))
           T.Z := by
   conv =>
     lhs
