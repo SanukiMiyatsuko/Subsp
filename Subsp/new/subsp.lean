@@ -494,13 +494,12 @@ theorem T.fund_lt_self {lam : Nat}
       | P ls add =>
         by_cases hadd : add = T.Z
         · subst add
-          rw [T.fund]
-          rw [if_pos rfl]
           cases hmin : T.domVecMinIdx ls with
           | none =>
-            rfl
+            rw [T.fund, if_pos rfl, hmin]
           | some md =>
             obtain ⟨m, d⟩ := md
+            rw [T.fund, if_pos rfl, hmin]
             change
               (if d = .one then
                 match m with
@@ -795,7 +794,15 @@ theorem Vec.Gres_cases {lam m : Nat}
         | inl hxs =>
           obtain ⟨i, hcase⟩ := ih hxs
           refine ⟨i.castSucc, ?_⟩
-          change y = xs.idx i ∨ y ∈ T.G (xs.idx i)
+          have hidx :
+              (Vec.snoc k xs last).idx i.castSucc =
+                xs.idx i := by
+            show
+              (if h : i.val < k then
+                Vec.idx xs ⟨i.val, h⟩ else last) =
+                xs.idx i
+            rw [dite_eq_left i.isLt]
+          rw [hidx]
           exact hcase
         | inr hlast =>
           have hylast : y = last := List.mem_singleton.mp hlast
