@@ -105,151 +105,55 @@ theorem T.add_size_lt_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
   rw [← h4]
   exact h3
 
-theorem T.domVecMinIdx_none_all_zero {lam m : Nat}
-    (v : Vec (T lam) m) (h : T.domVecMinIdx v = none) :
-    ∀ i : Fin m, T.dom (v.idx i) = .zero := by
-  induction v with
-  | nil =>
-      intro i
-      exact i.elim0
-  | snoc k xs x ih =>
-      intro i
-      rw [T.domVecMinIdx] at h
-      cases hrec : T.domVecMinIdx xs with
-      | some p =>
-          rw [hrec] at h
-          cases h
-      | none =>
-          rw [hrec] at h
-          by_cases hx : T.dom x = .zero
-          · rw [if_pos hx] at h
-            by_cases hi : i.val < k
-            · show T.dom
-                (if hlt : i.val < k then
-                  Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
-              rw [dite_eq_left hi]
-              exact ih hrec ⟨i.val, hi⟩
-            · show T.dom
-                (if hlt : i.val < k then
-                  Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
-              rw [dite_eq_right hi]
-              exact hx
-          · rw [if_neg hx] at h
-            cases h
+theorem T.dom_ne_zero {lam : Nat} (s : T lam) (hne : s ≠ T.Z) :
+    T.dom s ≠ .zero := by
+  generalize hs : T.size s = n
+  induction n using Nat.strong_induction_on generalizing s with
+  | h n ih =>
+    cases s with
+    | Z =>
+      exact False.elim (hne rfl)
+    | P ls add =>
+      intro hzero
+      by_cases hadd : add = T.Z
+      · subst add
+        rw [T.dom, if_pos rfl] at hzero
+        cases hmin : T.domVecMinIdx ls with
+        | none =>
+          rw [hmin] at hzero
+          cases hzero
+        | some md =>
+          cases md with
+          | mk m d =>
+            rw [hmin] at hzero
+            by_cases hd : d = .one
+            · rw [if_pos hd] at hzero
+              by_cases hm : m.val = 0
+              · rw [if_pos hm] at hzero
+                cases hzero
+              · rw [if_neg hm] at hzero
+                cases hzero
+            · rw [if_neg hd] at hzero
+              cases hzero
+      · rw [T.dom, if_neg hadd] at hzero
+        have hsize : T.size add < n := by
+          have hlt := T.add_size_lt_P ls add
+          rw [hs] at hlt
+          exact hlt
+        exact (ih (T.size add) hsize add rfl hadd) hzero
 
-theorem T.domVecMinIdx_some_spec {lam m : Nat}
-    (v : Vec (T lam) m) (i : Fin m) (d : Dom)
-    (h : T.domVecMinIdx v = some (i, d)) :
-    T.dom (v.idx i) = d ∧
-      ∀ j : Fin m, j.val < i.val →
-        T.dom (v.idx j) = .zero := by
-  induction v generalizing d with
-  | nil =>
-      exact i.elim0
-  | snoc k xs x ih =>
-      rw [T.domVecMinIdx] at h
-      cases hrec : T.domVecMinIdx xs with
-      | some p =>
-          obtain ⟨i', d'⟩ := p
-          rw [hrec] at h
-          have hspec := ih i' d' hrec
-          cases h
-          constructor
-          · show T.dom
-              (if hlt : i'.val < k then
-                Vec.idx xs ⟨i'.val, hlt⟩ else x) = d'
-            rw [dite_eq_left i'.isLt]
-            exact hspec.1
-          · intro j hj
-            have hjk : j.val < k :=
-              Nat.lt_trans hj i'.isLt
-            show T.dom
-                (if hlt : j.val < k then
-                  Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
-            rw [dite_eq_left hjk]
-            exact hspec.2 ⟨j.val, hjk⟩ hj
-      | none =>
-          rw [hrec] at h
-          by_cases hx : T.dom x = .zero
-          · rw [if_pos hx] at h
-            cases h
-          · rw [if_neg hx] at h
-            cases h
-            constructor
-            · show T.dom
-                (if hlt : k < k then
-                  Vec.idx xs ⟨k, hlt⟩ else x) = T.dom x
-              rw [dite_eq_right (Nat.lt_irrefl k)]
-            · intro j hj
-              change j.val < k at hj
-              show T.dom
-                  (if hlt : j.val < k then
-                    Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
-              rw [dite_eq_left hj]
-              exact T.domVecMinIdx_none_all_zero xs hrec ⟨j.val, hj⟩
-
-theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
-    (v : Vec (T lam) m) (i : Fin m) (d : Dom)
-    (h : T.domVecMinIdx v = some (i, d)) :
-    d ≠ .zero := by
-  induction v generalizing d with
-  | nil =>
-      exact i.elim0
-  | snoc k xs x ih =>
-      rw [T.domVecMinIdx] at h
-      cases hrec : T.domVecMinIdx xs with
-      | some p =>
-          obtain ⟨i', d'⟩ := p
-          rw [hrec] at h
-          have hne := ih i' d' hrec
-          cases h
-          exact hne
-      | none =>
-          rw [hrec] at h
-          by_cases hx : T.dom x = .zero
-          · rw [if_pos hx] at h
-            cases h
-          · rw [if_neg hx] at h
-            cases h
-            exact hx
-
-theorem T.dom_ne_zero_of_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
+theorem T.dom_ne_zero_of_P {lam : Nat}
+    (ls : Vec (T lam) lam) (add : T lam) :
     T.dom (T.P ls add) ≠ .zero := by
-  induction add with
-  | Z =>
-    rw [T.dom]
-    cases hmin : T.domVecMinIdx ls with
-    | none =>
-      intro h
-      cases h
-    | some md =>
-      cases md with
-      | mk m d =>
-        by_cases hd : d = .one
-        · rw [if_pos hd]
-          by_cases hm : m.val = 0
-          · rw [if_pos hm]
-            intro h
-            cases h
-          · rw [if_neg hm]
-            intro h
-            cases h
-        · rw [if_neg hd]
-          intro h
-          cases h
-  | P ls' add' ih =>
-    rw [T.dom]
-    have hne : T.P ls' add' ≠ T.Z := by
-      intro h
-      cases h
-    rw [if_neg hne]
-    exact ih
+  apply T.dom_ne_zero (T.P ls add)
+  intro h
+  cases h
 
-theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam) (h : T.dom s = .zero) : s = T.Z := by
-  cases s with
-  | Z => rfl
-  | P ls add =>
-    exact False.elim ((T.dom_ne_zero_of_P ls add) h)
+theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
+    (h : T.dom s = .zero) : s = T.Z := by
+  by_cases hz : s = T.Z
+  · exact hz
+  · exact False.elim ((T.dom_ne_zero s hz) h)
 
 
 theorem T.domVecMinIdx_none_all_zero {lam m : Nat} (v : Vec (T lam) m)
@@ -404,8 +308,9 @@ theorem Vec.mem_toList_iff_idx {A : Type} {n : Nat} (v : Vec A n) (x : A) :
       · apply List.mem_append_left [last]
         apply ih.mpr
         refine ⟨⟨i.val, hlt⟩, ?_⟩
-        show Vec.idx xs ⟨i.val, hlt⟩ = x
-        show (if h' : i.val < k then Vec.idx xs ⟨i.val, h'⟩ else last) = x at hi
+        change
+          (if h' : i.val < k then
+            Vec.idx xs ⟨i.val, h'⟩ else last) = x at hi
         rw [dite_eq_left hlt] at hi
         exact hi
       · apply List.mem_append_right (Vec.toList xs)
@@ -1295,182 +1200,9 @@ instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) :=
 def T.isNFComp {lam : Nat} (s : T lam) : Prop :=
   T.isNF s ∧ ∀ y ∈ T.G s, y < s
 
-theorem Vec.mem_toList_iff_idx {A : Type} {n : Nat}
-    (v : Vec A n) (x : A) :
-    x ∈ Vec.toList v ↔ ∃ i : Fin n, v.idx i = x := by
-  induction v with
-  | nil =>
-    constructor
-    · intro hx
-      cases hx
-    · intro h
-      obtain ⟨i, hi⟩ := h
-      exact i.elim0
-  | snoc k xs last ih =>
-    constructor
-    · intro hx
-      cases List.mem_append.mp hx with
-      | inl hxs =>
-        obtain ⟨i, hi⟩ := ih.mp hxs
-        refine ⟨i.castSucc, ?_⟩
-        show
-          (if h : i.val < k then
-            Vec.idx xs ⟨i.val, h⟩ else last) = x
-        rw [dite_eq_left i.isLt]
-        exact hi
-      | inr hlast =>
-        have hxl : x = last := List.mem_singleton.mp hlast
-        refine ⟨Fin.last k, ?_⟩
-        show
-          (if h : k < k then
-            Vec.idx xs ⟨k, h⟩ else last) = x
-        rw [dite_eq_right (Nat.lt_irrefl k)]
-        exact hxl.symm
-    · intro h
-      obtain ⟨i, hi⟩ := h
-      by_cases hlt : i.val < k
-      · apply List.mem_append_left [last]
-        apply ih.mpr
-        refine ⟨⟨i.val, hlt⟩, ?_⟩
-        change
-          (if h : i.val < k then
-            Vec.idx xs ⟨i.val, h⟩ else last) = x at hi
-        rw [dite_eq_left hlt] at hi
-        exact hi
-      · apply List.mem_append_right (Vec.toList xs)
-        have hik : i.val ≤ k := Nat.lt_succ_iff.mp i.isLt
-        have hki : k ≤ i.val := Nat.not_lt.mp hlt
-        have hval : i.val = k := Nat.le_antisymm hik hki
-        have hieq : i = Fin.last k := Fin.eq_of_val_eq hval
-        rw [hieq] at hi
-        change
-          (if h : k < k then
-            Vec.idx xs ⟨k, h⟩ else last) = x at hi
-        rw [dite_eq_right (Nat.lt_irrefl k)] at hi
-        exact List.mem_singleton.mpr hi.symm
-
-theorem Vec.rplc_idx_same {A : Type} {n : Nat}
-    (v : Vec A n) (i : Fin n) (a : A) :
-    (v.rplc i a).idx i = a := by
-  rw [Vec.rplc, Vec.ofFn_idx]
-  rw [ite_eq_left rfl]
-
-theorem Vec.rplc_idx_of_ne {A : Type} {n : Nat}
-    (v : Vec A n) (i j : Fin n) (a : A)
-    (hij : j.val ≠ i.val) :
-    (v.rplc i a).idx j = v.idx j := by
-  rw [Vec.rplc, Vec.ofFn_idx]
-  rw [ite_eq_right hij]
-  rfl
-
-theorem T.domVecMinIdx_none_spec {lam m : Nat}
-    (v : Vec (T lam) m) :
-    T.domVecMinIdx v = none →
-      ∀ i : Fin m, T.dom (v.idx i) = .zero := by
-  induction v with
-  | nil =>
-    intro h i
-    exact i.elim0
-  | snoc k xs x ih =>
-    intro h i
-    change
-      (match T.domVecMinIdx xs with
-      | some p => some (p.1.castSucc, p.2)
-      | none =>
-        if T.dom x = .zero then none
-        else some (Fin.last k, T.dom x)) = none at h
-    cases hr : T.domVecMinIdx xs with
-    | some p =>
-      rw [hr] at h
-      cases h
-    | none =>
-      rw [hr] at h
-      by_cases hx : T.dom x = .zero
-      · rw [ite_eq_left hx] at h
-        by_cases hi : i.val < k
-        · show
-            T.dom
-              (if hlt : i.val < k then
-                Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
-          rw [dite_eq_left hi]
-          exact ih hr ⟨i.val, hi⟩
-        · show
-            T.dom
-              (if hlt : i.val < k then
-                Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
-          rw [dite_eq_right hi]
-          exact hx
-      · rw [ite_eq_right hx] at h
-        cases h
-
-theorem T.domVecMinIdx_some_spec {lam m : Nat}
-    (v : Vec (T lam) m) (p : Fin m) (d : Dom)
-    (h : T.domVecMinIdx v = some (p, d)) :
-    T.dom (v.idx p) = d ∧
-      ∀ i : Fin m, i.val < p.val →
-        T.dom (v.idx i) = .zero := by
-  induction v with
-  | nil =>
-    exact p.elim0
-  | snoc k xs x ih =>
-    change
-      (match T.domVecMinIdx xs with
-      | some q => some (q.1.castSucc, q.2)
-      | none =>
-        if T.dom x = .zero then none
-        else some (Fin.last k, T.dom x)) = some (p, d) at h
-    cases hr : T.domVecMinIdx xs with
-    | some q =>
-      cases q with
-      | mk q dq =>
-        rw [hr] at h
-        cases h
-        have hrec := ih q dq hr
-        constructor
-        · show
-            T.dom
-              (if hlt : q.val < k then
-                Vec.idx xs ⟨q.val, hlt⟩ else x) = dq
-          rw [dite_eq_left q.isLt]
-          exact hrec.1
-        · intro i hi
-          have hik : i.val < k := Nat.lt_trans hi q.isLt
-          show
-            T.dom
-              (if hlt : i.val < k then
-                Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
-          rw [dite_eq_left hik]
-          exact hrec.2 ⟨i.val, hik⟩ hi
-    | none =>
-      rw [hr] at h
-      by_cases hx : T.dom x = .zero
-      · rw [ite_eq_left hx] at h
-        cases h
-      · rw [ite_eq_right hx] at h
-        cases h
-        constructor
-        · show
-            T.dom
-              (if hlt : k < k then
-                Vec.idx xs ⟨k, hlt⟩ else x) = T.dom x
-          rw [dite_eq_right (Nat.lt_irrefl k)]
-        · intro i hi
-          have hik : i.val < k := hi
-          show
-            T.dom
-              (if hlt : i.val < k then
-                Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
-          rw [dite_eq_left hik]
-          exact T.domVecMinIdx_none_spec xs hr ⟨i.val, hik⟩
-
 theorem Vec.mem_Gres {lam m : Nat}
     (v : Vec (T lam) m) (y : T lam) :
-    y ∈
-        (let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
-          match vt with
-          | .nil => []
-          | .snoc _ xs last => res xs ++ [last] ++ T.G last
-        res v) ↔
+    y ∈ T.G.res v ↔
       ∃ x, x ∈ Vec.toList v ∧ (y = x ∨ y ∈ T.G x) := by
   induction v with
   | nil =>
@@ -1478,17 +1210,11 @@ theorem Vec.mem_Gres {lam m : Nat}
     · intro hy
       cases hy
     · intro h
-      obtain ⟨x, hx, hrest⟩ := h
+      obtain ⟨x, hx, hcase⟩ := h
       cases hx
   | snoc k xs last ih =>
     change
-      y ∈
-          ((let rec res {q : Nat}
-              (vt : Vec (T lam) q) : List (T lam) :=
-            match vt with
-            | .nil => []
-            | .snoc _ us u => res us ++ [u] ++ T.G u
-          res xs) ++ [last] ++ T.G last) ↔
+      y ∈ T.G.res xs ++ [last] ++ T.G last ↔
         ∃ x, x ∈ Vec.toList xs ++ [last] ∧
           (y = x ∨ y ∈ T.G x)
     constructor
@@ -1497,57 +1223,38 @@ theorem Vec.mem_Gres {lam m : Nat}
       | inl hleft =>
         cases List.mem_append.mp hleft with
         | inl hxs =>
-          obtain ⟨x, hx, hyx⟩ := ih.mp hxs
-          refine ⟨x, List.mem_append_left [last] hx, hyx⟩
+          obtain ⟨x, hx, hcase⟩ := ih.mp hxs
+          exact ⟨x, List.mem_append_left [last] hx, hcase⟩
         | inr hlast =>
           have hylast : y = last := List.mem_singleton.mp hlast
-          refine ⟨last,
+          exact ⟨last,
             List.mem_append_right (Vec.toList xs)
               (List.mem_singleton_self last),
             Or.inl hylast⟩
       | inr hG =>
-        refine ⟨last,
+        exact ⟨last,
           List.mem_append_right (Vec.toList xs)
             (List.mem_singleton_self last),
           Or.inr hG⟩
     · intro h
-      obtain ⟨x, hx, hyx⟩ := h
+      obtain ⟨x, hx, hcase⟩ := h
       cases List.mem_append.mp hx with
       | inl hxs =>
-        have hres :
-            y ∈
-              (let rec res {q : Nat}
-                  (vt : Vec (T lam) q) : List (T lam) :=
-                match vt with
-                | .nil => []
-                | .snoc _ us u => res us ++ [u] ++ T.G u
-              res xs) :=
-          ih.mpr ⟨x, hxs, hyx⟩
+        have hres : y ∈ T.G.res xs :=
+          ih.mpr ⟨x, hxs, hcase⟩
         exact List.mem_append_left (T.G last)
           (List.mem_append_left [last] hres)
       | inr hlast =>
         have hxeq : x = last := List.mem_singleton.mp hlast
-        cases hyx with
-        | inl hyEq =>
-          have hylast : y = last := hyEq.trans hxeq
+        cases hcase with
+        | inl hyx =>
+          have hylast : y = last := hyx.trans hxeq
           apply List.mem_append_left (T.G last)
-          apply List.mem_append_right
-            (let rec res {q : Nat}
-                (vt : Vec (T lam) q) : List (T lam) :=
-              match vt with
-              | .nil => []
-              | .snoc _ us u => res us ++ [u] ++ T.G u
-            res xs)
+          apply List.mem_append_right (T.G.res xs)
           exact List.mem_singleton.mpr hylast
         | inr hyG =>
           rw [hxeq] at hyG
-          exact List.mem_append_right
-            ((let rec res {q : Nat}
-                (vt : Vec (T lam) q) : List (T lam) :=
-              match vt with
-              | .nil => []
-              | .snoc _ us u => res us ++ [u] ++ T.G u
-            res xs) ++ [last]) hyG
+          exact List.mem_append_right (T.G.res xs ++ [last]) hyG
 
 theorem T.mem_G_P {lam : Nat}
     (ls : Vec (T lam) lam) (add y : T lam) :
@@ -1555,17 +1262,10 @@ theorem T.mem_G_P {lam : Nat}
       (∃ x, x ∈ Vec.toList ls ∧
         (y = x ∨ y ∈ T.G x)) ∨
       y ∈ T.G add := by
-  change
-    y ∈
-        ((let rec res {q : Nat}
-            (vt : Vec (T lam) q) : List (T lam) :=
-          match vt with
-          | .nil => []
-          | .snoc _ xs last => res xs ++ [last] ++ T.G last
-        res ls) ++ T.G add) ↔
-      (∃ x, x ∈ Vec.toList ls ∧
-        (y = x ∨ y ∈ T.G x)) ∨
-      y ∈ T.G add
+  change y ∈ T.G.res ls ++ T.G add ↔
+    (∃ x, x ∈ Vec.toList ls ∧
+      (y = x ∨ y ∈ T.G x)) ∨
+    y ∈ T.G add
   constructor
   · intro hy
     cases List.mem_append.mp hy with
@@ -1579,13 +1279,7 @@ theorem T.mem_G_P {lam : Nat}
       exact List.mem_append_left (T.G add)
         ((Vec.mem_Gres ls y).mpr hres)
     | inr hadd =>
-      exact List.mem_append_right
-        (let rec res {q : Nat}
-            (vt : Vec (T lam) q) : List (T lam) :=
-          match vt with
-          | .nil => []
-          | .snoc _ xs last => res xs ++ [last] ++ T.G last
-        res ls) hadd
+      exact List.mem_append_right (T.G.res ls) hadd
 
 theorem T.isNF_G_isNFComp {lam : Nat}
     (s : T lam) (hs : T.isNF s) :
