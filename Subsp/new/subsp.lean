@@ -802,6 +802,128 @@ def T.isNFComp {lam : Nat} (s : T lam) : Prop :=
   T.isNF s ∧ ∀ y ∈ T.G s, y < s
 
 
+
+theorem Vec.mem_Gres {lam m : Nat} (v : Vec (T lam) m) (y : T lam) :
+    y ∈
+      (let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+        match vt with
+        | .nil => []
+        | .snoc n xs last => res xs ++ [last] ++ T.G last
+      res v) ↔
+    ∃ x, x ∈ Vec.toList v ∧ (y = x ∨ y ∈ T.G x) := by
+  induction v with
+  | nil =>
+    constructor
+    · intro h
+      exact False.elim (List.not_mem_nil y h)
+    · intro h
+      obtain ⟨x, hx, _⟩ := h
+      exact False.elim (List.not_mem_nil x hx)
+  | snoc k xs last ih =>
+    change
+      y ∈
+          ((let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+            match vt with
+            | .nil => []
+            | .snoc n us z => res us ++ [z] ++ T.G z
+          res xs) ++ [last] ++ T.G last) ↔
+        ∃ x, x ∈ (Vec.toList xs ++ [last]) ∧
+          (y = x ∨ y ∈ T.G x)
+    constructor
+    · intro hy
+      have hy' :
+          y ∈
+            (let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+              match vt with
+              | .nil => []
+              | .snoc n us z => res us ++ [z] ++ T.G z
+            res xs) ∨
+          y ∈ [last] ∨ y ∈ T.G last := by
+        cases List.mem_append.mp hy with
+        | inl hleft =>
+          cases List.mem_append.mp hleft with
+          | inl hres => exact Or.inl hres
+          | inr hlast => exact Or.inr (Or.inl hlast)
+        | inr hg => exact Or.inr (Or.inr hg)
+      cases hy' with
+      | inl hres =>
+        obtain ⟨x, hx, hxy⟩ := ih.mp hres
+        refine ⟨x, List.mem_append_left [last] hx, hxy⟩
+      | inr hr =>
+        cases hr with
+        | inl hlast =>
+          have heq : y = last := List.mem_singleton.mp hlast
+          refine ⟨last, List.mem_append_right (Vec.toList xs)
+            (List.mem_singleton_self last), Or.inl heq⟩
+        | inr hg =>
+          refine ⟨last, List.mem_append_right (Vec.toList xs)
+            (List.mem_singleton_self last), Or.inr hg⟩
+    · intro h
+      obtain ⟨x, hx, hxy⟩ := h
+      cases List.mem_append.mp hx with
+      | inl hxs =>
+        have hres :
+            y ∈
+              (let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+                match vt with
+                | .nil => []
+                | .snoc n us z => res us ++ [z] ++ T.G z
+              res xs) :=
+          ih.mpr ⟨x, hxs, hxy⟩
+        exact List.mem_append_left (T.G last)
+          (List.mem_append_left [last] hres)
+      | inr hlast =>
+        have heq : x = last := List.mem_singleton.mp hlast
+        rw [heq] at hxy
+        cases hxy with
+        | inl hylast =>
+          exact List.mem_append_left (T.G last)
+            (List.mem_append_right
+              (let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+                match vt with
+                | .nil => []
+                | .snoc n us z => res us ++ [z] ++ T.G z
+              res xs)
+              (List.mem_singleton.mpr hylast))
+        | inr hyg =>
+          exact List.mem_append_right
+            ((let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+              match vt with
+              | .nil => []
+              | .snoc n us z => res us ++ [z] ++ T.G z
+            res xs) ++ [last]) hyg
+
+theorem T.mem_G_P {lam : Nat} (ls : Vec (T lam) lam) (add y : T lam) :
+    y ∈ T.G (T.P ls add) ↔
+      (∃ x, x ∈ Vec.toList ls ∧ (y = x ∨ y ∈ T.G x)) ∨
+      y ∈ T.G add := by
+  change
+    y ∈
+        ((let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+          match vt with
+          | .nil => []
+          | .snoc n xs last => res xs ++ [last] ++ T.G last
+        res ls) ++ T.G add) ↔
+      (∃ x, x ∈ Vec.toList ls ∧ (y = x ∨ y ∈ T.G x)) ∨
+        y ∈ T.G add
+  constructor
+  · intro hy
+    cases List.mem_append.mp hy with
+    | inl hres => exact Or.inl ((Vec.mem_Gres ls y).mp hres)
+    | inr hadd => exact Or.inr hadd
+  · intro hy
+    cases hy with
+    | inl hres =>
+      exact List.mem_append_left (T.G add)
+        ((Vec.mem_Gres ls y).mpr hres)
+    | inr hadd =>
+      exact List.mem_append_right
+        (let rec res {q : Nat} (vt : Vec (T lam) q) : List (T lam) :=
+          match vt with
+          | .nil => []
+          | .snoc n xs last => res xs ++ [last] ++ T.G last
+        res ls) hadd
+
 theorem T.isNFComp_Z {lam : Nat} : T.isNFComp (T.Z : T lam) := by
   constructor
   · exact T.isNF.z
