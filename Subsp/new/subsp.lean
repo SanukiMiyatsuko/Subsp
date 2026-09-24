@@ -477,24 +477,57 @@ theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
       exact T.P_lt_P_of_compareVec_lt
         u v (T.mul (T.P u T.Z) add) T.Z h
 
-theorem T.fund_lt_self {lam : Nat} :
-    ∀ (s t : T lam), s ≠ T.Z → T.fund s t < s
-  | .Z, t, hne =>
-      False.elim (hne rfl)
-  | .P ls add, t, hne => by
-      by_cases hadd : add = T.Z
-      · subst add
-        rw [T.fund]
-        rw [if_pos rfl]
-        cases hmin : T.domVecMinIdx ls with
-        | none =>
+theorem T.fund_lt_self {lam : Nat}
+    (s t : T lam) (hne : s ≠ T.Z) :
+    T.fund s t < s := by
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ a b : T lam, T.size a = n →
+        a ≠ T.Z → T.fund a b < a
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro a b hsize hanz
+      cases a with
+      | Z =>
+        exact False.elim (hanz rfl)
+      | P ls add =>
+        by_cases hadd : add = T.Z
+        · subst add
+          rw [T.fund]
+          rw [if_pos rfl]
+          cases hmin : T.domVecMinIdx ls with
+          | none =>
             rfl
-        | some md =>
-          cases md with
-          | mk m d =>
+          | some md =>
+            obtain ⟨m, d⟩ := md
             change
-              (if d = .one then _ else _) <
-                T.P ls T.Z
+              (if d = .one then
+                match m with
+                | ⟨0, _⟩ =>
+                  T.mul
+                    (T.P
+                      (ls.rplc m
+                        (T.fund ls[m] T.Z))
+                      T.Z)
+                    b
+                | ⟨m' + 1, h⟩ =>
+                  T.P
+                    ((ls.rplc m
+                      (T.fund ls[m] T.Z)).rplc
+                        ⟨m', Nat.lt_of_succ_lt h⟩ b)
+                    T.Z
+              else if d = .Omega then
+                T.P
+                  (ls.rplc m
+                    (T.fund ls[m]
+                      (T.iter
+                        (fun x => T.fund ls[m] x) b)))
+                  T.Z
+              else
+                T.P
+                  (ls.rplc m (T.fund ls[m] b))
+                  T.Z) < T.P ls T.Z
             have hspec :=
               T.domVecMinIdx_some_spec ls m d hmin
             have hmne : ls[m] ≠ T.Z := by
@@ -504,6 +537,10 @@ theorem T.fund_lt_self {lam : Nat} :
                 exact hspec.2.1
               rw [hmz] at hdom
               exact hspec.1 hdom.symm
+            have hmsize : T.size ls[m] < n := by
+              have hlt := T.idx_size_lt_P ls T.Z m
+              rw [hsize] at hlt
+              exact hlt
             by_cases hd1 : d = .one
             · rw [if_pos hd1]
               cases m with
@@ -513,8 +550,8 @@ theorem T.fund_lt_self {lam : Nat} :
                   have hrec :
                       T.fund ls[⟨0, mh⟩] T.Z <
                         ls[⟨0, mh⟩] :=
-                    T.fund_lt_self
-                      ls[⟨0, mh⟩] T.Z hmne
+                    ih (T.size ls[⟨0, mh⟩]) hmsize
+                      ls[⟨0, mh⟩] T.Z rfl hmne
                   have hrecIdx :
                       T.fund ls[⟨0, mh⟩] T.Z <
                         ls.idx ⟨0, mh⟩ := by
@@ -531,13 +568,14 @@ theorem T.fund_lt_self {lam : Nat} :
                   exact T.mul_PZ_lt_of_compareVec_lt
                     (ls.rplc ⟨0, mh⟩
                       (T.fund ls[⟨0, mh⟩] T.Z))
-                    ls t hvec
+                    ls b hvec
                 | succ m' =>
                   have hrec :
                       T.fund ls[⟨m' + 1, mh⟩] T.Z <
                         ls[⟨m' + 1, mh⟩] :=
-                    T.fund_lt_self
-                      ls[⟨m' + 1, mh⟩] T.Z hmne
+                    ih (T.size ls[⟨m' + 1, mh⟩])
+                      hmsize ls[⟨m' + 1, mh⟩]
+                      T.Z rfl hmne
                   have hrecIdx :
                       T.fund ls[⟨m' + 1, mh⟩] T.Z <
                         ls.idx ⟨m' + 1, mh⟩ := by
@@ -550,25 +588,26 @@ theorem T.fund_lt_self {lam : Nat} :
                       compareVec
                         ((ls.rplc ⟨m' + 1, mh⟩
                           (T.fund ls[⟨m' + 1, mh⟩] T.Z)).rplc
-                          j t)
+                            j b)
                         ls = Ordering.lt :=
                     Vec.compare_rplc_rplc_lt
                       ls ⟨m' + 1, mh⟩ j
                       (T.fund ls[⟨m' + 1, mh⟩] T.Z)
-                      t (Nat.lt_succ_self m') hrecIdx
+                      b (Nat.lt_succ_self m') hrecIdx
                   exact T.P_lt_P_of_compareVec_lt
                     ((ls.rplc ⟨m' + 1, mh⟩
                       (T.fund ls[⟨m' + 1, mh⟩] T.Z)).rplc
-                      j t)
+                        j b)
                     ls T.Z T.Z hvec
             · rw [if_neg hd1]
               by_cases hdO : d = .Omega
               · rw [if_pos hdO]
                 let arg :=
-                  T.iter (fun x => T.fund ls[m] x) t
+                  T.iter (fun x => T.fund ls[m] x) b
                 have hrec :
                     T.fund ls[m] arg < ls[m] :=
-                  T.fund_lt_self ls[m] arg hmne
+                  ih (T.size ls[m]) hmsize
+                    ls[m] arg rfl hmne
                 have hrecIdx :
                     T.fund ls[m] arg < ls.idx m := by
                   rw [← Vec.getElem_eq_idx ls m]
@@ -584,38 +623,38 @@ theorem T.fund_lt_self {lam : Nat} :
                   ls T.Z T.Z hvec
               · rw [if_neg hdO]
                 have hrec :
-                    T.fund ls[m] t < ls[m] :=
-                  T.fund_lt_self ls[m] t hmne
+                    T.fund ls[m] b < ls[m] :=
+                  ih (T.size ls[m]) hmsize
+                    ls[m] b rfl hmne
                 have hrecIdx :
-                    T.fund ls[m] t < ls.idx m := by
+                    T.fund ls[m] b < ls.idx m := by
                   rw [← Vec.getElem_eq_idx ls m]
                   exact hrec
                 have hvec :
                     compareVec
-                      (ls.rplc m (T.fund ls[m] t))
+                      (ls.rplc m (T.fund ls[m] b))
                       ls = Ordering.lt :=
                   Vec.compare_rplc_lt ls m
-                    (T.fund ls[m] t) hrecIdx
+                    (T.fund ls[m] b) hrecIdx
                 exact T.P_lt_P_of_compareVec_lt
-                  (ls.rplc m (T.fund ls[m] t))
+                  (ls.rplc m (T.fund ls[m] b))
                   ls T.Z T.Z hvec
-      · rw [T.fund]
-        rw [if_neg hadd]
-        have hrec : T.fund add t < add :=
-          T.fund_lt_self add t hadd
-        change
-          (match compareVec ls ls with
-          | Ordering.eq =>
-              compareT (T.fund add t) add
-          | ord => ord) = Ordering.lt
-        rw [Vec_refl ls]
-        exact hrec
-termination_by s t _ => T.size s
-decreasing_by
-  all_goals
-    first
-    | exact T.idx_size_lt_P ls T.Z m
-    | exact T.add_size_lt_P ls add
+        · rw [T.fund]
+          rw [if_neg hadd]
+          have haddsize : T.size add < n := by
+            have hlt := T.add_size_lt_P ls add
+            rw [hsize] at hlt
+            exact hlt
+          have hrec : T.fund add b < add :=
+            ih (T.size add) haddsize add b rfl hadd
+          change
+            (match compareVec ls ls with
+            | Ordering.eq =>
+                compareT (T.fund add b) add
+            | ord => ord) = Ordering.lt
+          rw [Vec_refl ls]
+          exact hrec)
+  exact main (T.size s) s t rfl hne
 
 theorem T.head_mono {lam : Nat}
     (a b : T lam) (h : a < b) :
@@ -756,13 +795,7 @@ theorem Vec.Gres_cases {lam m : Nat}
         | inl hxs =>
           obtain ⟨i, hcase⟩ := ih hxs
           refine ⟨i.castSucc, ?_⟩
-          have hidx :
-              (Vec.snoc k xs last).idx i.castSucc = xs.idx i := by
-            show
-              (if h : i.val < k then
-                Vec.idx xs ⟨i.val, h⟩ else last) = xs.idx i
-            rw [dite_eq_left i.isLt]
-          rw [hidx]
+          change y = xs.idx i ∨ y ∈ T.G (xs.idx i)
           exact hcase
         | inr hlast =>
           have hylast : y = last := List.mem_singleton.mp hlast
