@@ -1605,6 +1605,67 @@ theorem T.isNF_G_isNFComp {lam : Nat} (s : T lam)
     | inr hxG =>
       exact ih1 x hxG
 
+theorem T.G_mul_PZ_subset {lam : Nat}
+    (ls : Vec (T lam) lam) :
+    ∀ (t x : T lam),
+      x ∈ T.G (T.mul (T.P ls T.Z) t) →
+        x ∈ T.G (T.P ls T.Z) := by
+  intro t
+  induction t with
+  | Z =>
+    intro x hx
+    rw [T.mul, T.G] at hx
+    exact False.elim (List.not_mem_nil x hx)
+  | P tls add ih =>
+    intro x hx
+    rw [T.mul, T.oplus] at hx
+    cases (T.mem_G_P ls (T.mul (T.P ls T.Z) add) x).mp hx with
+    | inl hvec =>
+      apply (T.mem_G_P ls T.Z x).mpr
+      exact Or.inl hvec
+    | inr htail =>
+      exact ih x htail
+
+theorem T.zero_domination_mul_PZ {lam : Nat}
+    (u v : Vec (T lam) lam) (t : T lam)
+    (hvec : compareVec u v = Ordering.lt)
+    (hbase :
+      T.P u T.Z < T.P v T.Z ∧
+        ∀ c : T lam,
+          T.P u T.Z ≤ c → c ≤ T.P v T.Z →
+          ∀ x ∈ T.G (T.P u T.Z),
+            ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y) :
+    T.mul (T.P u T.Z) t < T.P v T.Z ∧
+      ∀ c : T lam,
+        T.mul (T.P u T.Z) t ≤ c →
+        c ≤ T.P v T.Z →
+        ∀ x ∈ T.G (T.mul (T.P u T.Z) t),
+          ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y := by
+  constructor
+  · exact T.mul_PZ_lt_of_compareVec_lt u v t hvec
+  · intro c hmc hcv x hx
+    cases t with
+    | Z =>
+      rw [T.mul, T.G] at hx
+      exact False.elim (List.not_mem_nil x hx)
+    | P tls add =>
+      have hbaseMul :
+          T.P u T.Z ≤
+            T.mul (T.P u T.Z) (T.P tls add) := by
+        rw [T.mul, T.oplus]
+        exact T.P_le_P_same u T.Z
+          (T.mul (T.P u T.Z) add)
+          (T.Z_le (T.mul (T.P u T.Z) add))
+      have hbaseC : T.P u T.Z ≤ c :=
+        partial_order.trans
+          (T.P u T.Z)
+          (T.mul (T.P u T.Z) (T.P tls add))
+          c hbaseMul hmc
+      have hxbase :
+          x ∈ T.G (T.P u T.Z) :=
+        T.G_mul_PZ_subset u (T.P tls add) x hx
+      exact hbase.2 c hbaseC hcv x hxbase
+
 theorem T.zero_domination_rplc_min {lam : Nat}
     (ls : Vec (T lam) lam) (m : Fin lam) (d : Dom)
     (b : T lam)
