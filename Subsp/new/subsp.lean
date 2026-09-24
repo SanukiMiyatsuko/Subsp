@@ -342,7 +342,6 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat}
                     Vec.idx xs ⟨i.val, h⟩ else x) =
                     Vec.idx xs i'
                 rw [dite_eq_left hiklt]
-                rfl
               have hw :
                   (Vec.snoc k ys y).idx i = ys.idx i' := by
                 show
@@ -350,7 +349,6 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat}
                     Vec.idx ys ⟨i.val, h⟩ else y) =
                     Vec.idx ys i'
                 rw [dite_eq_left hiklt]
-                rfl
               rw [hv, hw] at hlt
               exact hlt
             have heq' :
@@ -365,7 +363,6 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat}
                     Vec.idx xs ⟨j.val, h⟩ else x) =
                     Vec.idx xs j
                 rw [dite_eq_left j.isLt]
-                rfl
               have hw :
                   (Vec.snoc k ys y).idx j.castSucc =
                     ys.idx j := by
@@ -374,7 +371,6 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat}
                     Vec.idx ys ⟨j.val, h⟩ else y) =
                     Vec.idx ys j
                 rw [dite_eq_left j.isLt]
-                rfl
               have hh := heq j.castSucc hj
               rw [hv, hw] at hh
               exact hh
