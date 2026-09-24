@@ -468,52 +468,6 @@ theorem T.fund_PZ_none {lam : Nat}
     T.fund (T.P ls T.Z) t = T.Z := by
   rw [T.fund, if_pos rfl, hmin]
 
-theorem T.fund_PZ_some {lam : Nat}
-    (ls : Vec (T lam) lam) (t : T lam)
-    (m : Fin lam) (d : Dom)
-    (hmin : T.domVecMinIdx ls = some (m, d)) :
-    T.fund (T.P ls T.Z) t =
-      if d = .one then
-        match m with
-        | ⟨0, _⟩ =>
-          T.mul
-            (T.P
-              (ls.rplc m
-                (T.fund ls[m] T.Z))
-              T.Z)
-            t
-        | ⟨m' + 1, h⟩ =>
-          T.P
-            ((ls.rplc m
-              (T.fund ls[m] T.Z)).rplc
-                ⟨m', Nat.lt_of_succ_lt h⟩ t)
-            T.Z
-      else if d = .Omega then
-        T.P
-          (ls.rplc m
-            (T.fund ls[m]
-              (T.iter
-                (fun x => T.fund ls[m] x) t)))
-          T.Z
-      else
-        T.P
-          (ls.rplc m
-            (T.fund ls[m] t))
-          T.Z := by
-  cases m with
-  | mk mv mh =>
-    cases mv with
-    | zero =>
-      conv =>
-        lhs
-        rw [T.fund, if_pos rfl]
-        rw [hmin]
-    | succ m' =>
-      conv =>
-        lhs
-        rw [T.fund, if_pos rfl]
-        rw [hmin]
-
 theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
     (u v : Vec (T lam) lam) (t : T lam)
     (h : compareVec u v = Ordering.lt) :
@@ -552,7 +506,6 @@ theorem T.fund_lt_self {lam : Nat}
             rfl
           | some md =>
             obtain ⟨m, d⟩ := md
-            rw [T.fund_PZ_some ls b m d hmin]
             have hspec :=
               T.domVecMinIdx_some_spec ls m d hmin
             have hmne : ls.idx m ≠ T.Z := by
@@ -569,12 +522,17 @@ theorem T.fund_lt_self {lam : Nat}
               rw [hsize] at hlt
               exact hlt
             by_cases hd1 : d = .one
-            · rw [if_pos hd1]
-              cases m with
+            · cases m with
               | mk mv mh =>
                 cases mv with
                 | zero =>
                   let mi : Fin lam := ⟨0, mh⟩
+                  conv =>
+                    lhs
+                    rw [T.fund, if_pos rfl]
+                    rw [hmin]
+                    change (if d = .one then _ else _)
+                    rw [if_pos hd1]
                   change
                     T.mul
                       (T.P
@@ -602,6 +560,12 @@ theorem T.fund_lt_self {lam : Nat}
                   let mi : Fin lam := ⟨m' + 1, mh⟩
                   let j : Fin lam :=
                     ⟨m', Nat.lt_of_succ_lt mh⟩
+                  conv =>
+                    lhs
+                    rw [T.fund, if_pos rfl]
+                    rw [hmin]
+                    change (if d = .one then _ else _)
+                    rw [if_pos hd1]
                   change
                     T.P
                       ((ls.rplc mi
@@ -628,10 +592,8 @@ theorem T.fund_lt_self {lam : Nat}
                       (T.fund (ls.idx mi) T.Z)).rplc
                         j b)
                     ls T.Z T.Z hvec
-            · rw [if_neg hd1]
-              by_cases hdO : d = .Omega
-              · rw [if_pos hdO]
-                let arg :=
+            · by_cases hdO : d = .Omega
+              · let arg :=
                   T.iter
                     (fun x =>
                       T.fund (ls.idx m) x) b
@@ -656,7 +618,14 @@ theorem T.fund_lt_self {lam : Nat}
                   (ls.rplc m
                     (T.fund (ls.idx m) arg))
                   ls T.Z T.Z hvec
-              · rw [if_neg hdO]
+              · conv =>
+                  lhs
+                  rw [T.fund, if_pos rfl]
+                  rw [hmin]
+                  change (if d = .one then _ else _)
+                  rw [if_neg hd1]
+                  change (if d = .Omega then _ else _)
+                  rw [if_neg hdO]
                 change
                   T.P
                     (ls.rplc m
