@@ -1800,6 +1800,90 @@ theorem T.zero_domination_rplc_min {lam : Nat}
                 exact List.mem_append_right
                   (T.G (T.P vs add)) hZ
 
+theorem T.NFComp_of_domination_support {lam : Nat}
+    (a b : T lam) (support : List (T lam))
+    (hb : T.isNF b) (ha : T.isNFComp a)
+    (hdom :
+      b < a ∧
+        ∀ c : T lam, b ≤ c → c ≤ a →
+          ∀ x ∈ T.G b,
+            ∃ y : T lam, y ∈ T.G c ++ support ∧ x ≤ y)
+    (hsupport : ∀ y ∈ support, y < b) :
+    T.isNFComp b := by
+  constructor
+  · exact hb
+  · intro x hx
+    have hba : b ≤ a := Or.inl hdom.1
+    obtain ⟨w, hw, hxw⟩ :=
+      hdom.2 a hba (partial_order.refl a) x hx
+    have hwa : w < a := by
+      cases List.mem_append.mp hw with
+      | inl hGa => exact ha.2 w hGa
+      | inr hs =>
+        exact strict_partial_order.trans w b a
+          (hsupport w hs) hdom.1
+    have hxa : x < a :=
+      lt_of_le_of_lt_thm T x w a hxw hwa
+    by_cases hxb : x < b
+    · exact hxb
+    · have hbx : b ≤ x := by
+        cases linear_order.total b x with
+        | inl h => exact h
+        | inr h =>
+          cases h with
+          | inl hlt => exact False.elim (hxb hlt)
+          | inr heq => exact Or.inr heq.symm
+      obtain ⟨v, hv, hxv⟩ :=
+        hdom.2 x hbx (Or.inl hxa) x hx
+      have hvx : v < x := by
+        cases List.mem_append.mp hv with
+        | inl hGx =>
+          have hxc :=
+            T.isNF_G_isNFComp b hb x hx
+          exact hxc.2 v hGx
+        | inr hs =>
+          exact lt_of_lt_of_le_thm T v b x
+            (hsupport v hs) hbx
+      have hxx : x < x :=
+        lt_of_le_of_lt_thm T x v x hxv hvx
+      exact False.elim (strict_partial_order.irrefl x hxx)
+
+theorem T.domination_support_tail {lam : Nat}
+    (ls : Vec (T lam) lam) (a b : T lam)
+    (support : List (T lam))
+    (hdom :
+      b < a ∧
+        ∀ c : T lam, b ≤ c → c ≤ a →
+          ∀ x ∈ T.G b,
+            ∃ y : T lam, y ∈ T.G c ++ support ∧ x ≤ y) :
+    T.P ls b < T.P ls a ∧
+      ∀ c : T lam, T.P ls b ≤ c → c ≤ T.P ls a →
+        ∀ x ∈ T.G (T.P ls b),
+          ∃ y : T lam, y ∈ T.G c ++ support ∧ x ≤ y := by
+  constructor
+  · exact T.P_tail_lt ls b a hdom.1
+  · intro c hbc hca x hx
+    obtain ⟨d, hceq, hbd, hda⟩ :=
+      T.between_same_vector ls b a c hbc hca
+    rw [hceq]
+    cases (T.mem_G_P ls b x).mp hx with
+    | inl hvec =>
+      refine ⟨x, ?_, partial_order.refl x⟩
+      apply List.mem_append_left support
+      apply (T.mem_G_P ls d x).mpr
+      exact Or.inl hvec
+    | inr htail =>
+      obtain ⟨y, hy, hxy⟩ :=
+        hdom.2 d hbd hda x htail
+      refine ⟨y, ?_, hxy⟩
+      cases List.mem_append.mp hy with
+      | inl hGd =>
+        apply List.mem_append_left support
+        apply (T.mem_G_P ls d y).mpr
+        exact Or.inr hGd
+      | inr hs =>
+        exact List.mem_append_right (T.G (T.P ls d)) hs
+
 theorem T.zero_domination_tail {lam : Nat}
     (ls : Vec (T lam) lam) (a b : T lam)
     (hdom :
