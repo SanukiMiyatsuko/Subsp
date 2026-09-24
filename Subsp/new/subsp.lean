@@ -500,23 +500,11 @@ theorem T.fund_PZ_some {lam : Nat}
           (ls.rplc m
             (T.fund (ls.idx m) t))
           T.Z := by
-  rw [T.fund, if_pos rfl]
-  cases hrec : T.domVecMinIdx ls with
-  | none =>
-      have hbad :
-          (none : Option (Fin lam × Dom)) =
-            some (m, d) :=
-        hrec.symm.trans hmin
-      cases hbad
-  | some p =>
-      cases p with
-      | mk i e =>
-        have hsome :
-            some (i, e) = some (m, d) :=
-          hrec.symm.trans hmin
-        injection hsome with hp
-        cases hp
-        rfl
+  conv =>
+    lhs
+    rw [T.fund, if_pos rfl]
+    rw [hmin]
+  rw [Vec.getElem_eq_idx]
 
 theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
     (u v : Vec (T lam) lam) (t : T lam)
