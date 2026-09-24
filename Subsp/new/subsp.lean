@@ -500,7 +500,6 @@ theorem T.fund_lt_self {lam : Nat}
             rw [hmin]
           | some md =>
             obtain ⟨m, d⟩ := md
-            rw [hmin]
             have hspec :=
               T.domVecMinIdx_some_spec ls m d hmin
             have hmne : ls[m] ≠ T.Z := by
@@ -514,8 +513,10 @@ theorem T.fund_lt_self {lam : Nat}
               have hlt := T.idx_size_lt_P ls T.Z m
               rw [hsize] at hlt
               exact hlt
-            by_cases hd1 : d = .one
-            · rw [if_pos hd1]
+            cases d with
+            | zero =>
+              exact False.elim (hspec.1 rfl)
+            | one =>
               cases m with
               | mk mv mh =>
                 cases mv with
@@ -572,46 +573,44 @@ theorem T.fund_lt_self {lam : Nat}
                       (T.fund ls[⟨m' + 1, mh⟩] T.Z)).rplc
                         j b)
                     ls T.Z T.Z hvec
-            · rw [if_neg hd1]
-              by_cases hdO : d = .Omega
-              · rw [if_pos hdO]
-                let arg :=
-                  T.iter (fun x => T.fund ls[m] x) b
-                have hrec :
-                    T.fund ls[m] arg < ls[m] :=
-                  ih (T.size ls[m]) hmsize
-                    ls[m] arg rfl hmne
-                have hrecIdx :
-                    T.fund ls[m] arg < ls.idx m := by
-                  rw [← Vec.getElem_eq_idx ls m]
-                  exact hrec
-                have hvec :
-                    compareVec
-                      (ls.rplc m (T.fund ls[m] arg))
-                      ls = Ordering.lt :=
-                  Vec.compare_rplc_lt ls m
-                    (T.fund ls[m] arg) hrecIdx
-                exact T.P_lt_P_of_compareVec_lt
-                  (ls.rplc m (T.fund ls[m] arg))
-                  ls T.Z T.Z hvec
-              · rw [if_neg hdO]
-                have hrec :
-                    T.fund ls[m] b < ls[m] :=
-                  ih (T.size ls[m]) hmsize
-                    ls[m] b rfl hmne
-                have hrecIdx :
-                    T.fund ls[m] b < ls.idx m := by
-                  rw [← Vec.getElem_eq_idx ls m]
-                  exact hrec
-                have hvec :
-                    compareVec
-                      (ls.rplc m (T.fund ls[m] b))
-                      ls = Ordering.lt :=
-                  Vec.compare_rplc_lt ls m
-                    (T.fund ls[m] b) hrecIdx
-                exact T.P_lt_P_of_compareVec_lt
-                  (ls.rplc m (T.fund ls[m] b))
-                  ls T.Z T.Z hvec
+            | omega =>
+              have hrec :
+                  T.fund ls[m] b < ls[m] :=
+                ih (T.size ls[m]) hmsize
+                  ls[m] b rfl hmne
+              have hrecIdx :
+                  T.fund ls[m] b < ls.idx m := by
+                rw [← Vec.getElem_eq_idx ls m]
+                exact hrec
+              have hvec :
+                  compareVec
+                    (ls.rplc m (T.fund ls[m] b))
+                    ls = Ordering.lt :=
+                Vec.compare_rplc_lt ls m
+                  (T.fund ls[m] b) hrecIdx
+              exact T.P_lt_P_of_compareVec_lt
+                (ls.rplc m (T.fund ls[m] b))
+                ls T.Z T.Z hvec
+            | Omega =>
+              let arg :=
+                T.iter (fun x => T.fund ls[m] x) b
+              have hrec :
+                  T.fund ls[m] arg < ls[m] :=
+                ih (T.size ls[m]) hmsize
+                  ls[m] arg rfl hmne
+              have hrecIdx :
+                  T.fund ls[m] arg < ls.idx m := by
+                rw [← Vec.getElem_eq_idx ls m]
+                exact hrec
+              have hvec :
+                  compareVec
+                    (ls.rplc m (T.fund ls[m] arg))
+                    ls = Ordering.lt :=
+                Vec.compare_rplc_lt ls m
+                  (T.fund ls[m] arg) hrecIdx
+              exact T.P_lt_P_of_compareVec_lt
+                (ls.rplc m (T.fund ls[m] arg))
+                ls T.Z T.Z hvec
         · rw [T.fund]
           rw [if_neg hadd]
           have haddsize : T.size add < n := by
