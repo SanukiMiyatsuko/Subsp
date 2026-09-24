@@ -144,6 +144,102 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam) (h : T.dom s = .zero) : s = T.Z 
   | P ls add =>
     exact False.elim ((T.dom_ne_zero_of_P ls add) h)
 
+
+theorem T.domVecMinIdx_none_all_zero {lam m : Nat} (v : Vec (T lam) m)
+    (h : T.domVecMinIdx v = none) :
+    ∀ i : Fin m, T.dom (v.idx i) = .zero := by
+  induction v with
+  | nil =>
+    intro i
+    exact i.elim0
+  | snoc k xs x ih =>
+    intro i
+    rw [T.domVecMinIdx] at h
+    cases hrec : T.domVecMinIdx xs with
+    | some md =>
+      rw [hrec] at h
+      cases h
+    | none =>
+      rw [hrec] at h
+      by_cases hdx : T.dom x = .zero
+      · rw [if_pos hdx] at h
+        by_cases hi : i.val < k
+        · show T.dom (if hlt : i.val < k then Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
+          rw [dite_eq_left hi]
+          exact ih hrec ⟨i.val, hi⟩
+        · show T.dom (if hlt : i.val < k then Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
+          rw [dite_eq_right hi]
+          exact hdx
+      · rw [if_neg hdx] at h
+        cases h
+
+theorem T.domVecMinIdx_some_spec {lam m : Nat} (v : Vec (T lam) m)
+    (i : Fin m) (d : Dom) (h : T.domVecMinIdx v = some (i, d)) :
+    T.dom (v.idx i) = d ∧
+      ∀ j : Fin m, j.val < i.val → T.dom (v.idx j) = .zero := by
+  induction v with
+  | nil =>
+    exact i.elim0
+  | snoc k xs x ih =>
+    rw [T.domVecMinIdx] at h
+    cases hrec : T.domVecMinIdx xs with
+    | some md =>
+      cases md with
+      | mk i' d' =>
+        rw [hrec] at h
+        cases h
+        have hspec := ih i' d' hrec
+        constructor
+        · show T.dom
+            (if hlt : i'.val < k then Vec.idx xs ⟨i'.val, hlt⟩ else x) = d'
+          have hlt : i'.val < k := i'.isLt
+          rw [dite_eq_left hlt]
+          have heq : (⟨i'.val, hlt⟩ : Fin k) = i' := Fin.eq_of_val_eq rfl
+          rw [heq]
+          exact hspec.1
+        · intro j hj
+          have hjk : j.val < k := Nat.lt_of_lt_of_le hj (Nat.le_of_lt_succ i'.isLt)
+          show T.dom
+              (if hlt : j.val < k then Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
+          rw [dite_eq_left hjk]
+          exact hspec.2 ⟨j.val, hjk⟩ hj
+    | none =>
+      rw [hrec] at h
+      by_cases hdx : T.dom x = .zero
+      · rw [if_pos hdx] at h
+        cases h
+      · rw [if_neg hdx] at h
+        cases h
+        constructor
+        · show T.dom
+            (if hlt : k < k then Vec.idx xs ⟨k, hlt⟩ else x) = T.dom x
+          rw [dite_eq_right (Nat.lt_irrefl k)]
+        · intro j hj
+          have hjk : j.val < k := hj
+          show T.dom
+              (if hlt : j.val < k then Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
+          rw [dite_eq_left hjk]
+          exact T.domVecMinIdx_none_all_zero xs hrec ⟨j.val, hjk⟩
+
+theorem T.domVecMinIdx_some_ne_zero {lam m : Nat} (v : Vec (T lam) m)
+    (i : Fin m) (d : Dom) (h : T.domVecMinIdx v = some (i, d)) :
+    d ≠ .zero := by
+  intro hd
+  have hspec := T.domVecMinIdx_some_spec v i d h
+  have hzi : T.dom (v.idx i) = .zero := hd ▸ hspec.1
+  have heq : v.idx i = T.Z := T.dom_zero_eq_Z (v.idx i) hzi
+  rw [heq] at hspec
+  have hdz : T.dom T.Z = .zero := rfl
+  exact (by
+    cases d with
+    | zero => exact False.elim (by
+        have := hspec.1
+        rw [hdz] at this
+        exact False.elim (by cases this))
+    | one => cases hd
+    | omega => cases hd
+    | Omega => cases hd)
+
 theorem Vec.rplc_idx_same {A : Type} {n : Nat} (v : Vec A n) (i : Fin n) (a : A) :
     (v.rplc i a).idx i = a := by
   unfold Vec.rplc
