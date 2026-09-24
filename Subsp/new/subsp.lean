@@ -183,6 +183,55 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
   rw [h] at hs
   exact hs
 
+theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
+    (hdom : T.dom s = .zero) : s = T.Z := by
+  cases s with
+  | Z =>
+      rfl
+  | P ls add =>
+      by_cases hadd : add = T.Z
+      · subst add
+        rw [T.dom, if_pos rfl] at hdom
+        cases hmin : T.domVecMinIdx ls with
+        | none =>
+            rw [hmin] at hdom
+            cases hdom
+        | some p =>
+            obtain ⟨i, d⟩ := p
+            rw [hmin] at hdom
+            by_cases hd1 : d = .one
+            · rw [if_pos hd1] at hdom
+              by_cases hi : i.val = 0
+              · rw [if_pos hi] at hdom
+                cases hdom
+              · rw [if_neg hi] at hdom
+                cases hdom
+            · rw [if_neg hd1] at hdom
+              cases hdom
+      · rw [T.dom, if_neg hadd] at hdom
+        have heq : add = T.Z :=
+          T.dom_zero_eq_Z add hdom
+        exact False.elim (hadd heq)
+termination_by T.size s
+decreasing_by
+  exact T.add_size_lt_P ls add
+
+theorem Vec.rplc_idx_same {A : Type} {n : Nat}
+    (v : Vec A n) (i : Fin n) (a : A) :
+    (v.rplc i a).idx i = a := by
+  unfold Vec.rplc
+  rw [Vec.ofFn_idx]
+  rw [if_pos rfl]
+
+theorem Vec.rplc_idx_of_ne {A : Type} {n : Nat}
+    (v : Vec A n) (i j : Fin n) (a : A)
+    (h : j.val ≠ i.val) :
+    (v.rplc i a).idx j = v.idx j := by
+  unfold Vec.rplc
+  rw [Vec.ofFn_idx]
+  rw [if_neg h]
+  rfl
+
 def T.fund {lam : Nat} (s t : T lam) : T lam :=
   match s with
   | Z => Z
