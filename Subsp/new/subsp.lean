@@ -1615,6 +1615,7 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
               exact Vec.rplc_idx_of_ne
                 ls m j a (Nat.ne_of_gt hmj)
             rw [hr]
+            rw [hr]
             exact
               T.term_lt_P_of_self_at
                 a ls (ls.rplc m a) m
