@@ -142,9 +142,9 @@ def T.LF {lam : Nat} : Nat → T lam
   | lam' + 1 =>
     P (Vec.ofFn (lam' + 1) (fun i => if i = lam' then LF n else Z)) Z
 
-inductive T.isOT {lam : Nat} : T lam → Prop where
-| base (n : Nat) : isOT (LF n)
-| step (s : T lam) (hs : isOT s) (n : Nat) : isOT (fund s (ofNat n))
+inductive T.isOT (lam : Nat) : T lam → Prop where
+| base (n : Nat) : isOT lam (LF n)
+| step (s : T lam) (hs : isOT lam s) (n : Nat) : isOT lam (fund s (ofNat n))
 
 def T.G {lam : Nat} (s : T lam) : List (T lam) :=
   match s with
@@ -162,5 +162,7 @@ inductive T.isNF {lam : Nat} : T lam → Prop where
   (h0 : ∀ x ∈ Vec.toList ls, isNF x) (h1 : isNF add)
   (h2 : ∀ x ∈ Vec.toList ls, ∀ y ∈ G x, y < x)
   (h3 : head add ≤ P ls Z) : isNF (P ls add)
+
+instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) := sorry
 
 end new
