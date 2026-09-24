@@ -3456,7 +3456,46 @@ theorem T.fund_iter_NFComp {lam : Nat} (s t : T lam)
     (hd : T.dom s = .Omega) :
     T.isNFComp
       (T.fund s (T.iter (fun x => T.fund s x) t)) := by
-  sorry
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ u : T lam, T.size u = n →
+        T.isNFComp
+          (T.fund s
+            (T.iter (fun x => T.fund s x) u))
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro u hn
+      have harg :
+          T.isNFComp
+            (T.iter (fun x => T.fund s x) u) := by
+        cases u with
+        | Z =>
+          rw [T.iter]
+          exact T.isNFComp_Z
+        | P us add =>
+          have hsz : T.size add < n := by
+            rw [← hn]
+            exact T.add_size_lt_P us add
+          have hrec :=
+            ih (T.size add) hsz add rfl
+          rw [T.iter]
+          exact hrec
+      obtain ⟨hnf, hsd⟩ :=
+        T.fund_Omega_master s
+          (T.iter (fun x => T.fund s x) u)
+          hs.1 hd harg
+      have hlt :
+          T.iter (fun x => T.fund s x) u <
+            T.fund s
+              (T.iter (fun x => T.fund s x) u) :=
+        T.iter_fund_lt_next s u hd
+      exact T.NFComp_of_SDom
+        (T.iter (fun x => T.fund s x) u)
+        (T.fund s
+          (T.iter (fun x => T.fund s x) u))
+        s hnf hs harg hsd hlt)
+  exact main (T.size t) t rfl
 
 theorem T.fund_NF_closed {lam : Nat} (s t : T lam)
     (hs : T.isNF s)
