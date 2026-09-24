@@ -572,7 +572,7 @@ theorem Vec.compare_lt_preserve_from_index {lam m : Nat}
             (match compareT aLast wLast with
             | Ordering.eq => compareVec as ws
             | ord => ord) = Ordering.lt
-          show
+          change
             (match compareT aLast vLast with
             | Ordering.eq => compareVec as vs
             | ord => ord) = Ordering.lt at hlt
@@ -672,7 +672,7 @@ theorem Vec.compare_lt_after_pivot_update {lam m : Nat}
             (match compareT aLast nLast with
             | Ordering.eq => compareVec as ns
             | ord => ord) = Ordering.lt
-          show
+          change
             (match compareT aLast oLast with
             | Ordering.eq => compareVec as os
             | ord => ord) = Ordering.lt at hold
