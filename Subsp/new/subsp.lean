@@ -1787,6 +1787,289 @@ theorem T.mul_PZ_NFComp_closed {lam : Nat}
             (T.P ls (T.mul (T.P ls T.Z) add))
             hyu hu
 
+
+def T.GZ {lam : Nat} (z : T lam) : List (T lam) :=
+  [z] ++ T.G z ++ [T.Z]
+
+def T.listLe {lam : Nat} (xs ys : List (T lam)) : Prop :=
+  ∀ x, x ∈ xs → ∃ y, y ∈ ys ∧ x ≤ y
+
+def T.SDom {lam : Nat} (z b a : T lam) : Prop :=
+  b < a ∧
+    ∀ c, b ≤ c → c ≤ a →
+      T.listLe (T.G b) (T.G c ++ T.GZ z)
+
+theorem T.G_trans {lam : Nat} :
+    ∀ a x y : T lam, x ∈ T.G a → y ∈ T.G x → y ∈ T.G a := by
+  intro a
+  have main :
+      ∀ n : Nat, ∀ s x y : T lam, T.size s = n →
+        x ∈ T.G s → y ∈ T.G x → y ∈ T.G s := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | h n ih =>
+      intro s x y hsize hx hy
+      cases s with
+      | Z =>
+        rw [T.G] at hx
+        exact False.elim (List.not_mem_nil x hx)
+      | P ls add =>
+        cases (T.mem_G_P ls add x).mp hx with
+        | inl hv =>
+          obtain ⟨u, hu, hxu⟩ := hv
+          cases hxu with
+          | inl hxu =>
+            rw [hxu] at hy
+            apply (T.mem_G_P ls add y).mpr
+            exact Or.inl ⟨u, hu, Or.inr hy⟩
+          | inr hG =>
+            obtain ⟨i, hi⟩ := (Vec.mem_toList_iff_idx ls u).mp hu
+            have husize : T.size u < T.size (T.P ls add) := by
+              have h1 : T.size u < Vec.size ls := by
+                rw [← hi]
+                exact Vec.idx_size_lt ls i
+              have h2 : Vec.size ls < T.size (T.P ls add) := by
+                show Vec.size ls < 1 + Vec.size ls + T.size add
+                have hle : Vec.size ls ≤ Vec.size ls + T.size add :=
+                  Nat.le_add_right _ _
+                have hlt :
+                    Vec.size ls + T.size add <
+                      1 + (Vec.size ls + T.size add) :=
+                  Nat.lt_add_of_pos_left Nat.zero_lt_one
+                have heq :
+                    1 + (Vec.size ls + T.size add) =
+                      1 + Vec.size ls + T.size add :=
+                  (Nat.add_assoc 1 (Vec.size ls) (T.size add)).symm
+                calc
+                  Vec.size ls ≤ Vec.size ls + T.size add := hle
+                  _ < 1 + (Vec.size ls + T.size add) := hlt
+                  _ = 1 + Vec.size ls + T.size add := heq
+              exact Nat.lt_trans h1 h2
+            have hun : T.size u < n := by
+              rw [hsize] at husize
+              exact husize
+            have hyr : y ∈ T.G u :=
+              ih (T.size u) hun u x y rfl hG hy
+            apply (T.mem_G_P ls add y).mpr
+            exact Or.inl ⟨u, hu, Or.inr hyr⟩
+        | inr hGa =>
+          have hasize : T.size add < n := by
+            have hlt := T.add_size_lt_P ls add
+            rw [hsize] at hlt
+            exact hlt
+          have hyr : y ∈ T.G add :=
+            ih (T.size add) hasize add x y rfl hGa hy
+          apply (T.mem_G_P ls add y).mpr
+          exact Or.inr hyr
+  exact fun a x y hx hy => main (T.size a) a x y rfl hx hy
+
+theorem T.exists_G_not_lt {lam : Nat} (s b : T lam)
+    (h : ¬ (∀ x ∈ T.G s, x < b)) :
+    ∃ x, x ∈ T.G s ∧ ¬ x < b := by
+  have main :
+      ∀ l : List (T lam),
+        ¬ (∀ x ∈ l, x < b) →
+        ∃ x, x ∈ l ∧ ¬ x < b := by
+    intro l
+    induction l with
+    | nil =>
+      intro hn
+      exact False.elim (hn (fun x hx =>
+        False.elim (List.not_mem_nil x hx)))
+    | cons a as ih =>
+      intro hn
+      by_cases ha : a < b
+      · have htail : ¬ (∀ x ∈ as, x < b) := by
+          intro hall
+          apply hn
+          intro x hx
+          cases List.mem_cons.mp hx with
+          | inl heq =>
+            rw [← heq]
+            exact ha
+          | inr hmem =>
+            exact hall x hmem
+        obtain ⟨x, hx, hnx⟩ := ih htail
+        exact ⟨x, List.mem_cons_of_mem a hx, hnx⟩
+      · exact ⟨a, List.mem_cons_self, ha⟩
+  exact main (T.G s) h
+
+theorem T.find_violating_source {lam : Nat} (b c₀ w : T lam)
+    (hw : w ∈ T.G c₀) (hbw : b ≤ w) :
+    ∃ c, c ∈ T.G c₀ ∧ b ≤ c ∧
+      ∀ x ∈ T.G c, x < b := by
+  generalize hn : T.size w = n
+  induction n using Nat.strong_induction_on generalizing w with
+  | h n ih =>
+    by_cases hbound : ∀ x ∈ T.G w, x < b
+    · exact ⟨w, hw, hbw, hbound⟩
+    · obtain ⟨x, hx, hnx⟩ := T.exists_G_not_lt w b hbound
+      have hbx : b ≤ x := by
+        cases strict_linear_order.total x b with
+        | inl hxb =>
+          exact False.elim (hnx hxb)
+        | inr hr =>
+          cases hr with
+          | inl hbx =>
+            exact Or.inl hbx
+          | inr heq =>
+            exact Or.inr heq.symm
+      have hxsize : T.size x < n := by
+        have hs := T.G_size_lt w x hx
+        rw [hn] at hs
+        exact hs
+      have hxc₀ : x ∈ T.G c₀ :=
+        T.G_trans c₀ w x hw hx
+      exact ih (T.size x) hxsize x hxc₀ hbx rfl
+
+theorem T.GZ_bound_trans {lam : Nat} (z b a : T lam)
+    (hzb : ∀ x ∈ T.GZ z, x < b)
+    (hba : b < a) :
+    ∀ x ∈ T.GZ z, x < a := by
+  intro x hx
+  exact strict_partial_order.trans x b a (hzb x hx) hba
+
+theorem T.SDom_G_lt_upper {lam : Nat} (z b a : T lam)
+    (hs : T.SDom z b a)
+    (hGa : ∀ x ∈ T.G a, x < a)
+    (hGz : ∀ x ∈ T.GZ z, x < b) :
+    ∀ y ∈ T.G b, y < a := by
+  intro y hy
+  have hba : b ≤ a := Or.inl hs.1
+  have haa : a ≤ a := partial_order.refl a
+  obtain ⟨w, hw, hyw⟩ := hs.2 a hba haa y hy
+  cases List.mem_append.mp hw with
+  | inl hwa =>
+    have hwlt : w < a := hGa w hwa
+    exact lt_of_le_of_lt_thm T y w a hyw hwlt
+  | inr hwz =>
+    have hwltb : w < b := hGz w hwz
+    have hyltb : y < b :=
+      lt_of_le_of_lt_thm T y w b hyw hwltb
+    exact strict_partial_order.trans y b a hyltb hs.1
+
+theorem T.SDom_G_closed {lam : Nat} (z b a : T lam)
+    (hs : T.SDom z b a)
+    (hGa : ∀ x ∈ T.G a, x < a)
+    (hGz : ∀ x ∈ T.GZ z, x < b) :
+    ∀ y ∈ T.G b, y < b := by
+  intro y hy
+  cases strict_linear_order.total y b with
+  | inl hyb =>
+    exact hyb
+  | inr hr =>
+    have hby : b ≤ y := by
+      cases hr with
+      | inl hby =>
+        exact Or.inl hby
+      | inr heq =>
+        exact Or.inr heq.symm
+    obtain ⟨c, hcG, hbc, hcBound⟩ :=
+      T.find_violating_source b b y hy hby
+    have hca : c < a :=
+      T.SDom_G_lt_upper z b a hs hGa hGz c hcG
+    have hcaLe : c ≤ a := Or.inl hca
+    obtain ⟨w, hw, hcw⟩ := hs.2 c hbc hcaLe c hcG
+    have hwb : w < b := by
+      cases List.mem_append.mp hw with
+      | inl hwc =>
+        exact hcBound w hwc
+      | inr hwz =>
+        exact hGz w hwz
+    have hcb : c < b :=
+      lt_of_le_of_lt_thm T c w b hcw hwb
+    have hbb : b < b :=
+      lt_of_le_of_lt_thm T b c b hbc hcb
+    exact False.elim (strict_partial_order.irrefl b hbb)
+
+theorem T.head_mono_le {lam : Nat} (a b : T lam)
+    (h : a ≤ b) : T.head a ≤ T.head b := by
+  cases h with
+  | inl hlt =>
+    exact T.head_mono a b hlt
+  | inr heq =>
+    rw [heq]
+    exact partial_order.refl (T.head b)
+
+theorem T.P_same_le_iff {lam : Nat} (ls : Vec (T lam) lam)
+    (a b : T lam) :
+    T.P ls a ≤ T.P ls b ↔ a ≤ b := by
+  constructor
+  · intro h
+    cases h with
+    | inl hlt =>
+      left
+      show compareT a b = Ordering.lt
+      show compareT (T.P ls a) (T.P ls b) = Ordering.lt at hlt
+      rw [show compareVec ls ls = Ordering.eq from Vec_refl ls] at hlt
+      exact hlt
+    | inr heq =>
+      right
+      cases heq
+      rfl
+  · intro h
+    exact T.P_le_P_same ls a b h
+
+theorem T.sandwich_same_vector {lam : Nat}
+    (ls : Vec (T lam) lam) (a b c : T lam)
+    (hab : a ≤ b)
+    (hl : T.P ls a ≤ c)
+    (hu : c ≤ T.P ls b) :
+    ∃ d, c = T.P ls d ∧ a ≤ d ∧ d ≤ b := by
+  have hheadL :
+      T.P ls T.Z ≤ T.head c :=
+    T.head_mono_le (T.P ls a) c hl
+  have hheadU :
+      T.head c ≤ T.P ls T.Z :=
+    T.head_mono_le c (T.P ls b) hu
+  have hheadEq :
+      T.head c = T.P ls T.Z :=
+    partial_order.antisymm (T.head c) (T.P ls T.Z)
+      hheadU hheadL
+  cases c with
+  | Z =>
+    rw [T.head] at hheadEq
+    cases hheadEq
+  | P cs d =>
+    rw [T.head] at hheadEq
+    have hcs : cs = ls := by
+      cases hheadEq
+      rfl
+    subst cs
+    refine ⟨d, rfl, ?_, ?_⟩
+    · exact (T.P_same_le_iff ls a d).mp hl
+    · exact (T.P_same_le_iff ls d b).mp hu
+
+theorem T.SDom_tail {lam : Nat} (z b a : T lam)
+    (ls : Vec (T lam) lam) (hs : T.SDom z b a) :
+    T.SDom z (T.P ls b) (T.P ls a) := by
+  constructor
+  · show compareT (T.P ls b) (T.P ls a) = Ordering.lt
+    rw [show compareVec ls ls = Ordering.eq from Vec_refl ls]
+    exact hs.1
+  · intro c hbc hca
+    have hba : b ≤ a := Or.inl hs.1
+    obtain ⟨d, hcd, hbd, hda⟩ :=
+      T.sandwich_same_vector ls b a c hba hbc hca
+    rw [hcd]
+    intro x hx
+    cases (T.mem_G_P ls b x).mp hx with
+    | inl hvec =>
+      refine ⟨x, ?_, partial_order.refl x⟩
+      apply List.mem_append_left (T.GZ z)
+      apply (T.mem_G_P ls d x).mpr
+      exact Or.inl hvec
+    | inr htail =>
+      obtain ⟨y, hy, hxy⟩ := hs.2 d hbd hda x htail
+      cases List.mem_append.mp hy with
+      | inl hyd =>
+        refine ⟨y, ?_, hxy⟩
+        apply List.mem_append_left (T.GZ z)
+        apply (T.mem_G_P ls d y).mpr
+        exact Or.inr hyd
+      | inr hyz =>
+        exact ⟨y, List.mem_append_right (T.G (T.P ls d)) hyz, hxy⟩
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
