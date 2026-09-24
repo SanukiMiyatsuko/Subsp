@@ -2314,6 +2314,153 @@ theorem T.NFComp_of_SDom_Z_or_eq {lam : Nat}
     exact T.NFComp_of_SDom
       T.Z b a hb ha T.isNFComp_Z hdom hzb
 
+theorem T.rplc_NF_closed {lam : Nat}
+    (ls : Vec (T lam) lam) (i : Fin lam) (a : T lam)
+    (hs : T.isNF (T.P ls T.Z))
+    (ha : T.isNFComp a) :
+    T.isNF (T.P (ls.rplc i a) T.Z) := by
+  have holdCoord :=
+    T.isNF_P_coord_NFComp ls T.Z hs
+  apply T.isNF_PZ_of_coords (ls.rplc i a)
+  intro q
+  by_cases hqi : q.val = i.val
+  · have hq : q = i := Fin.eq_of_val_eq hqi
+    rw [hq, Vec.rplc_idx_same]
+    exact ha
+  · rw [Vec.rplc_idx_of_ne ls i q a hqi]
+    exact holdCoord q
+
+theorem T.rplc_two_NF_closed {lam : Nat}
+    (ls : Vec (T lam) lam) (i j : Fin lam)
+    (a b : T lam) (hij : i.val ≠ j.val)
+    (hs : T.isNF (T.P ls T.Z))
+    (ha : T.isNFComp a) (hb : T.isNFComp b) :
+    T.isNF
+      (T.P ((ls.rplc i a).rplc j b) T.Z) := by
+  have holdCoord :=
+    T.isNF_P_coord_NFComp ls T.Z hs
+  apply T.isNF_PZ_of_coords
+    ((ls.rplc i a).rplc j b)
+  intro q
+  by_cases hqj : q.val = j.val
+  · have hq : q = j := Fin.eq_of_val_eq hqj
+    rw [hq, Vec.rplc_idx_same]
+    exact hb
+  · rw [Vec.rplc_idx_of_ne (ls.rplc i a) j q b hqj]
+    by_cases hqi : q.val = i.val
+    · have hq : q = i := Fin.eq_of_val_eq hqi
+      rw [hq, Vec.rplc_idx_same]
+      exact ha
+    · rw [Vec.rplc_idx_of_ne ls i q a hqi]
+      exact holdCoord q
+
+theorem T.mul_PZ_lt_next {lam : Nat}
+    (ls : Vec (T lam) lam) :
+    ∀ t : T lam,
+      T.mul (T.P ls T.Z) t <
+        T.P ls (T.mul (T.P ls T.Z) t) := by
+  intro t
+  induction t with
+  | Z =>
+    rw [T.mul]
+    rfl
+  | P tls add ih =>
+    rw [T.mul, T.oplus]
+    show
+      (match compareVec ls ls with
+      | Ordering.eq =>
+          compareT
+            (T.mul (T.P ls T.Z) add)
+            (T.P ls (T.mul (T.P ls T.Z) add))
+      | ord => ord) = Ordering.lt
+    rw [Vec_refl ls]
+    exact ih
+
+theorem T.head_mul_PZ_le {lam : Nat}
+    (ls : Vec (T lam) lam) :
+    ∀ t : T lam,
+      T.head (T.mul (T.P ls T.Z) t) ≤
+        T.P ls T.Z := by
+  intro t
+  cases t with
+  | Z =>
+    rw [T.mul]
+    exact T.Z_le (T.P ls T.Z)
+  | P tls add =>
+    rw [T.mul, T.oplus]
+    exact Or.inr (T_refl (T.P ls T.Z))
+
+theorem T.mul_PZ_NF_closed {lam : Nat}
+    (ls : Vec (T lam) lam)
+    (hbase : T.isNF (T.P ls T.Z)) :
+    ∀ t : T lam,
+      T.isNF (T.mul (T.P ls T.Z) t) := by
+  intro t
+  induction t with
+  | Z =>
+    rw [T.mul]
+    exact T.isNF.z
+  | P tls add ih =>
+    rw [T.mul, T.oplus]
+    cases hbase with
+    | p _ _ h0 hz h2 h3 =>
+      exact T.isNF.p ls
+        (T.mul (T.P ls T.Z) add)
+        h0 ih h2 (T.head_mul_PZ_le ls add)
+
+theorem T.mul_PZ_NFComp_closed {lam : Nat}
+    (ls : Vec (T lam) lam)
+    (hbase : T.isNFComp (T.P ls T.Z)) :
+    ∀ t : T lam,
+      T.isNFComp (T.mul (T.P ls T.Z) t) := by
+  intro t
+  induction t with
+  | Z =>
+    rw [T.mul]
+    exact T.isNFComp_Z
+  | P tls add ih =>
+    rw [T.mul, T.oplus]
+    have hnf :
+        T.isNF
+          (T.P ls (T.mul (T.P ls T.Z) add)) := by
+      cases hbase.1 with
+      | p _ _ h0 hz h2 h3 =>
+        exact T.isNF.p ls
+          (T.mul (T.P ls T.Z) add)
+          h0 ih.1 h2 (T.head_mul_PZ_le ls add)
+    constructor
+    · exact hnf
+    · intro y hy
+      cases
+          (T.mem_G_P ls
+            (T.mul (T.P ls T.Z) add) y).mp hy with
+      | inl hvec =>
+        have hybase :
+            y ∈ T.G (T.P ls T.Z) := by
+          apply (T.mem_G_P ls T.Z y).mpr
+          exact Or.inl hvec
+        have hya : y < T.P ls T.Z :=
+          hbase.2 y hybase
+        have hle :
+            T.P ls T.Z ≤
+              T.P ls
+                (T.mul (T.P ls T.Z) add) :=
+          T.P_le_P_same ls T.Z
+            (T.mul (T.P ls T.Z) add)
+            (T.Z_le (T.mul (T.P ls T.Z) add))
+        exact T.lt_of_lt_of_le y
+          (T.P ls T.Z)
+          (T.P ls (T.mul (T.P ls T.Z) add))
+          hya hle
+      | inr htail =>
+        have hyu :
+            y < T.mul (T.P ls T.Z) add :=
+          ih.2 y htail
+        exact T_trans y
+          (T.mul (T.P ls T.Z) add)
+          (T.P ls (T.mul (T.P ls T.Z) add))
+          hyu (T.mul_PZ_lt_next ls add)
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
