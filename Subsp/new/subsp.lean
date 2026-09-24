@@ -143,7 +143,7 @@ theorem T.domVecMinIdx_some_spec {lam m : Nat}
     T.dom (v.idx i) = d ∧
       ∀ j : Fin m, j.val < i.val →
         T.dom (v.idx j) = .zero := by
-  induction v with
+  induction v generalizing i d with
   | nil =>
       exact i.elim0
   | snoc k xs x ih =>
@@ -192,7 +192,7 @@ theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
     (v : Vec (T lam) m) (i : Fin m) (d : Dom)
     (h : T.domVecMinIdx v = some (i, d)) :
     d ≠ .zero := by
-  induction v with
+  induction v generalizing i d with
   | nil =>
       exact i.elim0
   | snoc k xs x ih =>
