@@ -20,7 +20,7 @@ def T.isSubNF (n : Nat) (s : T) :=
     match n with
     | 0 => s < P 0 (P 0 Z Z) Z
     | 1 => s < P 0 (P 1 Z Z) Z
-    | _ + 1 => s < P 0 (P 1 (P 1 (mul (P 1 Z Z) (ofNat n)) Z) Z) Z
+    | n' + 1 => s < P 0 (P 1 (P 1 (mul (P 1 Z Z) (ofNat n')) Z) Z) Z
 
 theorem OT_iff_NF1 (lam : Nat) (s : new.T lam) : new.T.isOT lam s ↔ T.isSubNF lam (trans s) := sorry
 
