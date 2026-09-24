@@ -3445,6 +3445,85 @@ theorem T.SDom_mul_PZ {lam : Nat}
         T.G_mul_PZ_subset u (T.P ts add) x hx
       exact hbase.2 c hbaseC hcv x hxbase
 
+theorem T.SDom_rplc_min_Z {lam : Nat}
+    (ls : Vec (T lam) lam) (m : Fin lam) (d : Dom)
+    (b : T lam)
+    (hmin : T.domVecMinIdx ls = some (m, d))
+    (hb : T.isNFComp b)
+    (hblt : b < ls.idx m) :
+    T.SDom T.Z
+      (T.P (ls.rplc m b) T.Z)
+      (T.P ls T.Z) := by
+  have hspec :=
+    T.domVecMinIdx_some_spec ls m d hmin
+  apply T.SDom_PZ_pivot_comp
+    T.Z (ls.rplc m b) ls m
+  · intro j hmj
+    exact Vec.rplc_idx_of_ne
+      ls m j b (Nat.ne_of_gt hmj)
+  · rw [Vec.rplc_idx_same]
+    exact hblt
+  · rw [Vec.rplc_idx_same]
+    exact hb
+  · intro q hqm
+    apply Or.inl
+    have hne : q.val ≠ m.val :=
+      Nat.ne_of_lt hqm
+    rw [Vec.rplc_idx_of_ne ls m q b hne]
+    exact T.dom_zero_eq_Z
+      (ls.idx q) (hspec.2.2 q hqm)
+
+theorem T.SDom_rplc_lower {lam : Nat}
+    (z : T lam)
+    (ls : Vec (T lam) lam)
+    (m j : Fin lam) (d : Dom) (b : T lam)
+    (hjm : j.val < m.val)
+    (hmin : T.domVecMinIdx ls = some (m, d))
+    (hb : T.isNFComp b)
+    (hblt : b < ls.idx m) :
+    T.SDom z
+      (T.P ((ls.rplc m b).rplc j z) T.Z)
+      (T.P ls T.Z) := by
+  have hspec :=
+    T.domVecMinIdx_some_spec ls m d hmin
+  apply T.SDom_PZ_pivot_comp
+    z ((ls.rplc m b).rplc j z) ls m
+  · intro q hmq
+    have hqj : q.val ≠ j.val :=
+      Nat.ne_of_gt (Nat.lt_trans hjm hmq)
+    have hqm : q.val ≠ m.val :=
+      Nat.ne_of_gt hmq
+    rw [Vec.rplc_idx_of_ne
+      (ls.rplc m b) j q z hqj]
+    rw [Vec.rplc_idx_of_ne ls m q b hqm]
+  · have hmj : m.val ≠ j.val :=
+      Nat.ne_of_gt hjm
+    rw [Vec.rplc_idx_of_ne
+      (ls.rplc m b) j m z hmj]
+    rw [Vec.rplc_idx_same]
+    exact hblt
+  · have hmj : m.val ≠ j.val :=
+      Nat.ne_of_gt hjm
+    rw [Vec.rplc_idx_of_ne
+      (ls.rplc m b) j m z hmj]
+    rw [Vec.rplc_idx_same]
+    exact hb
+  · intro q hqm
+    by_cases hqj : q.val = j.val
+    · have hq : q = j :=
+        Fin.eq_of_val_eq hqj
+      rw [hq, Vec.rplc_idx_same]
+      exact Or.inr rfl
+    · apply Or.inl
+      rw [Vec.rplc_idx_of_ne
+        (ls.rplc m b) j q z hqj]
+      have hqmne : q.val ≠ m.val :=
+        Nat.ne_of_lt hqm
+      rw [Vec.rplc_idx_of_ne
+        ls m q b hqmne]
+      exact T.dom_zero_eq_Z
+        (ls.idx q) (hspec.2.2 q hqm)
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
