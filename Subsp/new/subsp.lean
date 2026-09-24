@@ -896,19 +896,20 @@ theorem Vec.rplc_interval_spec {lam m : Nat}
       ∀ j : Fin m, i.val < j.val →
         u.idx j = v.idx j := by
     intro j hij
-    by_cases hneq : u.idx j ≠ v.idx j
+    by_cases heq : u.idx j = v.idx j
+    · exact heq
     · have huv : compareVec u v = Ordering.lt := by
         cases hhi with
         | inl h => exact h
-        | inr heq =>
-          have huvEq : u = v := Vec_eq_sound u v heq
-          exact False.elim (hneq (by rw [huvEq]))
+        | inr hvecEq =>
+          have huvEq : u = v := Vec_eq_sound u v hvecEq
+          exact False.elim (heq (by rw [huvEq]))
       obtain ⟨p, hpHigh, hpLt⟩ :=
         Vec.compare_lt_has_pivot u v huv
       have hjp : j.val ≤ p.val := by
         by_cases hpj : p.val < j.val
         · exact False.elim
-            (hneq (hpHigh j hpj))
+            (heq (hpHigh j hpj))
         · exact Nat.not_lt.mp hpj
       have hip : i.val < p.val :=
         Nat.lt_of_lt_of_le hij hjp
@@ -947,8 +948,6 @@ theorem Vec.rplc_interval_spec {lam m : Nat}
         rw [← hveq] at huw
         rw [Vec_refl (v.rplc i a)] at huw
         cases huw
-    · exact Classical.byContradiction (fun h =>
-        hneq (Classical.not_not.mp h))
   have hai : a ≤ u.idx i := by
     cases linear_order.total a (u.idx i) with
     | inl h => exact h
