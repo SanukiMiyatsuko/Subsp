@@ -1294,10 +1294,28 @@ def T.decForallMem {lam : Nat} (l : List (T lam))
                 | Or.inl hxa => hxa ▸ ha
                 | Or.inr hxs => has x hxs)
 
+theorem T.decLtConstructive {lam : Nat}
+    (a b : T lam) : Decidable (a < b) := by
+  cases h : compareT a b with
+  | lt =>
+    exact isTrue h
+  | eq =>
+    apply isFalse
+    intro hlt
+    change compareT a b = Ordering.lt at hlt
+    rw [h] at hlt
+    cases hlt
+  | gt =>
+    apply isFalse
+    intro hlt
+    change compareT a b = Ordering.lt at hlt
+    rw [h] at hlt
+    cases hlt
+
 def T.decGCondition {lam : Nat} (x : T lam) :
     Decidable (∀ y ∈ T.G x, y < x) :=
   T.decForallMem (T.G x) (fun y => y < x)
-    (fun y => inferInstanceAs (Decidable (T.lt y x)))
+    (fun y => T.decLtConstructive y x)
 
 mutual
   def T.decIsNF {lam : Nat} : (s : T lam) → Decidable (T.isNF s)
@@ -1901,8 +1919,7 @@ theorem T.NFComp_of_ZeroDom {lam : Nat}
       have hxa : x < a :=
         T.lt_of_le_of_lt x w a hxw hwa
       cases
-          (inferInstanceAs
-            (Decidable (T.lt x b))) with
+          (T.decLtConstructive x b) with
       | isTrue hxb =>
         exact hxb
       | isFalse hxb =>
@@ -2151,8 +2168,7 @@ theorem T.exists_G_not_lt {lam : Nat} (s b : T lam)
     | cons a as ih =>
       intro hn
       cases
-          (inferInstanceAs
-            (Decidable (T.lt a b))) with
+          (T.decLtConstructive a b) with
       | isTrue ha =>
         have htail : ¬ (∀ x ∈ as, x < b) := by
           intro hall
@@ -2188,7 +2204,7 @@ theorem T.find_violating_source {lam : Nat}
       match T.decForallMem
           (T.G w) (fun x => x < b)
           (fun x =>
-            inferInstanceAs (Decidable (T.lt x b))) with
+            T.decLtConstructive x b) with
       | isTrue hbound =>
         exact ⟨w, hw, hbw, hbound⟩
       | isFalse hbound =>
@@ -2264,8 +2280,7 @@ theorem T.SDom_G_closed {lam : Nat}
     ∀ y ∈ T.G b, y < b := by
   intro y hy
   cases
-      (inferInstanceAs
-        (Decidable (T.lt y b))) with
+      (T.decLtConstructive y b) with
   | isTrue hyb =>
     exact hyb
   | isFalse hyb =>
