@@ -143,7 +143,7 @@ def T.LF {lam : Nat} : Nat → T lam
     P (Vec.ofFn (lam' + 1) (fun i => if i = lam' then LF n else Z)) Z
 
 inductive T.isOT (lam : Nat) : T lam → Prop where
-| base (n : Nat) : isOT lam (LF n)
+| base (n : Nat) : isOT lam (P (Vec.ofFn lam (fun i => if i.val = 0 then LF n else Z)) Z)
 | step (s : T lam) (hs : isOT lam s) (n : Nat) : isOT lam (fund s (ofNat n))
 
 def T.G {lam : Nat} (s : T lam) : List (T lam) :=
