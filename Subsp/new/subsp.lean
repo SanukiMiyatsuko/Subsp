@@ -543,6 +543,81 @@ theorem Vec.Gres_mem_G_of_idx {lam m : Nat}
           exact hy
         exact List.mem_append_right (T.G.res xs ++ [last]) hy'
 
+theorem Vec.Gres_cases {lam m : Nat}
+    (v : Vec (T lam) m) (y : T lam)
+    (hy : y ∈ T.G.res v) :
+    ∃ i : Fin m, y = v.idx i ∨ y ∈ T.G (v.idx i) := by
+  induction v with
+  | nil =>
+      cases hy
+  | snoc k xs last ih =>
+      change y ∈ T.G.res xs ++ [last] ++ T.G last at hy
+      cases List.mem_append.mp hy with
+      | inl hleft =>
+        cases List.mem_append.mp hleft with
+        | inl hxs =>
+          obtain ⟨i, hcase⟩ := ih hxs
+          refine ⟨i.castSucc, ?_⟩
+          have hidx :
+              (Vec.snoc k xs last).idx i.castSucc = xs.idx i := by
+            show
+              (if h : i.val < k then
+                Vec.idx xs ⟨i.val, h⟩ else last) = xs.idx i
+            rw [dite_eq_left i.isLt]
+            rfl
+          rw [hidx]
+          exact hcase
+        | inr hlast =>
+          have hylast : y = last := List.mem_singleton.mp hlast
+          refine ⟨Fin.last k, Or.inl ?_⟩
+          have hidx :
+              (Vec.snoc k xs last).idx (Fin.last k) = last := by
+            show
+              (if h : k < k then
+                Vec.idx xs ⟨k, h⟩ else last) = last
+            rw [dite_eq_right (Nat.lt_irrefl k)]
+          rw [hidx]
+          exact hylast
+      | inr hG =>
+        refine ⟨Fin.last k, Or.inr ?_⟩
+        have hidx :
+            (Vec.snoc k xs last).idx (Fin.last k) = last := by
+          show
+            (if h : k < k then
+              Vec.idx xs ⟨k, h⟩ else last) = last
+          rw [dite_eq_right (Nat.lt_irrefl k)]
+        rw [hidx]
+        exact hG
+
+theorem T.mem_G_P {lam : Nat}
+    (ls : Vec (T lam) lam) (add y : T lam) :
+    y ∈ T.G (T.P ls add) ↔
+      (∃ i : Fin lam,
+        y = ls.idx i ∨ y ∈ T.G (ls.idx i)) ∨
+      y ∈ T.G add := by
+  constructor
+  · intro hy
+    rw [T.G_P_eq] at hy
+    cases List.mem_append.mp hy with
+    | inl hres =>
+      exact Or.inl (Vec.Gres_cases ls y hres)
+    | inr hadd =>
+      exact Or.inr hadd
+  · intro hy
+    rw [T.G_P_eq]
+    cases hy with
+    | inl hcoord =>
+      obtain ⟨i, hcase⟩ := hcoord
+      apply List.mem_append_left (T.G add)
+      cases hcase with
+      | inl heq =>
+        rw [heq]
+        exact Vec.Gres_mem_of_idx ls i
+      | inr hG =>
+        exact Vec.Gres_mem_G_of_idx ls i y hG
+    | inr hadd =>
+      exact List.mem_append_right (T.G.res ls) hadd
+
 inductive T.isNF {lam : Nat} : T lam → Prop where
 | z : isNF Z
 | p (ls : Vec (T lam) lam) (add : T lam)
@@ -668,6 +743,53 @@ instance {lam : Nat} (s : T lam) : Decidable (T.isNF s) :=
 
 def T.isNFComp {lam : Nat} (s : T lam) : Prop :=
   T.isNF s ∧ ∀ y ∈ T.G s, y < s
+
+theorem T.isNFComp_Z {lam : Nat} :
+    T.isNFComp (T.Z : T lam) := by
+  constructor
+  · exact T.isNF.z
+  · intro y hy
+    change y ∈ ([] : List (T lam)) at hy
+    cases hy
+
+theorem T.isNF_P_coord_NFComp {lam : Nat}
+    (ls : Vec (T lam) lam) (add : T lam)
+    (hs : T.isNF (T.P ls add)) :
+    ∀ i : Fin lam, T.isNFComp (ls.idx i) := by
+  intro i
+  cases hs with
+  | p _ _ h0 h1 h2 h3 =>
+    have hmem : ls.idx i ∈ Vec.toList ls :=
+      Vec.idx_mem_toList ls i
+    exact ⟨h0 (ls.idx i) hmem,
+      h2 (ls.idx i) hmem⟩
+
+theorem T.isNF_PZ_of_coords {lam : Nat}
+    (ls : Vec (T lam) lam)
+    (h : ∀ i : Fin lam, T.isNFComp (ls.idx i)) :
+    T.isNF (T.P ls T.Z) := by
+  apply T.isNF.p ls T.Z
+  · intro x hx
+    obtain ⟨i, hi⟩ := Vec.mem_toList_exists_idx ls x hx
+    rw [← hi]
+    exact (h i).1
+  · exact T.isNF.z
+  · intro x hx y hy
+    obtain ⟨i, hi⟩ := Vec.mem_toList_exists_idx ls x hx
+    rw [← hi] at hy
+    have hlt := (h i).2 y hy
+    rw [hi] at hlt
+    exact hlt
+  · exact Or.inl rfl
+
+theorem T.coord_lt_of_NFComp_P {lam : Nat}
+    (ls : Vec (T lam) lam) (add : T lam)
+    (hs : T.isNFComp (T.P ls add)) :
+    ∀ i : Fin lam, ls.idx i < T.P ls add := by
+  intro i
+  apply hs.2 (ls.idx i)
+  apply (T.mem_G_P ls add (ls.idx i)).mpr
+  exact Or.inl ⟨i, Or.inl rfl⟩
 
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
