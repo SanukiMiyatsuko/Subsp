@@ -3704,13 +3704,11 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       rw [hmin]
                       change
                         (if Dom.omega = Dom.one then _
-                        else _) =
-                          T.P low T.Z
+                        else _)
                       rw [if_neg (by intro h; cases h)]
                       change
                         (if Dom.omega = Dom.Omega then _
-                        else _) =
-                          T.P low T.Z
+                        else _)
                       rw [if_neg (by intro h; cases h)]
                     rfl
                   rw [hfund]
@@ -3858,13 +3856,11 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       rw [hmin]
                       change
                         (if Dom.Omega = Dom.one then _
-                        else _) =
-                          T.P low T.Z
+                        else _)
                       rw [if_neg (by intro h; cases h)]
                       change
                         (if Dom.Omega = Dom.Omega then _
-                        else _) =
-                          T.P low T.Z
+                        else _)
                       rw [if_pos rfl]
                     rfl
                   rw [hfund]
@@ -3942,8 +3938,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                           rw [hmin]
                           change
                             (if Dom.one = Dom.one then _
-                            else _) =
-                              T.mul (T.P low T.Z) t
+                            else _)
                           rw [if_pos rfl]
                         rfl
                       rw [hfund]
@@ -4002,8 +3997,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                           rw [hmin]
                           change
                             (if Dom.one = Dom.one then _
-                            else _) =
-                              T.P low T.Z
+                            else _)
                           rw [if_pos rfl]
                         change
                           T.P
