@@ -2376,6 +2376,396 @@ theorem T.sandwich_same_vector {lam : Nat}
     · exact (T.P_same_le_iff ls a d).mp hl
     · exact (T.P_same_le_iff ls d b).mp hu
 
+theorem T.PZ_le_vec {lam : Nat} (v w : Vec (T lam) lam)
+    (h : T.P v T.Z ≤ T.P w T.Z) :
+    compareVec v w = Ordering.lt ∨ v = w := by
+  cases h with
+  | inl hlt =>
+    show
+      (match compareVec v w with
+      | Ordering.eq => compareT T.Z T.Z
+      | ord => ord) = Ordering.lt at hlt
+    cases hc : compareVec v w with
+    | lt =>
+      exact Or.inl hc
+    | eq =>
+      rw [hc] at hlt
+      have hz : compareT T.Z T.Z = Ordering.eq := T_refl T.Z
+      rw [hz] at hlt
+      cases hlt
+    | gt =>
+      rw [hc] at hlt
+      cases hlt
+  | inr heq =>
+    injection heq with hv
+    exact Or.inr hv
+
+theorem Vec.between_pivot {lam m : Nat}
+    (low mid high : Vec (T lam) m) (i : Fin m)
+    (hAbove : ∀ j : Fin m, i.val < j.val → low.idx j = high.idx j)
+    (hPivot : low.idx i < high.idx i)
+    (hLow : compareVec low mid = Ordering.lt ∨ low = mid)
+    (hHigh : compareVec mid high = Ordering.lt ∨ mid = high) :
+    (∀ j : Fin m, i.val < j.val → mid.idx j = high.idx j) ∧
+      low.idx i ≤ mid.idx i ∧ mid.idx i ≤ high.idx i := by
+  induction m with
+  | zero =>
+    exact i.elim0
+  | succ k ih =>
+    cases low with
+    | snoc _ lows lowLast =>
+      cases mid with
+      | snoc _ mids midLast =>
+        cases high with
+        | snoc _ highs highLast =>
+          by_cases hik : i.val = k
+          · have hieq : i = Fin.last k := Fin.eq_of_val_eq hik
+            have hLowIdx :
+                (Vec.snoc k lows lowLast).idx (Fin.last k) = lowLast := by
+              show
+                (if h : k < k then Vec.idx lows ⟨k, h⟩ else lowLast) =
+                  lowLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hMidIdx :
+                (Vec.snoc k mids midLast).idx (Fin.last k) = midLast := by
+              show
+                (if h : k < k then Vec.idx mids ⟨k, h⟩ else midLast) =
+                  midLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hHighIdx :
+                (Vec.snoc k highs highLast).idx (Fin.last k) = highLast := by
+              show
+                (if h : k < k then Vec.idx highs ⟨k, h⟩ else highLast) =
+                  highLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hp : lowLast < highLast := by
+              rw [hieq, hLowIdx, hHighIdx] at hPivot
+              exact hPivot
+            have hlm : lowLast ≤ midLast := by
+              cases strict_linear_order.total midLast lowLast with
+              | inl hml =>
+                have hcmp :
+                    compareVec
+                      (Vec.snoc k mids midLast)
+                      (Vec.snoc k lows lowLast) = Ordering.lt := by
+                  show
+                    (match compareT midLast lowLast with
+                    | Ordering.eq => compareVec mids lows
+                    | ord => ord) = Ordering.lt
+                  rw [hml]
+                cases hLow with
+                | inl hl =>
+                  have hbad :=
+                    Vec_trans
+                      (Vec.snoc k lows lowLast)
+                      (Vec.snoc k mids midLast)
+                      (Vec.snoc k lows lowLast) hl hcmp
+                  have hrefl :=
+                    Vec_refl (Vec.snoc k lows lowLast)
+                  rw [hrefl] at hbad
+                  cases hbad
+                | inr heq =>
+                  cases heq
+                  exact False.elim
+                    (strict_partial_order.irrefl lowLast hml)
+              | inr hr =>
+                cases hr with
+                | inl hl =>
+                  exact Or.inl hl
+                | inr heq =>
+                  exact Or.inr heq.symm
+            have lmh : midLast ≤ highLast := by
+              cases strict_linear_order.total highLast midLast with
+              | inl hhm =>
+                have hcmp :
+                    compareVec
+                      (Vec.snoc k highs highLast)
+                      (Vec.snoc k mids midLast) = Ordering.lt := by
+                  show
+                    (match compareT highLast midLast with
+                    | Ordering.eq => compareVec highs mids
+                    | ord => ord) = Ordering.lt
+                  rw [hhm]
+                cases hHigh with
+                | inl hh =>
+                  have hbad :=
+                    Vec_trans
+                      (Vec.snoc k mids midLast)
+                      (Vec.snoc k highs highLast)
+                      (Vec.snoc k mids midLast) hh hcmp
+                  have hrefl :=
+                    Vec_refl (Vec.snoc k mids midLast)
+                  rw [hrefl] at hbad
+                  cases hbad
+                | inr heq =>
+                  cases heq
+                  exact False.elim
+                    (strict_partial_order.irrefl midLast hhm)
+              | inr hr =>
+                cases hr with
+                | inl hm =>
+                  exact Or.inl hm
+                | inr heq =>
+                  exact Or.inr heq.symm
+            constructor
+            · intro j hj
+              have hjle : j.val ≤ k := Nat.lt_succ_iff.mp j.isLt
+              exact False.elim ((Nat.not_lt_of_ge hjle) (hik ▸ hj))
+            · constructor
+              · rw [hieq, hLowIdx, hMidIdx]
+                exact hlm
+              · rw [hieq, hMidIdx, hHighIdx]
+                exact lmh
+          · have hiklt : i.val < k := by
+              have hle : i.val ≤ k := Nat.lt_succ_iff.mp i.isLt
+              exact Nat.lt_of_le_of_ne hle hik
+            let i' : Fin k := ⟨i.val, hiklt⟩
+            have hLowLast :
+                (Vec.snoc k lows lowLast).idx (Fin.last k) = lowLast := by
+              show
+                (if h : k < k then Vec.idx lows ⟨k, h⟩ else lowLast) =
+                  lowLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hMidLast :
+                (Vec.snoc k mids midLast).idx (Fin.last k) = midLast := by
+              show
+                (if h : k < k then Vec.idx mids ⟨k, h⟩ else midLast) =
+                  midLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hHighLast :
+                (Vec.snoc k highs highLast).idx (Fin.last k) = highLast := by
+              show
+                (if h : k < k then Vec.idx highs ⟨k, h⟩ else highLast) =
+                  highLast
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hlh : lowLast = highLast := by
+              have hh := hAbove (Fin.last k) hiklt
+              rw [hLowLast, hHighLast] at hh
+              exact hh
+            have hmh : midLast = highLast := by
+              cases strict_linear_order.total midLast highLast with
+              | inl hmh =>
+                have hcmpLM :
+                    compareVec
+                      (Vec.snoc k lows lowLast)
+                      (Vec.snoc k mids midLast) = Ordering.gt := by
+                  show
+                    (match compareT lowLast midLast with
+                    | Ordering.eq => compareVec lows mids
+                    | ord => ord) = Ordering.gt
+                  have hrev : highLast < midLast := by
+                    rw [← hlh]
+                    exact hmh
+                  show
+                    (match compareT lowLast midLast with
+                    | Ordering.eq => compareVec lows mids
+                    | ord => ord) = Ordering.gt
+                  cases htot := strict_linear_order.total lowLast midLast with
+                  | inl hlm =>
+                    exact False.elim
+                      (strict_partial_order.irrefl lowLast
+                        (strict_partial_order.trans lowLast midLast lowLast
+                          hlm (hlh ▸ hmh)))
+                  | inr hr =>
+                    cases hr with
+                    | inl hml =>
+                      have heq :
+                          compareT lowLast midLast = Ordering.gt := by
+                        -- reverse strict comparison has ordering gt
+                        cases hc : compareT lowLast midLast with
+                        | lt =>
+                          exact False.elim
+                            (strict_partial_order.irrefl lowLast
+                              (strict_partial_order.trans lowLast midLast lowLast
+                                hc hml))
+                        | eq =>
+                          have he := T_eq_sound lowLast midLast hc
+                          rw [he] at hml
+                          exact False.elim
+                            (strict_partial_order.irrefl midLast hml)
+                        | gt => exact hc
+                      rw [heq]
+                    | inr heq =>
+                      rw [heq] at hmh
+                      exact False.elim
+                        (strict_partial_order.irrefl highLast hmh)
+                cases hLow with
+                | inl hl =>
+                  rw [hcmpLM] at hl
+                  cases hl
+                | inr heq =>
+                  injection heq with _ hlast
+                  rw [hlast, hlh] at hmh
+                  exact False.elim
+                    (strict_partial_order.irrefl highLast hmh)
+              | inr hr =>
+                cases hr with
+                | inl hhm =>
+                  have hcmpMH :
+                      compareVec
+                        (Vec.snoc k mids midLast)
+                        (Vec.snoc k highs highLast) = Ordering.gt := by
+                    show
+                      (match compareT midLast highLast with
+                      | Ordering.eq => compareVec mids highs
+                      | ord => ord) = Ordering.gt
+                    cases hc : compareT midLast highLast with
+                    | lt =>
+                      exact False.elim
+                        (strict_partial_order.irrefl midLast
+                          (strict_partial_order.trans midLast highLast midLast
+                            hc hhm))
+                    | eq =>
+                      have he := T_eq_sound midLast highLast hc
+                      rw [he] at hhm
+                      exact False.elim
+                        (strict_partial_order.irrefl highLast hhm)
+                    | gt => exact hc
+                  cases hHigh with
+                  | inl hh =>
+                    rw [hcmpMH] at hh
+                    cases hh
+                  | inr heq =>
+                    injection heq with _ hlast
+                    rw [hlast] at hhm
+                    exact False.elim
+                      (strict_partial_order.irrefl highLast hhm)
+                | inr heq =>
+                  exact heq
+            have hLowPrefix :
+                compareVec lows mids = Ordering.lt ∨ lows = mids := by
+              cases hLow with
+              | inl hl =>
+                show
+                  (match compareT lowLast midLast with
+                  | Ordering.eq => compareVec lows mids
+                  | ord => ord) = Ordering.lt at hl
+                rw [hmh, hlh, T_refl highLast] at hl
+                exact Or.inl hl
+              | inr heq =>
+                injection heq with hp _
+                exact Or.inr hp
+            have hHighPrefix :
+                compareVec mids highs = Ordering.lt ∨ mids = highs := by
+              cases hHigh with
+              | inl hh =>
+                show
+                  (match compareT midLast highLast with
+                  | Ordering.eq => compareVec mids highs
+                  | ord => ord) = Ordering.lt at hh
+                rw [hmh, T_refl highLast] at hh
+                exact Or.inl hh
+              | inr heq =>
+                injection heq with hp _
+                exact Or.inr hp
+            have hAbove' :
+                ∀ j : Fin k, i'.val < j.val →
+                  lows.idx j = highs.idx j := by
+              intro j hj
+              have hlo :
+                  (Vec.snoc k lows lowLast).idx j.castSucc = lows.idx j := by
+                show
+                  (if h : j.val < k then Vec.idx lows ⟨j.val, h⟩ else lowLast) =
+                    Vec.idx lows j
+                rw [dite_eq_left j.isLt]
+                rfl
+              have hhi :
+                  (Vec.snoc k highs highLast).idx j.castSucc = highs.idx j := by
+                show
+                  (if h : j.val < k then Vec.idx highs ⟨j.val, h⟩ else highLast) =
+                    Vec.idx highs j
+                rw [dite_eq_left j.isLt]
+                rfl
+              have hh := hAbove j.castSucc hj
+              rw [hlo, hhi] at hh
+              exact hh
+            have hPivot' : lows.idx i' < highs.idx i' := by
+              have hlo :
+                  (Vec.snoc k lows lowLast).idx i = lows.idx i' := by
+                show
+                  (if h : i.val < k then Vec.idx lows ⟨i.val, h⟩ else lowLast) =
+                    Vec.idx lows i'
+                rw [dite_eq_left hiklt]
+                rfl
+              have hhi :
+                  (Vec.snoc k highs highLast).idx i = highs.idx i' := by
+                show
+                  (if h : i.val < k then Vec.idx highs ⟨i.val, h⟩ else highLast) =
+                    Vec.idx highs i'
+                rw [dite_eq_left hiklt]
+                rfl
+              rw [hlo, hhi] at hPivot
+              exact hPivot
+            have hrec :=
+              ih lows mids highs i' hAbove' hPivot'
+                hLowPrefix hHighPrefix
+            constructor
+            · intro j hj
+              by_cases hjk : j.val < k
+              · have hlo :
+                    (Vec.snoc k mids midLast).idx j =
+                      mids.idx ⟨j.val, hjk⟩ := by
+                  show
+                    (if h : j.val < k then
+                      Vec.idx mids ⟨j.val, h⟩ else midLast) =
+                      Vec.idx mids ⟨j.val, hjk⟩
+                  rw [dite_eq_left hjk]
+                  rfl
+                have hhi :
+                    (Vec.snoc k highs highLast).idx j =
+                      highs.idx ⟨j.val, hjk⟩ := by
+                  show
+                    (if h : j.val < k then
+                      Vec.idx highs ⟨j.val, h⟩ else highLast) =
+                      Vec.idx highs ⟨j.val, hjk⟩
+                  rw [dite_eq_left hjk]
+                  rfl
+                rw [hlo, hhi]
+                exact hrec.1 ⟨j.val, hjk⟩ hj
+              · have hjle : j.val ≤ k := Nat.lt_succ_iff.mp j.isLt
+                have hkj : k ≤ j.val := Nat.not_lt.mp hjk
+                have hjval : j.val = k := Nat.le_antisymm hjle hkj
+                have hjeq : j = Fin.last k := Fin.eq_of_val_eq hjval
+                rw [hjeq, hMidLast, hHighLast]
+                exact hmh
+            · constructor
+              · have hlo :
+                    (Vec.snoc k lows lowLast).idx i = lows.idx i' := by
+                  show
+                    (if h : i.val < k then
+                      Vec.idx lows ⟨i.val, h⟩ else lowLast) =
+                      Vec.idx lows i'
+                  rw [dite_eq_left hiklt]
+                  rfl
+                have hmid :
+                    (Vec.snoc k mids midLast).idx i = mids.idx i' := by
+                  show
+                    (if h : i.val < k then
+                      Vec.idx mids ⟨i.val, h⟩ else midLast) =
+                      Vec.idx mids i'
+                  rw [dite_eq_left hiklt]
+                  rfl
+                rw [hlo, hmid]
+                exact hrec.2.1
+              · have hmid :
+                    (Vec.snoc k mids midLast).idx i = mids.idx i' := by
+                  show
+                    (if h : i.val < k then
+                      Vec.idx mids ⟨i.val, h⟩ else midLast) =
+                      Vec.idx mids i'
+                  rw [dite_eq_left hiklt]
+                  rfl
+                have hhi :
+                    (Vec.snoc k highs highLast).idx i = highs.idx i' := by
+                  show
+                    (if h : i.val < k then
+                      Vec.idx highs ⟨i.val, h⟩ else highLast) =
+                      Vec.idx highs i'
+                  rw [dite_eq_left hiklt]
+                  rfl
+                rw [hmid, hhi]
+                exact hrec.2.2
+
 theorem T.SDom_tail {lam : Nat} (z b a : T lam)
     (ls : Vec (T lam) lam) (hs : T.SDom z b a) :
     T.SDom z (T.P ls b) (T.P ls a) := by
