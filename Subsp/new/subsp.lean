@@ -504,7 +504,7 @@ theorem T.fund_PZ_some {lam : Nat}
     lhs
     rw [T.fund, if_pos rfl]
     rw [hmin]
-  rw [Vec.getElem_eq_idx]
+  rfl
 
 theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
     (u v : Vec (T lam) lam) (t : T lam)
