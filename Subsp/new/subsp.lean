@@ -982,7 +982,6 @@ theorem Vec.Gres_cases {lam m : Nat}
                 Vec.idx xs ⟨i.val, h⟩ else last) = xs.idx i
             rw [dite_eq_left i.isLt]
           rw [hidx]
-          exact hcase
         | inr hlast =>
           have hylast : y = last := List.mem_singleton.mp hlast
           refine ⟨Fin.last k, Or.inl ?_⟩
