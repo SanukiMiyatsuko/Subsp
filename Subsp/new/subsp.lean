@@ -164,12 +164,20 @@ inductive T.isNF {lam : Nat} : T lam → Prop where
   (h2 : ∀ x ∈ Vec.toList ls, ∀ y ∈ G x, y < x)
   (h3 : head add ≤ P ls Z) : isNF (P ls add)
 
+def T.decLt {lam : Nat} (x y : T lam) : Decidable (x < y) :=
+  inferInstanceAs (Decidable (compareT x y = Ordering.lt))
+
+def T.decLe {lam : Nat} (x y : T lam) : Decidable (x ≤ y) :=
+  inferInstanceAs
+    (Decidable
+      (compareT x y = Ordering.lt ∨ compareT x y = Ordering.eq))
+
 def T.decidableAllLt {lam : Nat} (l : List (T lam)) (x : T lam) :
     Decidable (∀ y ∈ l, y < x) :=
   match l with
-  | [] => isTrue (fun y hy => False.elim (List.not_mem_nil y hy))
+  | [] => isTrue (fun y hy => False.elim (List.not_mem_nil hy))
   | y :: ys =>
-    match (inferInstance : Decidable (y < x)) with
+    match T.decLt y x with
     | isFalse hny =>
       isFalse (fun h => hny (h y List.mem_cons_self))
     | isTrue hy =>
@@ -187,7 +195,7 @@ def Vec.decidableAllG {lam m : Nat} (v : Vec (T lam) m) :
     Decidable (∀ x ∈ Vec.toList v, ∀ y ∈ T.G x, y < x) :=
   match v with
   | .nil =>
-    isTrue (fun x hx => False.elim (List.not_mem_nil x hx))
+    isTrue (fun x hx => False.elim (List.not_mem_nil hx))
   | .snoc _ xs x =>
     match Vec.decidableAllG xs with
     | isFalse hnxs =>
@@ -232,8 +240,7 @@ mutual
               match h with
               | .p _ _ _ _ h2 _ => hn2 h2)
           | isTrue h2 =>
-            match (inferInstance :
-              Decidable (T.head add ≤ T.P ls T.Z)) with
+            match T.decLe (T.head add) (T.P ls T.Z) with
             | isFalse hn3 =>
               isFalse (fun h =>
                 match h with
@@ -245,7 +252,7 @@ mutual
       Decidable (∀ x ∈ Vec.toList v, T.isNF x) :=
     match v with
     | .nil =>
-      isTrue (fun x hx => False.elim (List.not_mem_nil x hx))
+      isTrue (fun x hx => False.elim (List.not_mem_nil hx))
     | .snoc _ xs x =>
       match Vec.decAllNF xs with
       | isFalse hnxs =>
