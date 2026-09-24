@@ -188,7 +188,7 @@ def T.decForallMem {lam : Nat} (l : List (T lam))
 def T.decGCondition {lam : Nat} (x : T lam) :
     Decidable (∀ y ∈ T.G x, y < x) :=
   T.decForallMem (T.G x) (fun y => y < x)
-    (fun y => inferInstance)
+    (fun y => inferInstanceAs (Decidable (T.lt y x)))
 
 mutual
   def T.decIsNF {lam : Nat} : (s : T lam) → Decidable (T.isNF s)
@@ -212,7 +212,8 @@ mutual
                 match h with
                 | .p _ _ _ _ h2 _ => hn2 h2)
           | isTrue h2 =>
-            match (inferInstance :
+            match (inferInstanceAs
+              (Decidable (T.le (T.head add) (T.P ls T.Z))) :
               Decidable (T.head add ≤ T.P ls T.Z)) with
             | isFalse hn3 =>
                 isFalse (fun h =>
