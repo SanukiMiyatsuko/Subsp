@@ -471,7 +471,9 @@ theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
       rfl
   | P tls add =>
       rw [T.mul]
-      rw [T.oplus.eq_def]
+      change
+        T.P u (T.mul (T.P u T.Z) add) <
+          T.P v T.Z
       exact T.P_lt_P_of_compareVec_lt
         u v (T.mul (T.P u T.Z) add) T.Z h
 
@@ -488,12 +490,10 @@ theorem T.fund_lt_self {lam : Nat}
       rw [if_pos rfl]
       cases hmin : T.domVecMinIdx ls with
       | none =>
-          rw [hmin]
           rfl
       | some md =>
         cases md with
         | mk m d =>
-          rw [hmin]
           have hspec :=
             T.domVecMinIdx_some_spec ls m d hmin
           have hmne : ls[m] ≠ T.Z := by
@@ -614,7 +614,8 @@ decreasing_by
   all_goals
     first
     | exact T.idx_size_lt_P ls T.Z m
-    | exact T.add_size_lt_P ls add
+    | (change T.size add < T.size (T.P ls add)
+       exact T.add_size_lt_P ls add)
 
 theorem T.head_mono {lam : Nat}
     (a b : T lam) (h : a < b) :
@@ -762,6 +763,7 @@ theorem Vec.Gres_cases {lam m : Nat}
                 Vec.idx xs ⟨i.val, h⟩ else last) = xs.idx i
             rw [dite_eq_left i.isLt]
           rw [hidx]
+          exact hcase
         | inr hlast =>
           have hylast : y = last := List.mem_singleton.mp hlast
           refine ⟨Fin.last k, Or.inl ?_⟩
