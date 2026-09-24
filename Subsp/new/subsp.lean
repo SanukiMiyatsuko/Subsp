@@ -330,6 +330,60 @@ def T.G {lam : Nat} (s : T lam) : List (T lam) :=
       | .snoc n v last => res v ++ [last] ++ G last
     res ls ++ G add
 
+theorem T.G_P_eq {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
+    T.G (T.P ls add) = T.G.res ls ++ T.G add := by
+  rfl
+
+theorem Vec.Gres_mem_of_idx {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m) :
+    v.idx i ∈ T.G.res v := by
+  induction v with
+  | nil =>
+      exact i.elim0
+  | snoc k xs last ih =>
+      change
+        (if h : i.val < k then
+          Vec.idx xs ⟨i.val, h⟩ else last) ∈
+          T.G.res xs ++ [last] ++ T.G last
+      by_cases h : i.val < k
+      · rw [dite_eq_left h]
+        exact List.mem_append_left (T.G last)
+          (List.mem_append_left [last] (ih ⟨i.val, h⟩))
+      · rw [dite_eq_right h]
+        exact List.mem_append_left (T.G last)
+          (List.mem_append_right (T.G.res xs)
+            (List.mem_singleton_self last))
+
+theorem Vec.Gres_mem_G_of_idx {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m)
+    (y : T lam) (hy : y ∈ T.G (v.idx i)) :
+    y ∈ T.G.res v := by
+  induction v with
+  | nil =>
+      exact i.elim0
+  | snoc k xs last ih =>
+      change
+        y ∈ T.G.res xs ++ [last] ++ T.G last
+      by_cases h : i.val < k
+      · have hy' : y ∈ T.G (Vec.idx xs ⟨i.val, h⟩) := by
+          change
+            y ∈ T.G
+              (if h' : i.val < k then
+                Vec.idx xs ⟨i.val, h'⟩ else last) at hy
+          rw [dite_eq_left h] at hy
+          exact hy
+        exact List.mem_append_left (T.G last)
+          (List.mem_append_left [last]
+            (ih ⟨i.val, h⟩ y hy'))
+      · have hy' : y ∈ T.G last := by
+          change
+            y ∈ T.G
+              (if h' : i.val < k then
+                Vec.idx xs ⟨i.val, h'⟩ else last) at hy
+          rw [dite_eq_right h] at hy
+          exact hy
+        exact List.mem_append_right (T.G.res xs ++ [last]) hy'
+
 inductive T.isNF {lam : Nat} : T lam → Prop where
 | z : isNF Z
 | p (ls : Vec (T lam) lam) (add : T lam)
