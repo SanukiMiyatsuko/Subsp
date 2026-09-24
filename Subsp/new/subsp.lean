@@ -3365,6 +3365,86 @@ theorem T.fund_Omega_master {lam : Nat}
             exact ⟨hparentNF, hparentSD⟩)
   exact main (T.size s) s z rfl hs hd hz
 
+theorem T.G_mul_PZ_subset {lam : Nat}
+    (ls : Vec (T lam) lam) :
+    ∀ t x : T lam,
+      x ∈ T.G (T.mul (T.P ls T.Z) t) →
+        x ∈ T.G (T.P ls T.Z) := by
+  intro t
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ u : T lam, T.size u = n →
+        ∀ x : T lam,
+          x ∈ T.G (T.mul (T.P ls T.Z) u) →
+            x ∈ T.G (T.P ls T.Z)
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro u hn x hx
+      cases u with
+      | Z =>
+        rw [T.mul] at hx
+        change x ∈ ([] : List (T lam)) at hx
+        cases hx
+      | P us add =>
+        have hsz : T.size add < n := by
+          rw [← hn]
+          exact T.add_size_lt_P us add
+        have hrec :=
+          ih (T.size add) hsz add rfl
+        rw [T.mul] at hx
+        change
+          x ∈
+            T.G
+              (T.P ls
+                (T.mul (T.P ls T.Z) add)) at hx
+        cases
+            (T.mem_G_P ls
+              (T.mul (T.P ls T.Z) add) x).mp hx with
+        | inl hvec =>
+          apply (T.mem_G_P ls T.Z x).mpr
+          exact Or.inl hvec
+        | inr htail =>
+          exact hrec x htail)
+  exact main (T.size t) t rfl
+
+theorem T.SDom_mul_PZ {lam : Nat}
+    (u v : Vec (T lam) lam) (t : T lam)
+    (hvec : compareVec u v = Ordering.lt)
+    (hbase :
+      T.SDom T.Z (T.P u T.Z) (T.P v T.Z)) :
+    T.SDom T.Z
+      (T.mul (T.P u T.Z) t) (T.P v T.Z) := by
+  constructor
+  · exact T.mul_PZ_lt_of_compareVec_lt u v t hvec
+  · intro c hmc hcv x hx
+    cases t with
+    | Z =>
+      rw [T.mul] at hx
+      change x ∈ ([] : List (T lam)) at hx
+      cases hx
+    | P ts add =>
+      have hbaseMul :
+          T.P u T.Z ≤
+            T.mul (T.P u T.Z) (T.P ts add) := by
+        rw [T.mul]
+        change
+          T.P u T.Z ≤
+            T.P u (T.mul (T.P u T.Z) add)
+        exact T.P_le_P_same u T.Z
+          (T.mul (T.P u T.Z) add)
+          (T.Z_le (T.mul (T.P u T.Z) add))
+      have hbaseC :
+          T.P u T.Z ≤ c :=
+        T.le_trans
+          (T.P u T.Z)
+          (T.mul (T.P u T.Z) (T.P ts add))
+          c hbaseMul hmc
+      have hxbase :
+          x ∈ T.G (T.P u T.Z) :=
+        T.G_mul_PZ_subset u (T.P ts add) x hx
+      exact hbase.2 c hbaseC hcv x hxbase
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
