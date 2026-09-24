@@ -2866,30 +2866,6 @@ theorem T.fund_P_tail_eq {lam : Nat}
     lhs
     rw [T.fund, if_neg hadd]
 
-theorem T.fund_PZ_one_succ_eq {lam : Nat}
-    (ls : Vec (T lam) lam) (k : Nat)
-    (hk : Nat.succ k < lam)
-    (hmin :
-      T.domVecMinIdx ls =
-        some (⟨Nat.succ k, hk⟩, Dom.one))
-    (t : T lam) :
-    T.fund (T.P ls T.Z) t =
-      T.P
-        ((ls.rplc ⟨Nat.succ k, hk⟩
-          (T.fund
-            (ls.idx ⟨Nat.succ k, hk⟩) T.Z)).rplc
-            ⟨k, Nat.lt_of_succ_lt hk⟩ t)
-        T.Z := by
-  conv =>
-    lhs
-    rw [T.fund, if_pos rfl]
-    rw [hmin]
-    change
-      (if Dom.one = Dom.one then _ else _)
-    rw [if_pos rfl]
-  rw [Vec.getElem_eq_idx
-    ls ⟨Nat.succ k, hk⟩]
-
 theorem T.fund_Omega_ne_Z {lam : Nat}
     (s t : T lam) (hd : T.dom s = .Omega) :
     T.fund s t ≠ T.Z := by
@@ -3030,11 +3006,43 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                             Ordering.lt :=
                       Vec.compare_rplc_same_index_lt
                         base mj u v huv
-                    rw [
-                      T.fund_PZ_one_succ_eq
-                        ls k mh hmin u,
-                      T.fund_PZ_one_succ_eq
-                        ls k mh hmin v]
+                    have hfu :
+                        T.fund (T.P ls T.Z) u =
+                          T.P (base.rplc mj u) T.Z := by
+                      conv =>
+                        lhs
+                        rw [T.fund, if_pos rfl]
+                        rw [hmin]
+                        change
+                          (if Dom.one = Dom.one then _ else _)
+                        rw [if_pos rfl]
+                      change
+                        T.P
+                          ((ls.rplc mi
+                            (T.fund (ls.idx mi) T.Z)).rplc
+                              mj u)
+                          T.Z =
+                            T.P (base.rplc mj u) T.Z
+                      rfl
+                    have hfv :
+                        T.fund (T.P ls T.Z) v =
+                          T.P (base.rplc mj v) T.Z := by
+                      conv =>
+                        lhs
+                        rw [T.fund, if_pos rfl]
+                        rw [hmin]
+                        change
+                          (if Dom.one = Dom.one then _ else _)
+                        rw [if_pos rfl]
+                      change
+                        T.P
+                          ((ls.rplc mi
+                            (T.fund (ls.idx mi) T.Z)).rplc
+                              mj v)
+                          T.Z =
+                            T.P (base.rplc mj v) T.Z
+                      rfl
+                    rw [hfu, hfv]
                     exact T.P_lt_P_of_compareVec_lt
                       (base.rplc mj u)
                       (base.rplc mj v)
@@ -3101,134 +3109,6 @@ theorem T.iter_fund_lt_next {lam : Nat}
             (T.iter (fun x => T.fund s x) add))
           hd hrec)
   exact main (T.size t) t rfl
-
-theorem Vec.interval_pivot_properties {lam m : Nat}
-    (low mid high : Vec (T lam) m) (i : Fin m)
-    (heqAbove :
-      ∀ j : Fin m, i.val < j.val → low.idx j = high.idx j)
-    (hpivot : low.idx i < high.idx i)
-    (hlm : compareVec low mid = Ordering.lt ∨ low = mid)
-    (hmh : compareVec mid high = Ordering.lt ∨ mid = high) :
-    (∀ j : Fin m, i.val < j.val → mid.idx j = high.idx j) ∧
-      low.idx i ≤ mid.idx i ∧ mid.idx i ≤ high.idx i := by
-  cases hlm with
-  | inr heq =>
-    subst mid
-    constructor
-    · intro j hij
-      exact heqAbove j hij
-    · constructor
-      · exact Or.inr (T_refl (low.idx i))
-      · exact Or.inl hpivot
-  | inl hlt =>
-    obtain ⟨p, hpEq, hpLt⟩ :=
-      Vec.compare_lt_has_pivot low mid hlt
-    have hpi : p.val ≤ i.val := by
-      by_cases hip : i.val < p.val
-      · cases hmh with
-        | inr hmeq =>
-          have hmp : mid.idx p = high.idx p := by
-            rw [hmeq]
-          have hlp : low.idx p = high.idx p :=
-            heqAbove p hip
-          have hbad : low.idx p < low.idx p := by
-            rw [hmp, ← hlp] at hpLt
-            exact hpLt
-          exact False.elim
-            (strict_partial_order.irrefl (low.idx p) hbad)
-        | inl hmhlt =>
-          obtain ⟨q, hqEq, hqLt⟩ :=
-            Vec.compare_lt_has_pivot mid high hmhlt
-          cases Nat.lt_trichotomy q.val p.val with
-          | inl hqp =>
-            have hmp : mid.idx p = high.idx p :=
-              hqEq p hqp
-            have hlp : low.idx p = high.idx p :=
-              heqAbove p hip
-            have hbad : low.idx p < low.idx p := by
-              rw [hmp, ← hlp] at hpLt
-              exact hpLt
-            exact False.elim
-              (strict_partial_order.irrefl (low.idx p) hbad)
-          | inr hrest =>
-            cases hrest with
-            | inl heqVal =>
-              have hpq : p = q := Fin.eq_of_val_eq heqVal.symm
-              subst q
-              have hlp : low.idx p = high.idx p :=
-                heqAbove p hip
-              have hcycle : low.idx p < low.idx p := by
-                have htrans :=
-                  strict_partial_order.trans
-                    (low.idx p) (mid.idx p) (high.idx p)
-                    hpLt hqLt
-                rw [← hlp] at htrans
-                exact htrans
-              exact False.elim
-                (strict_partial_order.irrefl (low.idx p) hcycle)
-            | inr hpq =>
-              have hiq : i.val < q.val :=
-                Nat.lt_trans hip hpq
-              have hlq : low.idx q = high.idx q :=
-                heqAbove q hiq
-              have hlmq : low.idx q = mid.idx q :=
-                hpEq q hpq
-              have hbad : high.idx q < high.idx q := by
-                rw [← hlmq, hlq] at hqLt
-                exact hqLt
-              exact False.elim
-                (strict_partial_order.irrefl (high.idx q) hbad)
-      · exact Nat.not_lt.mp hip
-    have hhigh :
-        ∀ j : Fin m, i.val < j.val → mid.idx j = high.idx j := by
-      intro j hij
-      have hpj : p.val < j.val :=
-        Nat.lt_of_le_of_lt hpi hij
-      have hlmEq : low.idx j = mid.idx j :=
-        hpEq j hpj
-      have hlhEq : low.idx j = high.idx j :=
-        heqAbove j hij
-      exact hlmEq.symm.trans hlhEq
-    have hlower : low.idx i ≤ mid.idx i := by
-      cases Nat.lt_or_eq_of_le hpi with
-      | inl hpiLt =>
-        apply Or.inr
-        have heq := hpEq i hpiLt
-        rw [heq]
-        exact T_refl (mid.idx i)
-      | inr hpiEq =>
-        have hpeqi : p = i := Fin.eq_of_val_eq hpiEq
-        rw [hpeqi] at hpLt
-        exact Or.inl hpLt
-    have hupper : mid.idx i ≤ high.idx i := by
-      cases hmh with
-      | inr heq =>
-        rw [heq]
-        exact T.le_refl (high.idx i)
-      | inl hltmh =>
-        obtain ⟨q, hqEq, hqLt⟩ :=
-          Vec.compare_lt_has_pivot mid high hltmh
-        have hqi : q.val ≤ i.val := by
-          by_cases hiq : i.val < q.val
-          · have heqQ : mid.idx q = high.idx q :=
-              hhigh q hiq
-            have hbad : high.idx q < high.idx q := by
-              rw [heqQ] at hqLt
-              exact hqLt
-            exact False.elim
-              (strict_partial_order.irrefl (high.idx q) hbad)
-          · exact Nat.not_lt.mp hiq
-        cases Nat.lt_or_eq_of_le hqi with
-        | inl hqiLt =>
-          apply Or.inr
-          have heq := hqEq i hqiLt
-          rw [heq]
-          exact T_refl (high.idx i)
-        | inr hqiEq =>
-          have hqei : q = i := Fin.eq_of_val_eq hqiEq
-          rw [hqei] at hqLt
-          exact Or.inl hqLt
-    exact ⟨hhigh, hlower, hupper⟩
 
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
