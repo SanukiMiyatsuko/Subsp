@@ -500,11 +500,21 @@ theorem T.fund_PZ_some {lam : Nat}
           (ls.rplc m
             (T.fund ls[m] t))
           T.Z := by
-  conv =>
-    lhs
-    rw [T.fund, if_pos rfl]
-    rw [hmin]
-  rfl
+  cases m with
+  | mk mv mh =>
+    cases mv with
+    | zero =>
+      conv =>
+        lhs
+        rw [T.fund, if_pos rfl]
+        rw [hmin]
+      rfl
+    | succ m' =>
+      conv =>
+        lhs
+        rw [T.fund, if_pos rfl]
+        rw [hmin]
+      rfl
 
 theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
     (u v : Vec (T lam) lam) (t : T lam)
