@@ -18,10 +18,11 @@ theorem wellfounded_NF (lam : Nat) : WellFounded (fun s t : new.T.NF lam => s.va
 def T.isSubNF (n : Nat) (s : T) :=
   isNF1 s ∧
     match n with
-    | 0 => s < P 0 (P 1 Z Z) Z
+    | 0 => s < P 0 (P 0 Z Z) Z
+    | 1 => s < P 0 (P 1 Z Z) Z
     | _ + 1 => s < P 0 (P 1 (P 1 (mul (P 1 Z Z) (ofNat n)) Z) Z) Z
 
-theorem OT_iff_NF1 (lam : Nat) (s : new.T (lam + 1)) : new.T.isOT (lam + 1) s ↔ T.isSubNF lam (trans s) := sorry
+theorem OT_iff_NF1 (lam : Nat) (s : new.T lam) : new.T.isOT lam s ↔ T.isSubNF lam (trans s) := sorry
 
 def new.T.OT (lam : Nat) := { s : T lam // isOT lam s }
 
