@@ -394,6 +394,43 @@ theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
         cases h
         exact hx
 
+theorem T.dom_zero_eq_Z {lam : Nat}
+    (s : T lam) (h : T.dom s = .zero) :
+    s = T.Z := by
+  cases s with
+  | Z =>
+    rfl
+  | P ls add =>
+    rw [T.dom] at h
+    by_cases hadd : add = T.Z
+    · rw [ite_eq_left hadd] at h
+      cases hmin : T.domVecMinIdx ls with
+      | none =>
+        rw [hmin] at h
+        cases h
+      | some p =>
+        cases p with
+        | mk m d =>
+          rw [hmin] at h
+          have hdnz :=
+            T.domVecMinIdx_some_ne_zero ls m d hmin
+          by_cases hd1 : d = .one
+          · rw [ite_eq_left hd1] at h
+            by_cases hm0 : m.val = 0
+            · rw [ite_eq_left hm0] at h
+              cases h
+            · rw [ite_eq_right hm0] at h
+              cases h
+          · rw [ite_eq_right hd1] at h
+            cases h
+    · rw [ite_eq_right hadd] at h
+      have hz : add = T.Z :=
+        T.dom_zero_eq_Z add h
+      exact False.elim (hadd hz)
+termination_by T.size s
+decreasing_by
+  exact T.add_size_lt_P ls add
+
 theorem T.Z_le {lam : Nat} (s : T lam) : T.Z ≤ s := by
   cases s with
   | Z =>
