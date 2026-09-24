@@ -2857,6 +2857,36 @@ theorem Vec.compare_rplc_same_index_lt {lam m : Nat}
     rw [Vec.rplc_idx_same]
     exact hab
 
+theorem T.fund_P_tail_eq {lam : Nat}
+    (ls : Vec (T lam) lam) (add t : T lam)
+    (hadd : add ≠ T.Z) :
+    T.fund (T.P ls add) t =
+      T.P ls (T.fund add t) := by
+  conv =>
+    lhs
+    rw [T.fund, if_neg hadd]
+
+theorem T.fund_PZ_one_succ_eq {lam : Nat}
+    (ls : Vec (T lam) lam) (k : Nat)
+    (hk : k + 1 < lam)
+    (hmin :
+      T.domVecMinIdx ls =
+        some (⟨k + 1, hk⟩, Dom.one))
+    (t : T lam) :
+    T.fund (T.P ls T.Z) t =
+      T.P
+        ((ls.rplc ⟨k + 1, hk⟩
+          (T.fund (ls.idx ⟨k + 1, hk⟩) T.Z)).rplc
+            ⟨k, Nat.lt_of_succ_lt hk⟩ t)
+        T.Z := by
+  conv =>
+    lhs
+    rw [T.fund, if_pos rfl]
+    rw [hmin]
+    change
+      (if Dom.one = Dom.one then _ else _)
+    rw [if_pos rfl]
+
 theorem T.fund_Omega_ne_Z {lam : Nat}
     (s t : T lam) (hd : T.dom s = .Omega) :
     T.fund s t ≠ T.Z := by
@@ -2997,19 +3027,11 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                             Ordering.lt :=
                       Vec.compare_rplc_same_index_lt
                         base mj u v huv
-                    conv =>
-                      lhs
-                      rw [T.fund.eq_def, if_pos rfl]
-                      rw [hmin]
-                      change
-                        (if Dom.one = Dom.one then _ else _)
-                      rw [if_pos rfl]
-                      rhs
-                      rw [T.fund.eq_def, if_pos rfl]
-                      rw [hmin]
-                      change
-                        (if Dom.one = Dom.one then _ else _)
-                      rw [if_pos rfl]
+                    rw [
+                      T.fund_PZ_one_succ_eq
+                        ls k mh hmin u,
+                      T.fund_PZ_one_succ_eq
+                        ls k mh hmin v]
                     exact T.P_lt_P_of_compareVec_lt
                       (base.rplc mj u)
                       (base.rplc mj v)
@@ -3026,11 +3048,9 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
               T.fund add u < T.fund add v :=
             ih (T.size add) hsz add u v
               rfl hdadd huv
-          conv =>
-            lhs
-            rw [T.fund.eq_def, if_neg hadd]
-            rhs
-            rw [T.fund.eq_def, if_neg hadd]
+          rw [
+            T.fund_P_tail_eq ls add u hadd,
+            T.fund_P_tail_eq ls add v hadd]
           exact T.P_tail_lt ls
             (T.fund add u) (T.fund add v) hrec)
   exact main (T.size s) s x y rfl hd hxy
