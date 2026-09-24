@@ -2511,6 +2511,336 @@ theorem T.mul_PZ_NFComp_closed {lam : Nat}
               hyu (T.mul_PZ_lt_next ls add))
   exact main (T.size t) t rfl
 
+theorem T.SDom_tail {lam : Nat}
+    (z b a : T lam) (ls : Vec (T lam) lam)
+    (hs : T.SDom z b a) :
+    T.SDom z (T.P ls b) (T.P ls a) := by
+  constructor
+  · exact T.P_tail_lt ls b a hs.1
+  · intro c hbc hca
+    have hba : b ≤ a := Or.inl hs.1
+    obtain ⟨d, hcd, hbd, hda⟩ :=
+      T.sandwich_same_vector ls b a c hba hbc hca
+    rw [hcd]
+    intro x hx
+    cases (T.mem_G_P ls b x).mp hx with
+    | inl hvec =>
+      refine ⟨x, ?_, T.le_refl x⟩
+      apply List.mem_append_left (T.GZ z)
+      apply (T.mem_G_P ls d x).mpr
+      exact Or.inl hvec
+    | inr htail =>
+      obtain ⟨y, hy, hxy⟩ :=
+        hs.2 d hbd hda x htail
+      cases List.mem_append.mp hy with
+      | inl hyd =>
+        refine ⟨y, ?_, hxy⟩
+        apply List.mem_append_left (T.GZ z)
+        apply (T.mem_G_P ls d y).mpr
+        exact Or.inr hyd
+      | inr hyz =>
+        exact
+          ⟨y,
+            List.mem_append_right (T.G (T.P ls d)) hyz,
+            hxy⟩
+
+theorem Vec.interval_pivot_properties {lam m : Nat}
+    (low mid high : Vec (T lam) m) (i : Fin m)
+    (heqAbove :
+      ∀ j : Fin m, i.val < j.val →
+        low.idx j = high.idx j)
+    (hpivot : low.idx i < high.idx i)
+    (hlm : compareVec low mid = Ordering.lt ∨ low = mid)
+    (hmh : compareVec mid high = Ordering.lt ∨ mid = high) :
+    (∀ j : Fin m, i.val < j.val →
+        mid.idx j = high.idx j) ∧
+      low.idx i ≤ mid.idx i ∧
+      mid.idx i ≤ high.idx i := by
+  cases hlm with
+  | inr heq =>
+    subst mid
+    constructor
+    · intro j hij
+      exact heqAbove j hij
+    · constructor
+      · exact T.le_refl (low.idx i)
+      · exact Or.inl hpivot
+  | inl hlt =>
+    obtain ⟨p, hpEq, hpLt⟩ :=
+      Vec.compare_lt_has_pivot low mid hlt
+    have hpi : p.val ≤ i.val := by
+      by_cases hip : i.val < p.val
+      · cases hmh with
+        | inr hmeq =>
+          have hmp : mid.idx p = high.idx p := by
+            rw [hmeq]
+          have hlp : low.idx p = high.idx p :=
+            heqAbove p hip
+          have hbad : low.idx p < low.idx p := by
+            rw [hmp, ← hlp] at hpLt
+            exact hpLt
+          exact False.elim
+            (strict_partial_order.irrefl (low.idx p) hbad)
+        | inl hmhlt =>
+          obtain ⟨q, hqEq, hqLt⟩ :=
+            Vec.compare_lt_has_pivot mid high hmhlt
+          cases Nat.lt_trichotomy q.val p.val with
+          | inl hqp =>
+            have hmp : mid.idx p = high.idx p :=
+              hqEq p hqp
+            have hlp : low.idx p = high.idx p :=
+              heqAbove p hip
+            have hbad : low.idx p < low.idx p := by
+              rw [hmp, ← hlp] at hpLt
+              exact hpLt
+            exact False.elim
+              (strict_partial_order.irrefl (low.idx p) hbad)
+          | inr hrest =>
+            cases hrest with
+            | inl heqVal =>
+              have hpq : p = q :=
+                Fin.eq_of_val_eq heqVal.symm
+              subst q
+              have hlp : low.idx p = high.idx p :=
+                heqAbove p hip
+              have hcycle : low.idx p < low.idx p := by
+                have htrans :=
+                  strict_partial_order.trans
+                    (low.idx p) (mid.idx p)
+                    (high.idx p) hpLt hqLt
+                rw [← hlp] at htrans
+                exact htrans
+              exact False.elim
+                (strict_partial_order.irrefl
+                  (low.idx p) hcycle)
+            | inr hpq =>
+              have hiq : i.val < q.val :=
+                Nat.lt_trans hip hpq
+              have hlq : low.idx q = high.idx q :=
+                heqAbove q hiq
+              have hlmq : low.idx q = mid.idx q :=
+                hpEq q hpq
+              have hbad : high.idx q < high.idx q := by
+                rw [← hlmq, hlq] at hqLt
+                exact hqLt
+              exact False.elim
+                (strict_partial_order.irrefl
+                  (high.idx q) hbad)
+      · exact Nat.not_lt.mp hip
+    have hhigh :
+        ∀ j : Fin m, i.val < j.val →
+          mid.idx j = high.idx j := by
+      intro j hij
+      have hpj : p.val < j.val :=
+        Nat.lt_of_le_of_lt hpi hij
+      have hlmEq : low.idx j = mid.idx j :=
+        hpEq j hpj
+      have hlhEq : low.idx j = high.idx j :=
+        heqAbove j hij
+      exact hlmEq.symm.trans hlhEq
+    have hlower : low.idx i ≤ mid.idx i := by
+      cases Nat.lt_or_eq_of_le hpi with
+      | inl hpiLt =>
+        have heq : low.idx i = mid.idx i :=
+          hpEq i hpiLt
+        rw [heq]
+        exact T.le_refl (mid.idx i)
+      | inr hpiEq =>
+        have hpeqi : p = i :=
+          Fin.eq_of_val_eq hpiEq
+        rw [hpeqi] at hpLt
+        exact Or.inl hpLt
+    have hupper : mid.idx i ≤ high.idx i := by
+      cases hmh with
+      | inr heq =>
+        rw [heq]
+        exact T.le_refl (high.idx i)
+      | inl hltmh =>
+        obtain ⟨q, hqEq, hqLt⟩ :=
+          Vec.compare_lt_has_pivot mid high hltmh
+        have hqi : q.val ≤ i.val := by
+          by_cases hiq : i.val < q.val
+          · have heqQ : mid.idx q = high.idx q :=
+              hhigh q hiq
+            have hbad : high.idx q < high.idx q := by
+              rw [heqQ] at hqLt
+              exact hqLt
+            exact False.elim
+              (strict_partial_order.irrefl
+                (high.idx q) hbad)
+          · exact Nat.not_lt.mp hiq
+        cases Nat.lt_or_eq_of_le hqi with
+        | inl hqiLt =>
+          have heq : mid.idx i = high.idx i :=
+            hqEq i hqiLt
+          rw [heq]
+          exact T.le_refl (high.idx i)
+        | inr hqiEq =>
+          have hqei : q = i :=
+            Fin.eq_of_val_eq hqiEq
+          rw [hqei] at hqLt
+          exact Or.inl hqLt
+    exact ⟨hhigh, hlower, hupper⟩
+
+theorem T.SDom_PZ_pivot_comp {lam : Nat}
+    (z : T lam)
+    (low high : Vec (T lam) lam)
+    (i : Fin lam)
+    (hAbove :
+      ∀ j : Fin lam, i.val < j.val →
+        low.idx j = high.idx j)
+    (hPivotLt : low.idx i < high.idx i)
+    (hPivotComp : T.isNFComp (low.idx i))
+    (hBelow :
+      ∀ q : Fin lam, q.val < i.val →
+        low.idx q = T.Z ∨ low.idx q = z) :
+    T.SDom z (T.P low T.Z) (T.P high T.Z) := by
+  constructor
+  · exact T.P_lt_P_of_compareVec_lt
+      low high T.Z T.Z
+      (Vec.compare_lt_of_pivot
+        low high i hAbove hPivotLt)
+  · intro c hlc hch
+    cases c with
+    | Z =>
+      cases hlc with
+      | inl hlt =>
+        change
+          compareT (T.P low T.Z) T.Z =
+            Ordering.lt at hlt
+        cases hlt
+      | inr heq =>
+        have hpEq : T.P low T.Z = T.Z :=
+          T_eq_sound (T.P low T.Z) T.Z heq
+        cases hpEq
+    | P mid add =>
+      have hLowVec :
+          compareVec low mid = Ordering.lt ∨
+            low = mid :=
+        T.vector_rel_of_P_le_P
+          low mid T.Z add hlc
+      have hHighVec :
+          compareVec mid high = Ordering.lt ∨
+            mid = high :=
+        T.vector_rel_of_P_le_P
+          mid high add T.Z hch
+      have hBetween :=
+        Vec.interval_pivot_properties
+          low mid high i hAbove hPivotLt
+          hLowVec hHighVec
+      intro x hx
+      cases (T.mem_G_P low T.Z x).mp hx with
+      | inl hcoord =>
+        obtain ⟨q, hqx⟩ := hcoord
+        cases Nat.lt_trichotomy q.val i.val with
+        | inl hqi =>
+          have hlower := hBelow q hqi
+          cases hqx with
+          | inl hxq =>
+            rw [hxq]
+            cases hlower with
+            | inl hz =>
+              rw [hz]
+              refine ⟨T.Z, ?_, T.le_refl T.Z⟩
+              apply
+                List.mem_append_right
+                  (T.G (T.P mid add))
+              rw [T.GZ]
+              exact
+                List.mem_append_right
+                  ([z] ++ T.G z)
+                  (List.mem_singleton_self T.Z)
+            | inr hz =>
+              rw [hz]
+              refine ⟨z, ?_, T.le_refl z⟩
+              apply
+                List.mem_append_right
+                  (T.G (T.P mid add))
+              rw [T.GZ]
+              exact
+                List.mem_append_left
+                  (T.G z ++ [T.Z])
+                  (List.mem_singleton_self z)
+          | inr hG =>
+            cases hlower with
+            | inl hz =>
+              rw [hz] at hG
+              change x ∈ ([] : List (T lam)) at hG
+              cases hG
+            | inr hz =>
+              rw [hz] at hG
+              refine ⟨x, ?_, T.le_refl x⟩
+              apply
+                List.mem_append_right
+                  (T.G (T.P mid add))
+              rw [T.GZ]
+              apply List.mem_append_left [T.Z]
+              exact List.mem_append_right [z] hG
+        | inr hrest =>
+          cases hrest with
+          | inl hiq =>
+            have hqi : q = i :=
+              Fin.eq_of_val_eq hiq
+            subst q
+            have hLowMid :
+                low.idx i ≤ mid.idx i :=
+              hBetween.2.1
+            have hmidMem :
+                mid.idx i ∈
+                  T.G (T.P mid add) := by
+              apply
+                (T.mem_G_P mid add
+                  (mid.idx i)).mpr
+              exact Or.inl ⟨i, Or.inl rfl⟩
+            cases hqx with
+            | inl hxi =>
+              rw [hxi]
+              exact
+                ⟨mid.idx i,
+                  List.mem_append_left
+                    (T.GZ z) hmidMem,
+                  hLowMid⟩
+            | inr hG =>
+              have hxLow :
+                  x < low.idx i :=
+                hPivotComp.2 x hG
+              have hxMid :
+                  x < mid.idx i :=
+                T.lt_of_lt_of_le x
+                  (low.idx i) (mid.idx i)
+                  hxLow hLowMid
+              exact
+                ⟨mid.idx i,
+                  List.mem_append_left
+                    (T.GZ z) hmidMem,
+                  Or.inl hxMid⟩
+          | inr hiq =>
+            have hmidHigh :
+                mid.idx q = high.idx q :=
+              hBetween.1 q hiq
+            have hlowHigh :
+                low.idx q = high.idx q :=
+              hAbove q hiq
+            have hlowMid :
+                low.idx q = mid.idx q :=
+              hlowHigh.trans hmidHigh.symm
+            refine ⟨x, ?_, T.le_refl x⟩
+            apply List.mem_append_left (T.GZ z)
+            apply (T.mem_G_P mid add x).mpr
+            cases hqx with
+            | inl hxq =>
+              exact
+                Or.inl
+                  ⟨q,
+                    Or.inl
+                      (hxq.trans hlowMid)⟩
+            | inr hG =>
+              rw [hlowMid] at hG
+              exact Or.inl ⟨q, Or.inr hG⟩
+      | inr htail =>
+        change x ∈ ([] : List (T lam)) at htail
+        cases htail
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
