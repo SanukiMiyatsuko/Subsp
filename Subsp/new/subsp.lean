@@ -2360,6 +2360,142 @@ theorem T.SDom_tail {lam : Nat} (z b a : T lam)
         exact ⟨y, List.mem_append_right (T.G (T.P ls d)) hyz, hxy⟩
 
 
+
+theorem Vec.compare_rplc_same_index_lt {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m) (a b : T lam)
+    (hab : a < b) :
+    compareVec (v.rplc i a) (v.rplc i b) = Ordering.lt := by
+  apply Vec.compare_lt_of_pivot (v.rplc i a) (v.rplc i b) i
+  · intro j hij
+    have hji : j.val ≠ i.val := Nat.ne_of_gt hij
+    rw [Vec.rplc_idx_of_ne v i j a hji]
+    rw [Vec.rplc_idx_of_ne v i j b hji]
+  · rw [Vec.rplc_idx_same]
+    rw [Vec.rplc_idx_same]
+    exact hab
+
+theorem T.fund_Omega_ne_Z {lam : Nat} (s t : T lam)
+    (hd : T.dom s = .Omega) :
+    T.fund s t ≠ T.Z := by
+  cases s with
+  | Z =>
+    rw [T.dom] at hd
+    cases hd
+  | P ls add =>
+    by_cases hadd : add = T.Z
+    · subst add
+      cases hmin : T.domVecMinIdx ls with
+      | none =>
+        rw [T.dom, if_pos rfl, hmin] at hd
+        cases hd
+      | some md =>
+        cases md with
+        | mk m d =>
+          rw [T.dom, if_pos rfl, hmin] at hd
+          by_cases hd1 : d = .one
+          · rw [if_pos hd1] at hd
+            cases m with
+            | mk mv mh =>
+              cases mv with
+              | zero =>
+                rw [if_pos rfl] at hd
+                cases hd
+              | succ mv =>
+                have hne : mv + 1 ≠ 0 := Nat.succ_ne_zero mv
+                rw [if_neg hne] at hd
+                rw [T.fund, if_pos rfl, hmin, if_pos hd1]
+                intro heq
+                cases heq
+          · rw [if_neg hd1] at hd
+            cases hd
+    · rw [T.fund, if_neg hadd]
+      intro heq
+      cases heq
+
+theorem T.fund_Omega_strict_mono {lam : Nat} (s t₀ t₁ : T lam)
+    (hd : T.dom s = .Omega) (hlt : t₀ < t₁) :
+    T.fund s t₀ < T.fund s t₁ := by
+  generalize hn : T.size s = n
+  induction n using Nat.strong_induction_on generalizing s t₀ t₁ with
+  | h n ih =>
+    cases s with
+    | Z =>
+      rw [T.dom] at hd
+      cases hd
+    | P ls add =>
+      by_cases hadd : add = T.Z
+      · subst add
+        cases hmin : T.domVecMinIdx ls with
+        | none =>
+          rw [T.dom, if_pos rfl, hmin] at hd
+          cases hd
+        | some md =>
+          cases md with
+          | mk m d =>
+            rw [T.dom, if_pos rfl, hmin] at hd
+            by_cases hd1 : d = .one
+            · rw [if_pos hd1] at hd
+              cases m with
+              | mk mv mh =>
+                cases mv with
+                | zero =>
+                  rw [if_pos rfl] at hd
+                  cases hd
+                | succ mv =>
+                  have hne : mv + 1 ≠ 0 := Nat.succ_ne_zero mv
+                  rw [if_neg hne] at hd
+                  let mi : Fin lam := ⟨mv + 1, mh⟩
+                  let mj : Fin lam := ⟨mv, Nat.lt_of_succ_lt mh⟩
+                  have hvec :
+                      compareVec
+                        ((ls.rplc mi (T.fund ls[mi] T.Z)).rplc mj t₀)
+                        ((ls.rplc mi (T.fund ls[mi] T.Z)).rplc mj t₁) =
+                          Ordering.lt :=
+                    Vec.compare_rplc_same_index_lt
+                      (ls.rplc mi (T.fund ls[mi] T.Z)) mj t₀ t₁ hlt
+                  rw [T.fund, if_pos rfl, hmin, if_pos hd1]
+                  exact T.P_lt_P_of_compareVec_lt _ _ T.Z T.Z hvec
+            · rw [if_neg hd1] at hd
+              cases hd
+      · have hdadd : T.dom add = .Omega := by
+          rw [T.dom, if_neg hadd] at hd
+          exact hd
+        have hsz : T.size add < n := by
+          have hs := T.add_size_lt_P ls add
+          rw [hn] at hs
+          exact hs
+        have hrec :
+            T.fund add t₀ < T.fund add t₁ :=
+          ih (T.size add) hsz add t₀ t₁ rfl hdadd hlt
+        rw [T.fund, if_neg hadd]
+        show
+          (match compareVec ls ls with
+          | Ordering.eq => compareT (T.fund add t₀) (T.fund add t₁)
+          | ord => ord) = Ordering.lt
+        rw [Vec_refl ls]
+        exact hrec
+
+theorem T.iter_fund_lt_next {lam : Nat} (s t : T lam)
+    (hd : T.dom s = .Omega) :
+    T.iter (fun x => T.fund s x) t <
+      T.fund s (T.iter (fun x => T.fund s x) t) := by
+  induction t with
+  | Z =>
+    rw [T.iter]
+    have hne : T.fund s T.Z ≠ T.Z :=
+      T.fund_Omega_ne_Z s T.Z hd
+    cases T.Z_le (T.fund s T.Z) with
+    | inl hlt =>
+      exact hlt
+    | inr heq =>
+      exact False.elim (hne heq.symm)
+  | P ls add ih =>
+    rw [T.iter]
+    exact T.fund_Omega_strict_mono s
+      (T.iter (fun x => T.fund s x) add)
+      (T.fund s (T.iter (fun x => T.fund s x) add))
+      hd ih
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
