@@ -3676,6 +3676,91 @@ theorem T.SDom_PZ_pivot {lam : Nat}
         rw [T.G] at htail
         exact False.elim (List.not_mem_nil x htail)
 
+theorem T.fund_one_master {lam : Nat} (s : T lam) :
+    ∀ (hs : T.isNF s), T.dom s = .one →
+      T.isNF (T.fund s T.Z) ∧
+        (T.fund s T.Z < s ∧
+          ∀ c : T lam,
+            T.fund s T.Z ≤ c → c ≤ s →
+            ∀ x ∈ T.G (T.fund s T.Z),
+              ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y) := by
+  generalize hn : T.size s = n
+  induction n using Nat.strong_induction_on generalizing s with
+  | h n ih =>
+    intro hs hd
+    cases s with
+    | Z =>
+      cases hd
+    | P ls add =>
+      cases hs with
+      | p _ _ h0 h1 h2 h3 =>
+        by_cases hadd : add = T.Z
+        · subst add
+          have hnone : T.domVecMinIdx ls = none := by
+            cases hmin : T.domVecMinIdx ls with
+            | none => exact hmin
+            | some md =>
+              cases md with
+              | mk m d =>
+                have hdnz :=
+                  T.domVecMinIdx_some_ne_zero ls m d hmin
+                rw [T.dom] at hd
+                rw [if_pos rfl, hmin] at hd
+                cases d with
+                | zero =>
+                  exact False.elim (hdnz rfl)
+                | one =>
+                  rw [if_pos rfl] at hd
+                  by_cases hm : m.val = 0
+                  · rw [if_pos hm] at hd
+                    cases hd
+                  · rw [if_neg hm] at hd
+                    cases hd
+                | omega =>
+                  rw [if_neg (by intro heq; cases heq)] at hd
+                  cases hd
+                | Omega =>
+                  rw [if_neg (by intro heq; cases heq)] at hd
+                  cases hd
+          rw [T.fund, if_pos rfl, hnone]
+          constructor
+          · exact T.isNF.z
+          · constructor
+            · show compareT T.Z (T.P ls T.Z) = Ordering.lt
+              rfl
+            · intro c hzc hcs x hx
+              rw [T.G] at hx
+              exact False.elim (List.not_mem_nil x hx)
+        · have hdadd : T.dom add = .one := by
+            rw [T.dom] at hd
+            rw [if_neg hadd] at hd
+            exact hd
+          have hsz : T.size add < n := by
+            rw [← hn]
+            exact T.add_size_lt_P ls add
+          obtain ⟨hnf, hrel⟩ :=
+            ih (T.size add) hsz add rfl h1 hdadd
+          rw [T.fund, if_neg hadd]
+          constructor
+          · apply T.isNF.p ls (T.fund add T.Z)
+            · exact h0
+            · exact hnf
+            · exact h2
+            · exact partial_order.trans
+                (T.head (T.fund add T.Z))
+                (T.head add) (T.P ls T.Z)
+                (T.head_fund_le add T.Z) h3
+          · exact T.zero_domination_tail ls add
+              (T.fund add T.Z) hrel
+
+theorem T.fund_one_NFComp_closed {lam : Nat} (s : T lam)
+    (hs : T.isNFComp s) (hd : T.dom s = .one) :
+    T.isNFComp (T.fund s T.Z) := by
+  obtain ⟨hnf, hdom⟩ :=
+    T.fund_one_master s hs.1 hd
+  exact T.NFComp_of_zero_domination
+    s (T.fund s T.Z) hnf hs hdom
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
