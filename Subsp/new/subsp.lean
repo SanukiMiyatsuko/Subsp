@@ -134,17 +134,18 @@ decreasing_by
     | exact Prod.Lex.right _ (T.add_size_lt_P _ _)
     | exact Prod.Lex.left _ _ (T.add_size_lt_P ls add)
 
-def T.LF {lam : Nat} : Nat → T lam
+def T.LF (lam : Nat) : Nat → T lam
 | 0 => Z
 | n + 1 =>
   match lam with
-  | 0 => P Vec.nil (LF n)
+  | 0 => P Vec.nil (LF 0 n)
   | lam' + 1 =>
-    P (Vec.ofFn (lam' + 1) (fun i => if i = lam' then LF n else Z)) Z
+    P (Vec.ofFn (lam' + 1) (fun i => if i = lam' then LF (lam' + 1) n else Z)) Z
 
-inductive T.isOT (lam : Nat) : T lam → Prop where
-| base (n : Nat) : isOT lam (P (Vec.ofFn lam (fun i => if i.val = 0 then LF n else Z)) Z)
-| step (s : T lam) (hs : isOT lam s) (n : Nat) : isOT lam (fund s (ofNat n))
+inductive T.isOT : (lam : Nat) → T lam → Prop where
+| base_0 (n : Nat) : isOT 0 (LF 0 n)
+| base_succ (lam : Nat) (n : Nat) : isOT (lam + 1) (P (Vec.ofFn (lam + 1) (fun i => if i.val = 0 then LF (lam + 1) n else Z)) Z)
+| step (lam : Nat) (s : T lam) (hs : isOT lam s) (n : Nat) : isOT lam (fund s (ofNat n))
 
 def T.G {lam : Nat} (s : T lam) : List (T lam) :=
   match s with
