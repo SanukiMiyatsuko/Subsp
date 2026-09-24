@@ -1605,6 +1605,140 @@ theorem T.isNF_G_isNFComp {lam : Nat} (s : T lam)
     | inr hxG =>
       exact ih1 x hxG
 
+theorem T.zero_domination_rplc_min {lam : Nat}
+    (ls : Vec (T lam) lam) (m : Fin lam) (d : Dom)
+    (b : T lam)
+    (hmin : T.domVecMinIdx ls = some (m, d))
+    (hchild :
+      b < ls.idx m ∧
+        ∀ c : T lam, b ≤ c → c ≤ ls.idx m →
+          ∀ x ∈ T.G b,
+            ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y) :
+    T.P (ls.rplc m b) T.Z < T.P ls T.Z ∧
+      ∀ c : T lam,
+        T.P (ls.rplc m b) T.Z ≤ c →
+        c ≤ T.P ls T.Z →
+        ∀ x ∈ T.G (T.P (ls.rplc m b) T.Z),
+          ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y := by
+  have hspec := T.domVecMinIdx_some_spec ls m d hmin
+  have hvecLt :
+      compareVec (ls.rplc m b) ls = Ordering.lt :=
+    Vec.compare_rplc_lt ls m b hchild.1
+  constructor
+  · exact T.P_lt_P_of_compareVec_lt
+      (ls.rplc m b) ls T.Z T.Z hvecLt
+  · intro c hbc hca x hx
+    cases c with
+    | Z =>
+      cases hbc with
+      | inl hlt =>
+        show
+          compareT (T.P (ls.rplc m b) T.Z) T.Z =
+            Ordering.lt at hlt
+        cases hlt
+      | inr heq =>
+        cases heq
+    | P vs add =>
+      have hlo :=
+        T.vector_le_of_P_le_P
+          (ls.rplc m b) vs T.Z add hbc
+      have hhi :=
+        T.vector_le_of_P_le_P
+          vs ls add T.Z hca
+      obtain ⟨hhigh, hbm, hmold⟩ :=
+        Vec.rplc_interval_spec ls vs m b
+          hchild.1 hlo hhi
+      cases (T.mem_G_P (ls.rplc m b) T.Z x).mp hx with
+      | inr hZ =>
+        rw [T.G] at hZ
+        exact False.elim (List.not_mem_nil x hZ)
+      | inl hv =>
+        obtain ⟨q, hq, hqx⟩ := hv
+        by_cases hqm : q.val < m.val
+        · have hqne : q.val ≠ m.val := Nat.ne_of_lt hqm
+          have hr :
+              (ls.rplc m b).idx q = ls.idx q :=
+            Vec.rplc_idx_of_ne ls m q b hqne
+          have hdom0 : T.dom (ls.idx q) = .zero :=
+            hspec.2 q hqm
+          have hqz : ls.idx q = T.Z :=
+            T.dom_zero_eq_Z (ls.idx q) hdom0
+          cases hqx with
+          | inl heq =>
+            have hxz : x = T.Z := by
+              rw [hr, hqz] at heq
+              exact heq.symm
+            refine ⟨T.Z, ?_, Or.inr hxz⟩
+            exact List.mem_append_right
+              (T.G (T.P vs add))
+              (List.mem_singleton_self T.Z)
+          | inr hG =>
+            rw [hr, hqz, T.G] at hG
+            exact False.elim (List.not_mem_nil x hG)
+        · by_cases hmq : m.val < q.val
+          · have hqne : q.val ≠ m.val := Nat.ne_of_gt hmq
+            have hr :
+                (ls.rplc m b).idx q = ls.idx q :=
+              Vec.rplc_idx_of_ne ls m q b hqne
+            have hvq : vs.idx q = ls.idx q :=
+              hhigh q hmq
+            have hqmem : vs.idx q ∈ Vec.toList vs := by
+              apply (Vec.mem_toList_iff_idx vs (vs.idx q)).mpr
+              exact ⟨q, rfl⟩
+            cases hqx with
+            | inl heq =>
+              refine ⟨x, ?_, partial_order.refl x⟩
+              apply List.mem_append_left [T.Z]
+              apply (T.mem_G_P vs add x).mpr
+              apply Or.inl
+              refine ⟨vs.idx q, hqmem, Or.inl ?_⟩
+              rw [hvq, ← hr]
+              exact heq
+            | inr hG =>
+              refine ⟨x, ?_, partial_order.refl x⟩
+              apply List.mem_append_left [T.Z]
+              apply (T.mem_G_P vs add x).mpr
+              apply Or.inl
+              refine ⟨vs.idx q, hqmem, Or.inr ?_⟩
+              rw [hvq, ← hr]
+              exact hG
+          · have hqle : q.val ≤ m.val := Nat.not_lt.mp hmq
+            have hmle : m.val ≤ q.val := Nat.not_lt.mp hqm
+            have hval : q.val = m.val :=
+              Nat.le_antisymm hqle hmle
+            have hqe : q = m := Fin.eq_of_val_eq hval
+            subst q
+            have hr :
+                (ls.rplc m b).idx m = b :=
+              Vec.rplc_idx_same ls m b
+            have hmmem : vs.idx m ∈ Vec.toList vs := by
+              apply (Vec.mem_toList_iff_idx vs (vs.idx m)).mpr
+              exact ⟨m, rfl⟩
+            cases hqx with
+            | inl heq =>
+              refine ⟨vs.idx m, ?_, ?_⟩
+              · apply List.mem_append_left [T.Z]
+                apply (T.mem_G_P vs add (vs.idx m)).mpr
+                exact Or.inl
+                  ⟨vs.idx m, hmmem, Or.inl rfl⟩
+              · rw [hr] at heq
+                rw [← heq]
+                exact hbm
+            | inr hG =>
+              rw [hr] at hG
+              obtain ⟨y, hy, hxy⟩ :=
+                hchild.2 (vs.idx m) hbm hmold x hG
+              refine ⟨y, ?_, hxy⟩
+              cases List.mem_append.mp hy with
+              | inl hGm =>
+                apply List.mem_append_left [T.Z]
+                apply (T.mem_G_P vs add y).mpr
+                exact Or.inl
+                  ⟨vs.idx m, hmmem, Or.inr hGm⟩
+              | inr hZ =>
+                exact List.mem_append_right
+                  (T.G (T.P vs add)) hZ
+
 theorem T.zero_domination_tail {lam : Nat}
     (ls : Vec (T lam) lam) (a b : T lam)
     (hdom :
