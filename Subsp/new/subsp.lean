@@ -863,6 +863,148 @@ theorem Vec.compare_lt_has_pivot {lam m : Nat}
         rw [hc] at h
         cases h
 
+theorem T.vector_le_of_P_le_P {lam : Nat}
+    (v w : Vec (T lam) lam) (a b : T lam)
+    (h : T.P v a ≤ T.P w b) :
+    compareVec v w = Ordering.lt ∨
+      compareVec v w = Ordering.eq := by
+  cases h with
+  | inl hlt =>
+    show compareT (T.P v a) (T.P w b) = Ordering.lt at hlt
+    cases hc : compareVec v w with
+    | lt => exact Or.inl hc
+    | eq => exact Or.inr hc
+    | gt =>
+      rw [hc] at hlt
+      cases hlt
+  | inr heq =>
+    cases heq
+    exact Or.inr (Vec_refl v)
+
+theorem Vec.rplc_interval_spec {lam m : Nat}
+    (v u : Vec (T lam) m) (i : Fin m) (a : T lam)
+    (ha : a < v.idx i)
+    (hlo :
+      compareVec (v.rplc i a) u = Ordering.lt ∨
+        compareVec (v.rplc i a) u = Ordering.eq)
+    (hhi :
+      compareVec u v = Ordering.lt ∨
+        compareVec u v = Ordering.eq) :
+    (∀ j : Fin m, i.val < j.val → u.idx j = v.idx j) ∧
+      a ≤ u.idx i ∧ u.idx i ≤ v.idx i := by
+  have hhigh :
+      ∀ j : Fin m, i.val < j.val →
+        u.idx j = v.idx j := by
+    intro j hij
+    by_cases hneq : u.idx j ≠ v.idx j
+    · have huv : compareVec u v = Ordering.lt := by
+        cases hhi with
+        | inl h => exact h
+        | inr heq =>
+          have huvEq : u = v := Vec_eq_sound u v heq
+          exact False.elim (hneq (by rw [huvEq]))
+      obtain ⟨p, hpHigh, hpLt⟩ :=
+        Vec.compare_lt_has_pivot u v huv
+      have hjp : j.val ≤ p.val := by
+        by_cases hpj : p.val < j.val
+        · exact False.elim
+            (hneq (hpHigh j hpj))
+        · exact Nat.not_lt.mp hpj
+      have hip : i.val < p.val :=
+        Nat.lt_of_lt_of_le hij hjp
+      have hpi : p.val ≠ i.val := Nat.ne_of_gt hip
+      have hwp :
+          (v.rplc i a).idx p = v.idx p :=
+        Vec.rplc_idx_of_ne v i p a hpi
+      have huwp :
+          u.idx p < (v.rplc i a).idx p := by
+        rw [hwp]
+        exact hpLt
+      have hUpperEq :
+          ∀ q : Fin m, p.val < q.val →
+            u.idx q = (v.rplc i a).idx q := by
+        intro q hpq
+        have hiq : i.val < q.val :=
+          Nat.lt_trans hip hpq
+        have hqi : q.val ≠ i.val := Nat.ne_of_gt hiq
+        rw [Vec.rplc_idx_of_ne v i q a hqi]
+        exact hpHigh q hpq
+      have huw : compareVec u (v.rplc i a) = Ordering.lt :=
+        Vec.compare_lt_of_pivot u (v.rplc i a) p
+          hUpperEq huwp
+      cases hlo with
+      | inl hwu =>
+        have hself :
+            compareVec (v.rplc i a) (v.rplc i a) =
+              Ordering.lt :=
+          Vec_trans (v.rplc i a) u (v.rplc i a)
+            hwu huw
+        rw [Vec_refl (v.rplc i a)] at hself
+        cases hself
+      | inr hwuEq =>
+        have hveq : v.rplc i a = u :=
+          Vec_eq_sound (v.rplc i a) u hwuEq
+        rw [← hveq] at huw
+        rw [Vec_refl (v.rplc i a)] at huw
+        cases huw
+    · exact Classical.byContradiction (fun h =>
+        hneq (Classical.not_not.mp h))
+  have hai : a ≤ u.idx i := by
+    cases linear_order.total a (u.idx i) with
+    | inl h => exact h
+    | inr h =>
+      cases h with
+      | inl hui =>
+        have hcmp :
+            compareVec u (v.rplc i a) = Ordering.lt := by
+          apply Vec.compare_lt_of_pivot u (v.rplc i a) i
+          · intro j hij
+            have hri :
+                (v.rplc i a).idx j = v.idx j :=
+              Vec.rplc_idx_of_ne v i j a (Nat.ne_of_gt hij)
+            rw [hri]
+            exact hhigh j hij
+          · rw [Vec.rplc_idx_same]
+            exact hui
+        cases hlo with
+        | inl hback =>
+          have hself :=
+            Vec_trans (v.rplc i a) u (v.rplc i a)
+              hback hcmp
+          rw [Vec_refl (v.rplc i a)] at hself
+          cases hself
+        | inr heq =>
+          have hveq := Vec_eq_sound (v.rplc i a) u heq
+          rw [← hveq] at hcmp
+          rw [Vec_refl (v.rplc i a)] at hcmp
+          cases hcmp
+      | inr heq =>
+        exact Or.inr heq.symm
+  have hiv : u.idx i ≤ v.idx i := by
+    cases linear_order.total (u.idx i) (v.idx i) with
+    | inl h => exact h
+    | inr h =>
+      cases h with
+      | inl hvi =>
+        have hcmp : compareVec v u = Ordering.lt := by
+          apply Vec.compare_lt_of_pivot v u i
+          · intro j hij
+            rw [hhigh j hij]
+          · exact hvi
+        cases hhi with
+        | inl hback =>
+          have hself := Vec_trans u v u hback hcmp
+          rw [Vec_refl u] at hself
+          cases hself
+        | inr heq =>
+          have hveq := Vec_eq_sound u v heq
+          rw [hveq] at hcmp
+          rw [Vec_refl v] at hcmp
+          cases hcmp
+      | inr heq =>
+        exact Or.inr heq.symm
+  exact ⟨hhigh, hai, hiv⟩
+
 theorem T.Z_le {lam : Nat} (s : T lam) : T.Z ≤ s := by
   cases s with
   | Z =>
