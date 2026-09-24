@@ -1636,6 +1636,142 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
       change y ∈ ([] : List (T lam)) at hz
       cases hz
 
+theorem Vec.mem_toList_iff_idx {A : Type} {n : Nat}
+    (v : Vec A n) (x : A) :
+    x ∈ Vec.toList v ↔ ∃ i : Fin n, v.idx i = x := by
+  constructor
+  · intro hx
+    exact Vec.mem_toList_exists_idx v x hx
+  · intro h
+    obtain ⟨i, hi⟩ := h
+    rw [← hi]
+    exact Vec.idx_mem_toList v i
+
+theorem T.P_tail_lt {lam : Nat} (ls : Vec (T lam) lam)
+    (a b : T lam) (h : a < b) :
+    T.P ls a < T.P ls b := by
+  show
+    (match compareVec ls ls with
+    | Ordering.eq => compareT a b
+    | ord => ord) = Ordering.lt
+  rw [Vec_refl ls]
+  exact h
+
+theorem T.P_le_P_same {lam : Nat} (ls : Vec (T lam) lam)
+    (a b : T lam) (h : a ≤ b) :
+    T.P ls a ≤ T.P ls b := by
+  cases h with
+  | inl hlt =>
+    exact Or.inl (T.P_tail_lt ls a b hlt)
+  | inr heq =>
+    rw [heq]
+    exact Or.inr rfl
+
+theorem T.isNF_G_isNFComp {lam : Nat} (s : T lam)
+    (hs : T.isNF s) :
+    ∀ x ∈ T.G s, T.isNFComp x := by
+  induction hs with
+  | z =>
+    intro x hx
+    change x ∈ ([] : List (T lam)) at hx
+    cases hx
+  | p ls add h0 h1 h2 h3 ih0 ih1 =>
+    intro x hx
+    cases (T.mem_G_P ls add x).mp hx with
+    | inl hv =>
+      obtain ⟨i, hcase⟩ := hv
+      cases hcase with
+      | inl hxq =>
+        rw [hxq]
+        have hmem := Vec.idx_mem_toList ls i
+        exact ⟨h0 (ls.idx i) hmem, h2 (ls.idx i) hmem⟩
+      | inr hxG =>
+        have hmem := Vec.idx_mem_toList ls i
+        exact ih0 (ls.idx i) hmem x hxG
+    | inr hxG =>
+      exact ih1 x hxG
+
+theorem T.head_mono_le {lam : Nat} (a b : T lam)
+    (h : a ≤ b) : T.head a ≤ T.head b := by
+  cases h with
+  | inl hlt =>
+    exact T.head_mono a b hlt
+  | inr heq =>
+    rw [heq]
+    exact partial_order.refl (T.head b)
+
+theorem T.P_same_le_iff {lam : Nat} (ls : Vec (T lam) lam)
+    (a b : T lam) :
+    T.P ls a ≤ T.P ls b ↔ a ≤ b := by
+  constructor
+  · intro h
+    cases h with
+    | inl hlt =>
+      apply Or.inl
+      show compareT a b = Ordering.lt
+      show
+        (match compareVec ls ls with
+        | Ordering.eq => compareT a b
+        | ord => ord) = Ordering.lt at hlt
+      rw [Vec_refl ls] at hlt
+      exact hlt
+    | inr heq =>
+      apply Or.inr
+      injection heq with hab
+      exact hab
+  · intro h
+    exact T.P_le_P_same ls a b h
+
+theorem T.sandwich_same_vector {lam : Nat}
+    (ls : Vec (T lam) lam) (a b c : T lam)
+    (hab : a ≤ b)
+    (hl : T.P ls a ≤ c)
+    (hu : c ≤ T.P ls b) :
+    ∃ d, c = T.P ls d ∧ a ≤ d ∧ d ≤ b := by
+  have hheadL :
+      T.P ls T.Z ≤ T.head c :=
+    T.head_mono_le (T.P ls a) c hl
+  have hheadU :
+      T.head c ≤ T.P ls T.Z :=
+    T.head_mono_le c (T.P ls b) hu
+  have hheadEq :
+      T.head c = T.P ls T.Z :=
+    partial_order.antisymm (T.head c) (T.P ls T.Z)
+      hheadU hheadL
+  cases c with
+  | Z =>
+    change T.Z = T.P ls T.Z at hheadEq
+    cases hheadEq
+  | P cs d =>
+    change T.P cs T.Z = T.P ls T.Z at hheadEq
+    injection hheadEq with hcs
+    subst cs
+    refine ⟨d, rfl, ?_, ?_⟩
+    · exact (T.P_same_le_iff ls a d).mp hl
+    · exact (T.P_same_le_iff ls d b).mp hu
+
+theorem T.vector_rel_of_P_le_P {lam : Nat}
+    (v w : Vec (T lam) lam) (a b : T lam)
+    (h : T.P v a ≤ T.P w b) :
+    compareVec v w = Ordering.lt ∨ v = w := by
+  cases h with
+  | inl hlt =>
+    show
+      (match compareVec v w with
+      | Ordering.eq => compareT a b
+      | ord => ord) = Ordering.lt at hlt
+    cases hc : compareVec v w with
+    | lt =>
+      exact Or.inl hc
+    | eq =>
+      exact Or.inr (Vec_eq_sound v w hc)
+    | gt =>
+      rw [hc] at hlt
+      cases hlt
+  | inr heq =>
+    cases heq
+    exact Or.inr rfl
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
