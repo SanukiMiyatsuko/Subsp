@@ -1690,38 +1690,6 @@ theorem T.le_antisymm {lam : Nat} (a b : T lam)
       exact False.elim
         (strict_partial_order.irrefl a haa)
 
-theorem T.le_refl {lam : Nat} (a : T lam) : a ≤ a := by
-  exact Or.inr (T_refl a)
-
-theorem T.le_trans {lam : Nat} (a b c : T lam)
-    (hab : a ≤ b) (hbc : b ≤ c) : a ≤ c := by
-  cases hab with
-  | inl hablt =>
-    cases hbc with
-    | inl hbclt =>
-      exact Or.inl (T_trans a b c hablt hbclt)
-    | inr hbceq =>
-      have hbcEq : b = c := T_eq_sound b c hbceq
-      rw [← hbcEq]
-      exact Or.inl hablt
-  | inr habeq =>
-    have habEq : a = b := T_eq_sound a b habeq
-    rw [habEq]
-    exact hbc
-
-theorem T.le_antisymm {lam : Nat} (a b : T lam)
-    (hab : a ≤ b) (hba : b ≤ a) : a = b := by
-  cases hab with
-  | inl hablt =>
-    cases hba with
-    | inl hbalt =>
-      have haa : a < a := T_trans a b a hablt hbalt
-      exact False.elim (strict_partial_order.irrefl a haa)
-    | inr hbaeq =>
-      exact (T_eq_sound b a hbaeq).symm
-  | inr habeq =>
-    exact T_eq_sound a b habeq
-
 theorem T.P_le_P_same {lam : Nat} (ls : Vec (T lam) lam)
     (a b : T lam) (h : a ≤ b) :
     T.P ls a ≤ T.P ls b := by
@@ -1785,8 +1753,8 @@ theorem T.P_same_le_iff {lam : Nat} (ls : Vec (T lam) lam)
       apply Or.inr
       have hpEq : T.P ls a = T.P ls b :=
         T_eq_sound (T.P ls a) (T.P ls b) heq
-      injection hpEq with hab
-      rw [hab]
+      injection hpEq with _ hadd
+      rw [hadd]
       exact T_refl b
   · intro h
     exact T.P_le_P_same ls a b h
@@ -1831,7 +1799,7 @@ theorem T.vector_rel_of_P_le_P {lam : Nat}
       | ord => ord) = Ordering.lt at hlt
     cases hc : compareVec v w with
     | lt =>
-      exact Or.inl hc
+      exact Or.inl rfl
     | eq =>
       exact Or.inr (Vec_eq_sound v w hc)
     | gt =>
