@@ -2999,13 +2999,13 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                         base mj u v huv
                     conv =>
                       lhs
-                      rw [T.fund, if_pos rfl]
+                      rw [T.fund.eq_def, if_pos rfl]
                       rw [hmin]
                       change
                         (if Dom.one = Dom.one then _ else _)
                       rw [if_pos rfl]
                       rhs
-                      rw [T.fund, if_pos rfl]
+                      rw [T.fund.eq_def, if_pos rfl]
                       rw [hmin]
                       change
                         (if Dom.one = Dom.one then _ else _)
@@ -3028,9 +3028,9 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
               rfl hdadd huv
           conv =>
             lhs
-            rw [T.fund, if_neg hadd]
+            rw [T.fund.eq_def, if_neg hadd]
             rhs
-            rw [T.fund, if_neg hadd]
+            rw [T.fund.eq_def, if_neg hadd]
           exact T.P_tail_lt ls
             (T.fund add u) (T.fund add v) hrec)
   exact main (T.size s) s x y rfl hd hxy
