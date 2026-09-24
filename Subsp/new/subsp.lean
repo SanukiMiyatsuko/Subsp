@@ -761,6 +761,108 @@ theorem T.P_lt_P_of_compareVec_lt {lam : Nat}
     | ord => ord) = Ordering.lt
   rw [h]
 
+theorem Vec.compare_lt_has_pivot {lam m : Nat}
+    (v w : Vec (T lam) m) (h : compareVec v w = Ordering.lt) :
+    ∃ i : Fin m,
+      (∀ j : Fin m, i.val < j.val → v.idx j = w.idx j) ∧
+      v.idx i < w.idx i := by
+  induction v generalizing w with
+  | nil =>
+    cases w with
+    | nil =>
+      cases h
+  | snoc k xs x ih =>
+    cases w with
+    | snoc _ ys y =>
+      change
+        (match compareT x y with
+        | Ordering.eq => compareVec xs ys
+        | ord => ord) = Ordering.lt at h
+      cases hc : compareT x y with
+      | lt =>
+        refine ⟨Fin.last k, ?_, ?_⟩
+        · intro j hj
+          have hjle : j.val ≤ k := Nat.lt_succ_iff.mp j.isLt
+          exact False.elim ((Nat.not_lt_of_ge hjle) hj)
+        · have hv :
+              (Vec.snoc k xs x).idx (Fin.last k) = x := by
+            show
+              (if hlt : k < k then Vec.idx xs ⟨k, hlt⟩ else x) = x
+            rw [dite_eq_right (Nat.lt_irrefl k)]
+          have hw :
+              (Vec.snoc k ys y).idx (Fin.last k) = y := by
+            show
+              (if hlt : k < k then Vec.idx ys ⟨k, hlt⟩ else y) = y
+            rw [dite_eq_right (Nat.lt_irrefl k)]
+          rw [hv, hw]
+          exact hc
+      | eq =>
+        rw [hc] at h
+        obtain ⟨i, hiEq, hiLt⟩ := ih ys h
+        refine ⟨i.castSucc, ?_, ?_⟩
+        · intro j hj
+          by_cases hjk : j.val < k
+          · have hv :
+                (Vec.snoc k xs x).idx j =
+                  xs.idx ⟨j.val, hjk⟩ := by
+              show
+                (if hlt : j.val < k then
+                    Vec.idx xs ⟨j.val, hlt⟩ else x) =
+                  Vec.idx xs ⟨j.val, hjk⟩
+              rw [dite_eq_left hjk]
+              rfl
+            have hw :
+                (Vec.snoc k ys y).idx j =
+                  ys.idx ⟨j.val, hjk⟩ := by
+              show
+                (if hlt : j.val < k then
+                    Vec.idx ys ⟨j.val, hlt⟩ else y) =
+                  Vec.idx ys ⟨j.val, hjk⟩
+              rw [dite_eq_left hjk]
+              rfl
+            rw [hv, hw]
+            exact hiEq ⟨j.val, hjk⟩ hj
+          · have hjle : j.val ≤ k := Nat.lt_succ_iff.mp j.isLt
+            have hkj : k ≤ j.val := Nat.not_lt.mp hjk
+            have hjval : j.val = k := Nat.le_antisymm hjle hkj
+            have hjeq : j = Fin.last k := Fin.eq_of_val_eq hjval
+            rw [hjeq]
+            have hv :
+                (Vec.snoc k xs x).idx (Fin.last k) = x := by
+              show
+                (if hlt : k < k then
+                    Vec.idx xs ⟨k, hlt⟩ else x) = x
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            have hw :
+                (Vec.snoc k ys y).idx (Fin.last k) = y := by
+              show
+                (if hlt : k < k then
+                    Vec.idx ys ⟨k, hlt⟩ else y) = y
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            rw [hv, hw]
+            exact T_eq_sound x y hc
+        · have hv :
+              (Vec.snoc k xs x).idx i.castSucc = xs.idx i := by
+            show
+              (if hlt : i.val < k then
+                  Vec.idx xs ⟨i.val, hlt⟩ else x) =
+                Vec.idx xs i
+            rw [dite_eq_left i.isLt]
+            rfl
+          have hw :
+              (Vec.snoc k ys y).idx i.castSucc = ys.idx i := by
+            show
+              (if hlt : i.val < k then
+                  Vec.idx ys ⟨i.val, hlt⟩ else y) =
+                Vec.idx ys i
+            rw [dite_eq_left i.isLt]
+            rfl
+          rw [hv, hw]
+          exact hiLt
+      | gt =>
+        rw [hc] at h
+        cases h
+
 theorem T.Z_le {lam : Nat} (s : T lam) : T.Z ≤ s := by
   cases s with
   | Z =>
