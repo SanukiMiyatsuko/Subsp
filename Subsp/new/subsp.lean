@@ -2989,14 +2989,16 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
     (hlm : compareVec low mid = Ordering.lt ∨ low = mid)
     (hmh : compareVec mid high = Ordering.lt ∨ mid = high) :
     (∀ j : Fin m, i.val < j.val → mid.idx j = high.idx j) ∧
-      low.idx i ≤ mid.idx i := by
+      low.idx i ≤ mid.idx i ∧ mid.idx i ≤ high.idx i := by
   cases hlm with
   | inr heq =>
     subst mid
     constructor
     · intro j hij
       exact heqAbove j hij
-    · exact Or.inr rfl
+    · constructor
+      · exact Or.inr rfl
+      · exact Or.inl hpivot
   | inl hlt =>
     obtain ⟨p, hpEq, hpLt⟩ :=
       Vec.compare_lt_has_pivot low mid hlt
@@ -3056,8 +3058,9 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
               exact False.elim
                 (strict_partial_order.irrefl (high.idx q) hbad)
       · exact Nat.not_lt.mp hip
-    constructor
-    · intro j hij
+    have hhigh :
+        ∀ j : Fin m, i.val < j.val → mid.idx j = high.idx j := by
+      intro j hij
       have hpj : p.val < j.val :=
         Nat.lt_of_le_of_lt hpi hij
       have hlmEq : low.idx j = mid.idx j :=
@@ -3065,13 +3068,40 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
       have hlhEq : low.idx j = high.idx j :=
         heqAbove j hij
       exact hlmEq.symm.trans hlhEq
-    · cases Nat.lt_or_eq_of_le hpi with
+    have hlower : low.idx i ≤ mid.idx i := by
+      cases Nat.lt_or_eq_of_le hpi with
       | inl hpiLt =>
         exact Or.inr (hpEq i hpiLt)
       | inr hpiEq =>
         have hpeqi : p = i := Fin.eq_of_val_eq hpiEq
         rw [hpeqi] at hpLt
         exact Or.inl hpLt
+    have hupper : mid.idx i ≤ high.idx i := by
+      cases hmh with
+      | inr heq =>
+        rw [heq]
+        exact Or.inr rfl
+      | inl hltmh =>
+        obtain ⟨q, hqEq, hqLt⟩ :=
+          Vec.compare_lt_has_pivot mid high hltmh
+        have hqi : q.val ≤ i.val := by
+          by_cases hiq : i.val < q.val
+          · have heqQ : mid.idx q = high.idx q :=
+              hhigh q hiq
+            have hbad : high.idx q < high.idx q := by
+              rw [heqQ] at hqLt
+              exact hqLt
+            exact False.elim
+              (strict_partial_order.irrefl (high.idx q) hbad)
+          · exact Nat.not_lt.mp hiq
+        cases Nat.lt_or_eq_of_le hqi with
+        | inl hqiLt =>
+          exact Or.inr (hqEq i hqiLt)
+        | inr hqiEq =>
+          have hqei : q = i := Fin.eq_of_val_eq hqiEq
+          rw [hqei] at hqLt
+          exact Or.inl hqLt
+    exact ⟨hhigh, hlower, hupper⟩
 
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
