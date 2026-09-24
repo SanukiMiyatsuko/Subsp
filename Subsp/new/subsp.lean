@@ -3702,14 +3702,8 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       lhs
                       rw [T.fund, if_pos rfl]
                       rw [hmin]
-                      change
-                        (if Dom.omega = Dom.one then _
-                        else _)
-                      rw [if_neg (by intro h; cases h)]
-                      change
-                        (if Dom.omega = Dom.Omega then _
-                        else _)
-                      rw [if_neg (by intro h; cases h)]
+                    rw [if_neg (by intro h; cases h)]
+                    rw [if_neg (by intro h; cases h)]
                     rfl
                   rw [hfund]
                   exact ⟨hnf, hrel⟩
@@ -3854,14 +3848,8 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       lhs
                       rw [T.fund, if_pos rfl]
                       rw [hmin]
-                      change
-                        (if Dom.Omega = Dom.one then _
-                        else _)
-                      rw [if_neg (by intro h; cases h)]
-                      change
-                        (if Dom.Omega = Dom.Omega then _
-                        else _)
-                      rw [if_pos rfl]
+                    rw [if_neg (by intro h; cases h)]
+                    rw [if_pos rfl]
                     rfl
                   rw [hfund]
                   exact ⟨hnf, hrel⟩
@@ -3936,10 +3924,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                           lhs
                           rw [T.fund, if_pos rfl]
                           rw [hmin]
-                          change
-                            (if Dom.one = Dom.one then _
-                            else _)
-                          rw [if_pos rfl]
+                        rw [if_pos rfl]
                         rfl
                       rw [hfund]
                       exact ⟨hnf, hrel⟩
@@ -3995,10 +3980,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                           lhs
                           rw [T.fund, if_pos rfl]
                           rw [hmin]
-                          change
-                            (if Dom.one = Dom.one then _
-                            else _)
-                          rw [if_pos rfl]
+                        rw [if_pos rfl]
                         change
                           T.P
                             ((ls.rplc mi
@@ -4074,333 +4056,6 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
               rw [T.fund_P_tail_eq ls add z hadd]
               exact ⟨hnf, hrel⟩)
   exact main (T.size s) s rfl hs
-
-theorem T.fund_omega_master {lam : Nat}
-    (s t : T lam)
-    (hs : T.isNF s)
-    (hd : T.dom s = .omega) :
-    T.isNF (T.fund s t) ∧
-      T.SDom T.Z (T.fund s t) s := by
-  let motive : Nat → Prop :=
-    fun n =>
-      ∀ a u : T lam, T.size a = n →
-        T.isNF a → T.dom a = .omega →
-          T.isNF (T.fund a u) ∧
-            T.SDom T.Z (T.fund a u) a
-  have main : ∀ n : Nat, motive n := by
-    intro n
-    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
-      intro a u hn ha hdom
-      cases a with
-      | Z =>
-        change Dom.zero = Dom.omega at hdom
-        cases hdom
-      | P ls add =>
-        have ha0 := ha
-        have hcoords :=
-          T.isNF_P_coord_NFComp ls add ha
-        cases ha with
-        | p _ _ h0 h1 h2 h3 =>
-          by_cases hadd : add = T.Z
-          · subst add
-            cases hmin : T.domVecMinIdx ls with
-            | none =>
-              have hd' := hdom
-              conv at hd' =>
-                lhs
-                rw [T.dom, if_pos rfl]
-                rw [hmin]
-              change Dom.one = Dom.omega at hd'
-              cases hd'
-            | some md =>
-              obtain ⟨m, d⟩ := md
-              have hspec :=
-                T.domVecMinIdx_some_spec ls m d hmin
-              have hd' := hdom
-              conv at hd' =>
-                lhs
-                rw [T.dom, if_pos rfl]
-                rw [hmin]
-              cases d with
-              | zero =>
-                exact False.elim (hspec.1 rfl)
-              | one =>
-                change
-                  (if m.val = 0 then
-                    Dom.omega else Dom.Omega) =
-                      Dom.omega at hd'
-                have hm0 : m.val = 0 := by
-                  by_cases hm : m.val = 0
-                  · exact hm
-                  · rw [if_neg hm] at hd'
-                    cases hd'
-                cases m with
-                | mk mv mh =>
-                  change mv = 0 at hm0
-                  subst mv
-                  let i : Fin lam := ⟨0, mh⟩
-                  let child := ls.idx i
-                  let childFund :=
-                    T.fund child T.Z
-                  let base := ls.rplc i childFund
-                  have hchildComp :
-                      T.isNFComp child :=
-                    hcoords i
-                  have hchildDom :
-                      T.dom child = Dom.one := by
-                    change
-                      T.dom (ls.idx ⟨0, mh⟩) =
-                        Dom.one
-                    exact hspec.2.1
-                  have hchildFundComp :
-                      T.isNFComp childFund :=
-                    T.fund_one_NFComp_closed
-                      child hchildComp hchildDom
-                  have hchildNe : child ≠ T.Z := by
-                    intro heq
-                    have hc := hchildDom
-                    rw [heq] at hc
-                    cases hc
-                  have hchildLt :
-                      childFund < child :=
-                    T.fund_lt_self child T.Z hchildNe
-                  have hbaseNF :
-                      T.isNF (T.P base T.Z) := by
-                    exact T.rplc_NF_closed
-                      ls i childFund ha0
-                      hchildFundComp
-                  have hbaseSD :
-                      T.SDom T.Z
-                        (T.P base T.Z)
-                        (T.P ls T.Z) := by
-                    exact T.SDom_rplc_min_Z
-                      ls i Dom.one childFund
-                      hmin hchildFundComp hchildLt
-                  have hvec :
-                      compareVec base ls =
-                        Ordering.lt := by
-                    exact Vec.compare_rplc_lt
-                      ls i childFund hchildLt
-                  have hnf :
-                      T.isNF
-                        (T.mul (T.P base T.Z) u) :=
-                    T.mul_PZ_NF_closed
-                      base hbaseNF u
-                  have hsd :
-                      T.SDom T.Z
-                        (T.mul (T.P base T.Z) u)
-                        (T.P ls T.Z) :=
-                    T.SDom_mul_PZ
-                      base ls u hvec hbaseSD
-                  have hfundEq :
-                      T.fund (T.P ls T.Z) u =
-                        T.mul (T.P base T.Z) u := by
-                    conv =>
-                      lhs
-                      rw [T.fund, if_pos rfl]
-                      rw [hmin]
-                      change
-                        (if Dom.one = Dom.one then
-                          _ else _)
-                      rw [if_pos rfl]
-                    change
-                      T.mul
-                        (T.P
-                          (ls.rplc i
-                            (T.fund
-                              (ls.idx i) T.Z))
-                          T.Z)
-                        u =
-                        T.mul (T.P base T.Z) u
-                    rfl
-                  rw [hfundEq]
-                  exact ⟨hnf, hsd⟩
-              | omega =>
-                let child := ls.idx m
-                let childFund :=
-                  T.fund child u
-                let base := ls.rplc m childFund
-                have hchildComp :
-                    T.isNFComp child :=
-                  hcoords m
-                have hchildDom :
-                    T.dom child = Dom.omega := by
-                  change
-                    T.dom (ls.idx m) = Dom.omega
-                  exact hspec.2.1
-                have hsz :
-                    T.size child < n := by
-                  change T.size (ls.idx m) < n
-                  have hlt :
-                      T.size (ls.idx m) <
-                        T.size (T.P ls T.Z) := by
-                    rw [← Vec.getElem_eq_idx ls m]
-                    exact T.idx_size_lt_P ls T.Z m
-                  rw [hn] at hlt
-                  exact hlt
-                obtain ⟨hchildNF, hchildSD⟩ :=
-                  ih (T.size child) hsz child u
-                    rfl hchildComp.1 hchildDom
-                have hchildFundComp :
-                    T.isNFComp childFund := by
-                  exact T.NFComp_of_SDom_Z_or_eq
-                    childFund child hchildNF
-                    hchildComp hchildSD
-                have hchildNe : child ≠ T.Z := by
-                  intro heq
-                  have hc := hchildDom
-                  rw [heq] at hc
-                  cases hc
-                have hchildLt :
-                    childFund < child :=
-                  T.fund_lt_self child u hchildNe
-                have hnf :
-                    T.isNF (T.P base T.Z) :=
-                  T.rplc_NF_closed
-                    ls m childFund ha0
-                    hchildFundComp
-                have hsd :
-                    T.SDom T.Z
-                      (T.P base T.Z)
-                      (T.P ls T.Z) :=
-                  T.SDom_rplc_min_Z
-                    ls m Dom.omega childFund
-                    hmin hchildFundComp hchildLt
-                have hfundEq :
-                    T.fund (T.P ls T.Z) u =
-                      T.P base T.Z := by
-                  conv =>
-                    lhs
-                    rw [T.fund, if_pos rfl]
-                    rw [hmin]
-                    change
-                      (if Dom.omega = Dom.one then
-                        _ else _)
-                    rw [if_neg (by
-                      intro heq
-                      cases heq)]
-                    change
-                      (if Dom.omega = Dom.Omega then
-                        _ else _)
-                    rw [if_neg (by
-                      intro heq
-                      cases heq)]
-                  change
-                    T.P
-                      (ls.rplc m
-                        (T.fund (ls.idx m) u))
-                      T.Z =
-                        T.P base T.Z
-                  rfl
-                rw [hfundEq]
-                exact ⟨hnf, hsd⟩
-              | Omega =>
-                let child := ls.idx m
-                let arg :=
-                  T.iter
-                    (fun x => T.fund child x) u
-                let childFund :=
-                  T.fund child arg
-                let base := ls.rplc m childFund
-                have hchildComp :
-                    T.isNFComp child :=
-                  hcoords m
-                have hchildDom :
-                    T.dom child = Dom.Omega := by
-                  change
-                    T.dom (ls.idx m) = Dom.Omega
-                  exact hspec.2.1
-                have hchildFundComp :
-                    T.isNFComp childFund := by
-                  change
-                    T.isNFComp
-                      (T.fund child
-                        (T.iter
-                          (fun x => T.fund child x) u))
-                  exact T.fund_iter_NFComp_core
-                    child u hchildComp hchildDom
-                have hchildNe : child ≠ T.Z := by
-                  intro heq
-                  have hc := hchildDom
-                  rw [heq] at hc
-                  cases hc
-                have hchildLt :
-                    childFund < child := by
-                  exact T.fund_lt_self
-                    child arg hchildNe
-                have hnf :
-                    T.isNF (T.P base T.Z) :=
-                  T.rplc_NF_closed
-                    ls m childFund ha0
-                    hchildFundComp
-                have hsd :
-                    T.SDom T.Z
-                      (T.P base T.Z)
-                      (T.P ls T.Z) :=
-                  T.SDom_rplc_min_Z
-                    ls m Dom.Omega childFund
-                    hmin hchildFundComp hchildLt
-                have hfundEq :
-                    T.fund (T.P ls T.Z) u =
-                      T.P base T.Z := by
-                  conv =>
-                    lhs
-                    rw [T.fund, if_pos rfl]
-                    rw [hmin]
-                    change
-                      (if Dom.Omega = Dom.one then
-                        _ else _)
-                    rw [if_neg (by
-                      intro heq
-                      cases heq)]
-                    change
-                      (if Dom.Omega = Dom.Omega then
-                        _ else _)
-                    rw [if_pos rfl]
-                  change
-                    T.P
-                      (ls.rplc m
-                        (T.fund (ls.idx m)
-                          (T.iter
-                            (fun x =>
-                              T.fund (ls.idx m) x) u)))
-                      T.Z =
-                        T.P base T.Z
-                  rfl
-                rw [hfundEq]
-                exact ⟨hnf, hsd⟩
-          · have hdadd :
-                T.dom add = Dom.omega := by
-              conv at hdom =>
-                lhs
-                rw [T.dom, if_neg hadd]
-              exact hdom
-            have hsz :
-                T.size add < n := by
-              rw [← hn]
-              exact T.add_size_lt_P ls add
-            obtain ⟨hnewNF, hnewSD⟩ :=
-              ih (T.size add) hsz add u
-                rfl h1 hdadd
-            have hparentNF :
-                T.isNF
-                  (T.P ls (T.fund add u)) :=
-              T.isNF.p ls (T.fund add u)
-                h0 hnewNF h2
-                (T.le_trans
-                  (T.head (T.fund add u))
-                  (T.head add)
-                  (T.P ls T.Z)
-                  (T.head_fund_le add u) h3)
-            have hparentSD :
-                T.SDom T.Z
-                  (T.P ls (T.fund add u))
-                  (T.P ls add) :=
-              T.SDom_tail T.Z
-                (T.fund add u) add ls hnewSD
-            rw [T.fund_P_tail_eq ls add u hadd]
-            exact ⟨hparentNF, hparentSD⟩)
-  exact main (T.size s) s t rfl hs hd
 
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
