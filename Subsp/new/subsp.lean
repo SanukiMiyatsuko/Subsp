@@ -618,7 +618,7 @@ theorem Vec.compare_lt_preserve_from_index {lam m : Nat}
                 apply hne
                 show
                   (if h : q.val < k then
-                    Vec.idx as ⟨q.val, h⟩ else aLast) ≠
+                    Vec.idx as ⟨q.val, h⟩ else aLast) =
                   (if h : q.val < k then
                     Vec.idx vs ⟨q.val, h⟩ else vLast)
                 rw [dite_eq_left hqk,
@@ -736,15 +736,23 @@ theorem Vec.compare_lt_after_pivot_update {lam m : Nat}
               rw [hc']
               rw [hc] at hold
               let i' : Fin k := ⟨i.val, hiklt⟩
-              have hpivot' :
-                  as.idx i' < ns.idx i' := by
+              have haI :
+                  (Vec.snoc k as aLast).idx i = as.idx i' := by
                 show
                   (if h : i.val < k then
-                    Vec.idx as ⟨i.val, h⟩ else aLast) <
+                    Vec.idx as ⟨i.val, h⟩ else aLast) =
+                    Vec.idx as i'
+                rw [dite_eq_left hiklt]
+              have hnI :
+                  (Vec.snoc k ns nLast).idx i = ns.idx i' := by
+                show
                   (if h : i.val < k then
-                    Vec.idx ns ⟨i.val, h⟩ else nLast) at hpivot
-                rw [dite_eq_left hiklt,
-                  dite_eq_left hiklt] at hpivot
+                    Vec.idx ns ⟨i.val, h⟩ else nLast) =
+                    Vec.idx ns i'
+                rw [dite_eq_left hiklt]
+              have hpivot' :
+                  as.idx i' < ns.idx i' := by
+                rw [haI, hnI] at hpivot
                 exact hpivot
               have heqAbove' :
                   ∀ j : Fin k, i'.val < j.val →
