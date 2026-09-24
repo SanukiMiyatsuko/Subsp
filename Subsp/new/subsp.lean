@@ -1464,6 +1464,41 @@ theorem T.isNF_G_isNFComp {lam : Nat} (s : T lam)
     | inr hxG =>
       exact ih1 x hxG
 
+theorem T.zero_domination_tail {lam : Nat}
+    (ls : Vec (T lam) lam) (a b : T lam)
+    (hdom :
+      b < a ∧
+        ∀ c : T lam, b ≤ c → c ≤ a →
+          ∀ x ∈ T.G b,
+            ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y) :
+    T.P ls b < T.P ls a ∧
+      ∀ c : T lam, T.P ls b ≤ c → c ≤ T.P ls a →
+        ∀ x ∈ T.G (T.P ls b),
+          ∃ y : T lam, y ∈ T.G c ++ [T.Z] ∧ x ≤ y := by
+  constructor
+  · exact T.P_tail_lt ls b a hdom.1
+  · intro c hbc hca x hx
+    obtain ⟨d, hceq, hbd, hda⟩ :=
+      T.between_same_vector ls b a c hbc hca
+    rw [hceq]
+    cases (T.mem_G_P ls b x).mp hx with
+    | inl hvec =>
+      refine ⟨x, ?_, partial_order.refl x⟩
+      apply List.mem_append_left [T.Z]
+      apply (T.mem_G_P ls d x).mpr
+      exact Or.inl hvec
+    | inr htail =>
+      obtain ⟨y, hy, hxy⟩ :=
+        hdom.2 d hbd hda x htail
+      refine ⟨y, ?_, hxy⟩
+      cases List.mem_append.mp hy with
+      | inl hGd =>
+        apply List.mem_append_left [T.Z]
+        apply (T.mem_G_P ls d y).mpr
+        exact Or.inr hGd
+      | inr hZ =>
+        exact List.mem_append_right (T.G (T.P ls d)) hZ
+
 theorem T.NFComp_of_zero_domination {lam : Nat}
     (a b : T lam) (hb : T.isNF b) (ha : T.isNFComp a)
     (hdom :
