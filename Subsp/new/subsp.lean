@@ -105,6 +105,112 @@ theorem T.add_size_lt_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
   rw [← h4]
   exact h3
 
+theorem T.domVecMinIdx_none_all_zero {lam m : Nat}
+    (v : Vec (T lam) m) (h : T.domVecMinIdx v = none) :
+    ∀ i : Fin m, T.dom (v.idx i) = .zero := by
+  induction v with
+  | nil =>
+      intro i
+      exact i.elim0
+  | snoc k xs x ih =>
+      intro i
+      rw [T.domVecMinIdx] at h
+      cases hrec : T.domVecMinIdx xs with
+      | some p =>
+          rw [hrec] at h
+          cases h
+      | none =>
+          rw [hrec] at h
+          by_cases hx : T.dom x = .zero
+          · rw [if_pos hx] at h
+            by_cases hi : i.val < k
+            · show T.dom
+                (if hlt : i.val < k then
+                  Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
+              rw [dite_eq_left hi]
+              exact ih hrec ⟨i.val, hi⟩
+            · show T.dom
+                (if hlt : i.val < k then
+                  Vec.idx xs ⟨i.val, hlt⟩ else x) = .zero
+              rw [dite_eq_right hi]
+              exact hx
+          · rw [if_neg hx] at h
+            cases h
+
+theorem T.domVecMinIdx_some_spec {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m) (d : Dom)
+    (h : T.domVecMinIdx v = some (i, d)) :
+    T.dom (v.idx i) = d ∧
+      ∀ j : Fin m, j.val < i.val →
+        T.dom (v.idx j) = .zero := by
+  induction v with
+  | nil =>
+      exact i.elim0
+  | snoc k xs x ih =>
+      rw [T.domVecMinIdx] at h
+      cases hrec : T.domVecMinIdx xs with
+      | some p =>
+          obtain ⟨i', d'⟩ := p
+          rw [hrec] at h
+          cases h
+          have hspec := ih i' d' hrec
+          constructor
+          · show T.dom
+              (if hlt : i'.val < k then
+                Vec.idx xs ⟨i'.val, hlt⟩ else x) = d'
+            rw [dite_eq_left i'.isLt]
+            exact hspec.1
+          · intro j hj
+            have hjk : j.val < k :=
+              Nat.lt_of_lt_of_le hj (Nat.le_of_lt_succ i'.isLt)
+            show T.dom
+                (if hlt : j.val < k then
+                  Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
+            rw [dite_eq_left hjk]
+            exact hspec.2 ⟨j.val, hjk⟩ hj
+      | none =>
+          rw [hrec] at h
+          by_cases hx : T.dom x = .zero
+          · rw [if_pos hx] at h
+            cases h
+          · rw [if_neg hx] at h
+            cases h
+            constructor
+            · show T.dom
+                (if hlt : k < k then
+                  Vec.idx xs ⟨k, hlt⟩ else x) = T.dom x
+              rw [dite_eq_right (Nat.lt_irrefl k)]
+            · intro j hj
+              show T.dom
+                  (if hlt : j.val < k then
+                    Vec.idx xs ⟨j.val, hlt⟩ else x) = .zero
+              rw [dite_eq_left hj]
+              exact T.domVecMinIdx_none_all_zero xs hrec ⟨j.val, hj⟩
+
+theorem T.domVecMinIdx_some_ne_zero {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m) (d : Dom)
+    (h : T.domVecMinIdx v = some (i, d)) :
+    d ≠ .zero := by
+  induction v with
+  | nil =>
+      exact i.elim0
+  | snoc k xs x ih =>
+      rw [T.domVecMinIdx] at h
+      cases hrec : T.domVecMinIdx xs with
+      | some p =>
+          obtain ⟨i', d'⟩ := p
+          rw [hrec] at h
+          cases h
+          exact ih i' d' hrec
+      | none =>
+          rw [hrec] at h
+          by_cases hx : T.dom x = .zero
+          · rw [if_pos hx] at h
+            cases h
+          · rw [if_neg hx] at h
+            cases h
+            exact hx
+
 def T.fund {lam : Nat} (s t : T lam) : T lam :=
   match s with
   | Z => Z
