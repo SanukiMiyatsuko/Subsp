@@ -1459,7 +1459,7 @@ theorem T.term_lt_P_of_self_at {lam : Nat}
         | ord => ord) = Ordering.lt at hold
       cases hc : compareVec xs v with
       | lt =>
-          exact hc
+          rfl
       | eq =>
           rw [hc] at hold
           cases xadd with
@@ -1614,6 +1614,7 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
               intro j hmj
               exact Vec.rplc_idx_of_ne
                 ls m j a (Nat.ne_of_gt hmj)
+            rw [hr]
             exact
               T.term_lt_P_of_self_at
                 a ls (ls.rplc m a) m
