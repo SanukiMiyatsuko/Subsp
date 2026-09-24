@@ -1479,6 +1479,68 @@ theorem T.isNF_PZ_of_coords {lam : Nat} (ls : Vec (T lam) lam)
 
 
 
+theorem T.term_lt_P_of_self_at {lam : Nat}
+    (x : T lam) (v w : Vec (T lam) lam) (q : Fin lam)
+    (hx : T.isNFComp x)
+    (hold : x < T.P v T.Z)
+    (hwq : w.idx q = x)
+    (hhigh : ∀ j : Fin lam, q.val < j.val → w.idx j = v.idx j) :
+    x < T.P w T.Z := by
+  cases x with
+  | Z =>
+    show compareT T.Z (T.P w T.Z) = Ordering.lt
+    rfl
+  | P xs xadd =>
+    have hvlt : compareVec xs v = Ordering.lt := by
+      show
+        (match compareVec xs v with
+        | Ordering.eq => compareT xadd T.Z
+        | ord => ord) = Ordering.lt at hold
+      cases hc : compareVec xs v with
+      | lt =>
+        exact hc
+      | eq =>
+        rw [hc] at hold
+        cases xadd <;> cases hold
+      | gt =>
+        rw [hc] at hold
+        cases hold
+    obtain ⟨p, hpHigh, hpLt⟩ :=
+      Vec.compare_lt_has_pivot xs v hvlt
+    by_cases hqp : q.val < p.val
+    · have hcmp : compareVec xs w = Ordering.lt := by
+        apply Vec.compare_lt_of_pivot xs w p
+        · intro j hpj
+          have hqj : q.val < j.val :=
+            Nat.lt_trans hqp hpj
+          rw [hhigh j hqj]
+          exact hpHigh j hpj
+        · have hpw : w.idx p = v.idx p :=
+            hhigh p hqp
+          rw [hpw]
+          exact hpLt
+      exact T.P_lt_P_of_compareVec_lt xs w xadd T.Z hcmp
+    · have hpq : p.val ≤ q.val := Nat.not_lt.mp hqp
+      have hself : xs.idx q < T.P xs xadd := by
+        have hmemCoord : xs.idx q ∈ Vec.toList xs := by
+          apply (Vec.mem_toList_iff_idx xs (xs.idx q)).mpr
+          exact ⟨q, rfl⟩
+        have hmemG : xs.idx q ∈ T.G (T.P xs xadd) := by
+          apply (T.mem_G_P xs xadd (xs.idx q)).mpr
+          exact Or.inl
+            ⟨xs.idx q, hmemCoord, Or.inl rfl⟩
+        exact hx.2 (xs.idx q) hmemG
+      have hcmp : compareVec xs w = Ordering.lt := by
+        apply Vec.compare_lt_of_pivot xs w q
+        · intro j hqj
+          have hpj : p.val < j.val :=
+            Nat.lt_of_le_of_lt hpq hqj
+          rw [hhigh j hqj]
+          exact hpHigh j hpj
+        · rw [hwq]
+          exact hself
+      exact T.P_lt_P_of_compareVec_lt xs w xadd T.Z hcmp
+
 theorem T.G_size_lt {lam : Nat} :
     ∀ s y : T lam, y ∈ T.G s → T.size y < T.size s := by
   intro s
