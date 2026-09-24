@@ -3110,6 +3110,261 @@ theorem T.iter_fund_lt_next {lam : Nat}
           hd hrec)
   exact main (T.size t) t rfl
 
+theorem T.fund_Omega_master {lam : Nat}
+    (s z : T lam)
+    (hs : T.isNF s)
+    (hd : T.dom s = .Omega)
+    (hz : T.isNFComp z) :
+    T.isNF (T.fund s z) ∧
+      T.SDom z (T.fund s z) s := by
+  let motive : Nat → Prop :=
+    fun n =>
+      ∀ a w : T lam, T.size a = n →
+        T.isNF a → T.dom a = .Omega →
+        T.isNFComp w →
+          T.isNF (T.fund a w) ∧
+            T.SDom w (T.fund a w) a
+  have main : ∀ n : Nat, motive n := by
+    intro n
+    exact Nat.strongRecOn n (motive := motive) (fun n ih => by
+      intro a w hn ha hdom hw
+      cases a with
+      | Z =>
+        change Dom.zero = Dom.Omega at hdom
+        cases hdom
+      | P ls add =>
+        have ha0 := ha
+        have hcoords :=
+          T.isNF_P_coord_NFComp ls add ha
+        cases ha with
+        | p _ _ h0 h1 h2 h3 =>
+          by_cases hadd : add = T.Z
+          · subst add
+            cases hmin : T.domVecMinIdx ls with
+            | none =>
+              have hd' := hdom
+              conv at hd' =>
+                lhs
+                rw [T.dom, if_pos rfl]
+                rw [hmin]
+              change Dom.one = Dom.Omega at hd'
+              cases hd'
+            | some md =>
+              obtain ⟨m, d⟩ := md
+              have hspec :=
+                T.domVecMinIdx_some_spec ls m d hmin
+              have hd' := hdom
+              conv at hd' =>
+                lhs
+                rw [T.dom, if_pos rfl]
+                rw [hmin]
+              cases d with
+              | zero =>
+                change Dom.omega = Dom.Omega at hd'
+                cases hd'
+              | omega =>
+                change Dom.omega = Dom.Omega at hd'
+                cases hd'
+              | Omega =>
+                change Dom.omega = Dom.Omega at hd'
+                cases hd'
+              | one =>
+                change
+                  (if m.val = 0 then
+                    Dom.omega else Dom.Omega) =
+                      Dom.Omega at hd'
+                by_cases hm0 : m.val = 0
+                · rw [if_pos hm0] at hd'
+                  cases hd'
+                · cases m with
+                  | mk mv mh =>
+                    cases mv with
+                    | zero =>
+                      exact False.elim (hm0 rfl)
+                    | succ k =>
+                      let i : Fin lam :=
+                        ⟨Nat.succ k, mh⟩
+                      let j : Fin lam :=
+                        ⟨k, Nat.lt_of_succ_lt mh⟩
+                      let child := ls.idx i
+                      let childFund :=
+                        T.fund child T.Z
+                      let low :=
+                        (ls.rplc i childFund).rplc j w
+                      have hchildComp :
+                          T.isNFComp child :=
+                        hcoords i
+                      have hchildDom :
+                          T.dom child = Dom.one := by
+                        change
+                          T.dom
+                            (ls.idx
+                              ⟨Nat.succ k, mh⟩) =
+                            Dom.one
+                        exact hspec.2.1
+                      have hchildFundComp :
+                          T.isNFComp childFund := by
+                        exact T.fund_one_NFComp_closed
+                          child hchildComp hchildDom
+                      have hchildNe :
+                          child ≠ T.Z := by
+                        intro heq
+                        have hc := hchildDom
+                        rw [heq] at hc
+                        cases hc
+                      have hchildLt :
+                          childFund < child := by
+                        exact T.fund_lt_self
+                          child T.Z hchildNe
+                      have hij : i.val ≠ j.val := by
+                        change Nat.succ k ≠ k
+                        exact
+                          (Nat.ne_of_lt
+                            (Nat.lt_succ_self k)).symm
+                      have hnf :
+                          T.isNF (T.P low T.Z) := by
+                        exact T.rplc_two_NF_closed
+                          ls i j childFund w hij
+                          ha0 hchildFundComp hw
+                      have hAbove :
+                          ∀ q : Fin lam,
+                            i.val < q.val →
+                              low.idx q = ls.idx q := by
+                        intro q hiq
+                        have hqj : q.val ≠ j.val := by
+                          have hjq : j.val < q.val := by
+                            exact Nat.lt_trans
+                              (Nat.lt_succ_self k) hiq
+                          exact Nat.ne_of_gt hjq
+                        have hqi : q.val ≠ i.val :=
+                          Nat.ne_of_gt hiq
+                        change
+                          ((ls.rplc i childFund).rplc
+                            j w).idx q = ls.idx q
+                        rw [
+                          Vec.rplc_idx_of_ne
+                            (ls.rplc i childFund)
+                            j q w hqj,
+                          Vec.rplc_idx_of_ne
+                            ls i q childFund hqi]
+                      have hlowi :
+                          low.idx i = childFund := by
+                        change
+                          ((ls.rplc i childFund).rplc
+                            j w).idx i = childFund
+                        rw [
+                          Vec.rplc_idx_of_ne
+                            (ls.rplc i childFund)
+                            j i w hij,
+                          Vec.rplc_idx_same]
+                      have hPivotLt :
+                          low.idx i < ls.idx i := by
+                        rw [hlowi]
+                        exact hchildLt
+                      have hPivotComp :
+                          T.isNFComp (low.idx i) := by
+                        rw [hlowi]
+                        exact hchildFundComp
+                      have hBelow :
+                          ∀ q : Fin lam,
+                            q.val < i.val →
+                              low.idx q = T.Z ∨
+                                low.idx q = w := by
+                        intro q hqi
+                        by_cases hqj :
+                            q.val = j.val
+                        · have hq : q = j :=
+                            Fin.eq_of_val_eq hqj
+                          rw [hq]
+                          apply Or.inr
+                          change
+                            ((ls.rplc i childFund).rplc
+                              j w).idx j = w
+                          rw [Vec.rplc_idx_same]
+                        · have hqine :
+                              q.val ≠ i.val :=
+                            Nat.ne_of_lt hqi
+                          have hold :
+                              ls.idx q = T.Z := by
+                            have hdomq :
+                                T.dom (ls.idx q) =
+                                  Dom.zero :=
+                              hspec.2.2 q hqi
+                            exact T.dom_zero_eq_Z
+                              (ls.idx q) hdomq
+                          apply Or.inl
+                          change
+                            ((ls.rplc i childFund).rplc
+                              j w).idx q = T.Z
+                          rw [
+                            Vec.rplc_idx_of_ne
+                              (ls.rplc i childFund)
+                              j q w hqj,
+                            Vec.rplc_idx_of_ne
+                              ls i q childFund hqine,
+                            hold]
+                      have hsd :
+                          T.SDom w
+                            (T.P low T.Z)
+                            (T.P ls T.Z) :=
+                        T.SDom_PZ_pivot_comp
+                          w low ls i
+                          hAbove hPivotLt
+                          hPivotComp hBelow
+                      have hfundEq :
+                          T.fund (T.P ls T.Z) w =
+                            T.P low T.Z := by
+                        conv =>
+                          lhs
+                          rw [T.fund, if_pos rfl]
+                          rw [hmin]
+                          change
+                            (if Dom.one = Dom.one then
+                              _ else _)
+                          rw [if_pos rfl]
+                        change
+                          T.P
+                            ((ls.rplc i
+                              (T.fund
+                                (ls.idx i) T.Z)).rplc
+                              j w)
+                            T.Z =
+                              T.P low T.Z
+                        rfl
+                      rw [hfundEq]
+                      exact ⟨hnf, hsd⟩
+          · have hdadd :
+                T.dom add = .Omega := by
+              conv at hdom =>
+                lhs
+                rw [T.dom, if_neg hadd]
+              exact hdom
+            have hsz : T.size add < n := by
+              rw [← hn]
+              exact T.add_size_lt_P ls add
+            obtain ⟨hnewNF, hnewSD⟩ :=
+              ih (T.size add) hsz add w
+                rfl h1 hdadd hw
+            have hparentNF :
+                T.isNF
+                  (T.P ls (T.fund add w)) :=
+              T.isNF.p ls (T.fund add w)
+                h0 hnewNF h2
+                (T.le_trans
+                  (T.head (T.fund add w))
+                  (T.head add)
+                  (T.P ls T.Z)
+                  (T.head_fund_le add w) h3)
+            have hparentSD :
+                T.SDom w
+                  (T.P ls (T.fund add w))
+                  (T.P ls add) :=
+              T.SDom_tail w
+                (T.fund add w) add ls hnewSD
+            rw [T.fund_P_tail_eq ls add w hadd]
+            exact ⟨hparentNF, hparentSD⟩)
+  exact main (T.size s) s z rfl hs hd hz
+
 theorem T.fund_omega_NFComp_closed {lam : Nat} (s t : T lam)
     (hs : T.isNFComp s)
     (hd : T.dom s = .omega) :
