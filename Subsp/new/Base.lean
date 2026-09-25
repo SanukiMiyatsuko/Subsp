@@ -400,7 +400,7 @@ theorem Vec.ofFn_idx {A : Type} : ∀ (k : Nat) (f : Fin k → A) (i : Fin k),
     show (Vec.snoc k (Vec.ofFn k (fun j => f j.castSucc)) (f (Fin.last k))).idx i = f i
     show (if h : i.val < k then Vec.idx (Vec.ofFn k (fun j => f j.castSucc)) ⟨i.val, h⟩
           else f (Fin.last k)) = f i
-    by_cases h : i.val < k
+    rcases constructive_cases (p := i.val < k) with h | h
     · rw [dite_eq_left h]
       have heq : (⟨i.val, h⟩ : Fin k).castSucc = i := by
         apply Fin.eq_of_val_eq
