@@ -38,7 +38,7 @@ theorem bridge_lt_add_left_of_size_lt (a b x : T)
             have hcancel1 : T.size a1 + T.size x2 < T.size a1 + T.size a2 :=
               Nat.lt_of_succ_lt_succ hsize
             exact Nat.add_lt_add_iff_left.mp hcancel1
-          by_cases ha2 : a2 = T.Z
+          rcases constructive_cases (p := a2 = T.Z) with ha2 | ha2
           · rw [ha2] at htailSize
             exact False.elim (Nat.not_lt_zero _ htailSize)
           · have htail : x2 < a2 := ih2 x2 ha2 htailSize hh.2.2
@@ -52,7 +52,7 @@ theorem bridge_lt_add_left_of_size_lt (a b x : T)
     cases hx
   | P a0 a1 a2 ih1 ih2 =>
     rw [T.P_add_eq]
-    by_cases hu : u ≤ a0
+    rcases constructive_cases (p := u ≤ a0) with hu | hu
     · rw [T.G1.eq_2, ite_eq_left hu] at hx
       rw [T.G1.eq_2, ite_eq_left hu]
       cases List.mem_append.mp hx with
@@ -108,7 +108,7 @@ theorem bridge_lt_add_left_of_size_lt (a b x : T)
   | Z => rfl
   | P s0 s1 s2 ih1 ih2 =>
     rw [T.part]
-    by_cases h0 : s0 = 0
+    rcases constructive_cases (p := s0 = 0) with h0 | h0
     · rw [ite_eq_left h0]
       rfl
     · rw [ite_eq_right h0]
@@ -131,7 +131,7 @@ theorem bridge_stand_P_NF1 (n : Nat) (a b : T)
     (hb : T.isNF1 b) :
     T.isNF1 (T.stand (T.P n a b)) := by
   rw [T.stand, bridge_stand_eq_self_of_NF1 b hb]
-  by_cases hhead : T.head b ≤ T.P n a T.Z
+  rcases constructive_cases (p := T.head b ≤ T.P n a T.Z) with hhead | hhead
   · rw [ite_eq_left hhead]
     exact T.isNF1.p n a b ha hb hga hhead
   · rw [ite_eq_right hhead]
@@ -146,7 +146,7 @@ theorem bridge_part_second_shape (s a b : T) (hp : T.part s = (a, b)) :
     exact Or.inl hb.symm
   | P s0 s1 s2 ih1 ih2 =>
     rw [T.part] at hp
-    by_cases h0 : s0 = 0
+    rcases constructive_cases (p := s0 = 0) with h0 | h0
     · rw [ite_eq_left h0] at hp
       injection hp with ha hb
       subst s0
@@ -192,7 +192,7 @@ theorem bridge_stand_ne_Z (s : T) (hs : s ≠ T.Z) :
   | Z => exact False.elim (hs rfl)
   | P p a b iha ihb =>
     rw [T.stand]
-    by_cases hle : T.head (T.stand b) ≤ T.P p a T.Z
+    rcases constructive_cases (p := T.head (T.stand b) ≤ T.P p a T.Z) with hle | hle
     · rw [ite_eq_left hle]
       intro h
       cases h
@@ -211,7 +211,7 @@ theorem bridge_early_collapse_ne_Z (s : T) (hs : s ≠ T.Z) :
     rw [T.early_collapse]
     cases hp : T.part (T.P p a b) with
     | mk x y =>
-      by_cases hx : x = T.Z
+      rcases constructive_cases (p := x = T.Z) with hx | hx
       · rw [ite_eq_left hx]
         intro h
         cases h
@@ -234,7 +234,7 @@ theorem bridge_card_times_ne_Z (n : Nat) (s : T) (hs : s ≠ T.Z) :
       cases h
     | succ n =>
       rw [T.card_times]
-      by_cases hp : p = 0
+      rcases constructive_cases (p := p = 0) with hp | hp
       · rw [ite_eq_left hp]
         cases hc : T.card_times (n + 1) b with
         | Z =>
