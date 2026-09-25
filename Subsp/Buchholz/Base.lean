@@ -498,9 +498,11 @@ theorem add_lt_add_of_ne_Z (a X : T) (h : X ≠ Z) : a < T.add a X := by
   induction a with
   | Z =>
     rw [T.add.eq_1]
-    rcases T.Z_le X with hlt | heq
-    · exact hlt
-    · exact absurd heq.symm h
+    exact match T.Z_le X with
+    | Or.inl hlt => by
+      exact hlt
+    | Or.inr heq => by
+      exact absurd heq.symm h
   | P a0 a1 a2 ih1 ih2 =>
     rw [T.P_add_eq a0 a1 a2 X]
     exact T.Lt.p_tail a0 a1 a2 (T.add a2 X) ih2
@@ -512,22 +514,34 @@ theorem sandwich_tail (s0 : Nat) (s1 X c Y : T) (h1 : P s0 s1 X < c) (h2 : c < P
   | P c0 c1 c2 =>
     have hinv1 := lt_inv s0 s1 X c0 c1 c2 h1
     have hinv2 := lt_inv c0 c1 c2 s0 s1 Y h2
-    rcases hinv1 with hh1 | hh1 | hh1
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
-      · rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-      · rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
-      · have : s1 < s1 := lt_trans_thm s1 c1 s1 hh1.2 hh2.2
+    exact match hinv1 with
+    | Or.inl hh1 => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
+      | Or.inr (Or.inl hh2) => by
+        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
+      | Or.inr (Or.inr hh2) => by
+        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
+    | Or.inr (Or.inl hh1) => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
+      | Or.inr (Or.inl hh2) => by
+        have : s1 < s1 := lt_trans_thm s1 c1 s1 hh1.2 hh2.2
         exact absurd this (lt_irrefl_thm s1)
-      · rw [hh2.2.1] at hh1
+      | Or.inr (Or.inr hh2) => by
+        rw [hh2.2.1] at hh1
         exact absurd hh1.2 (lt_irrefl_thm s1)
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
-      · rw [← hh1.1] at hh2; rw [← hh1.2.1] at hh2
+    | Or.inr (Or.inr hh1) => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
+      | Or.inr (Or.inl hh2) => by
+        rw [← hh1.1] at hh2; rw [← hh1.2.1] at hh2
         exact absurd hh2.2 (lt_irrefl_thm s1)
-      · refine ⟨c2, ?_, hh1.2.2, hh2.2.2⟩
+      | Or.inr (Or.inr hh2) => by
+        refine ⟨c2, ?_, hh1.2.2, hh2.2.2⟩
         rw [← hh1.1, ← hh1.2.1]
 
 theorem sandwich_mid (s0 : Nat) (X Y c : T) (_hXY : X < Y) (h1 : P s0 X Z < c) (h2 : c < P s0 Y Z) :
@@ -537,22 +551,34 @@ theorem sandwich_mid (s0 : Nat) (X Y c : T) (_hXY : X < Y) (h1 : P s0 X Z < c) (
   | P c0 c1 c2 =>
     have hinv1 := lt_inv s0 X Z c0 c1 c2 h1
     have hinv2 := lt_inv c0 c1 c2 s0 Y Z h2
-    rcases hinv1 with hh1 | hh1 | hh1
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
-      · rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-      · exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
-      · refine ⟨c1, c2, ?_, Or.inl hh1.2, hh2.2⟩
+    exact match hinv1 with
+    | Or.inl hh1 => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
+      | Or.inr (Or.inl hh2) => by
+        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
+      | Or.inr (Or.inr hh2) => by
+        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
+    | Or.inr (Or.inl hh1) => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
+      | Or.inr (Or.inl hh2) => by
+        refine ⟨c1, c2, ?_, Or.inl hh1.2, hh2.2⟩
         rw [hh1.1]
-      · exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
-      · refine ⟨c1, c2, ?_, Or.inr hh1.2.1, ?_⟩
+      | Or.inr (Or.inr hh2) => by
+        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
+    | Or.inr (Or.inr hh1) => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
+      | Or.inr (Or.inl hh2) => by
+        refine ⟨c1, c2, ?_, Or.inr hh1.2.1, ?_⟩
         · rw [hh1.1]
         · exact hh2.2
-      · exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
+      | Or.inr (Or.inr hh2) => by
+        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
 
 theorem sandwich_mid_tail (s0 : Nat) (X W Y c' : T) (h1 : P s0 X W < c') (h2 : c' < P s0 Y Z) :
     ∃ c1 c2, c' = P s0 c1 c2 ∧ ((X < c1 ∧ c1 < Y) ∨ (c1 = X ∧ W < c2)) := by
@@ -561,21 +587,33 @@ theorem sandwich_mid_tail (s0 : Nat) (X W Y c' : T) (h1 : P s0 X W < c') (h2 : c
   | P c0 c1 c2 =>
     have hinv1 := lt_inv s0 X W c0 c1 c2 h1
     have hinv2 := lt_inv c0 c1 c2 s0 Y Z h2
-    rcases hinv1 with hh1 | hh1 | hh1
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
-      · rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-      · rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
-      · refine ⟨c1, c2, ?_, Or.inl ⟨hh1.2, hh2.2⟩⟩
+    exact match hinv1 with
+    | Or.inl hh1 => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
+      | Or.inr (Or.inl hh2) => by
+        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
+      | Or.inr (Or.inr hh2) => by
+        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
+    | Or.inr (Or.inl hh1) => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
+      | Or.inr (Or.inl hh2) => by
+        refine ⟨c1, c2, ?_, Or.inl ⟨hh1.2, hh2.2⟩⟩
         rw [hh1.1]
-      · exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
-    · rcases hinv2 with hh2 | hh2 | hh2
-      · rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
-      · refine ⟨c1, c2, ?_, Or.inr ⟨hh1.2.1.symm, hh1.2.2⟩⟩
+      | Or.inr (Or.inr hh2) => by
+        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
+    | Or.inr (Or.inr hh1) => by
+      exact match hinv2 with
+      | Or.inl hh2 => by
+        rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
+      | Or.inr (Or.inl hh2) => by
+        refine ⟨c1, c2, ?_, Or.inr ⟨hh1.2.1.symm, hh1.2.2⟩⟩
         rw [hh1.1]
-      · exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
+      | Or.inr (Or.inr hh2) => by
+        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
 
 def T.mul : T → T → T
 | _, Z => Z
@@ -712,9 +750,11 @@ theorem mul_ofNat_strict_mono (X : T) (hX : X ≠ Z) (n1 : Nat) :
   | succ n1' ih =>
     intro n0 h
     have hle : n0 ≤ n1' := Nat.le_of_lt_succ h
-    rcases Nat.lt_or_eq_of_le hle with hlt2 | heq2
-    · exact lt_trans_thm _ _ _ (ih n0 hlt2) (mul_ofNat_one_step X hX n1')
-    · rw [heq2]; exact mul_ofNat_one_step X hX n1'
+    exact match Nat.lt_or_eq_of_le hle with
+    | Or.inl hlt2 => by
+      exact lt_trans_thm _ _ _ (ih n0 hlt2) (mul_ofNat_one_step X hX n1')
+    | Or.inr heq2 => by
+      rw [heq2]; exact mul_ofNat_one_step X hX n1'
 
 theorem add_eq_hAdd (a b : T) : T.add a b = a + b := rfl
 
@@ -760,17 +800,23 @@ theorem ofNat_strict_mono {n m : Nat} (h : n < m) : T.ofNat n < T.ofNat m := by
   | zero => exact absurd h (Nat.not_lt_zero n)
   | succ m' ih =>
     have hle : n ≤ m' := Nat.le_of_lt_succ h
-    rcases Nat.lt_or_eq_of_le hle with hlt2 | heq2
-    · exact lt_trans_thm (T.ofNat n) (T.ofNat m') (T.ofNat (m'+1))
+    exact match Nat.lt_or_eq_of_le hle with
+    | Or.inl hlt2 => by
+      exact lt_trans_thm (T.ofNat n) (T.ofNat m') (T.ofNat (m'+1))
         (ih hlt2) (ofNat_one_step m')
-    · rw [heq2]; exact ofNat_one_step m'
+    | Or.inr heq2 => by
+      rw [heq2]; exact ofNat_one_step m'
 
 theorem ofNat_reflect_lt {n m : Nat} (h : T.ofNat n < T.ofNat m) : n < m := by
-  rcases nat_lt_total n m with hlt | hor
-  · exact hlt
-  · rcases hor with hgt | heq
-    · exact absurd (ofNat_strict_mono hgt) (lt_asymm_thm h)
-    · rw [heq] at h; exact absurd h (lt_irrefl_thm (T.ofNat m))
+  exact match nat_lt_total n m with
+  | Or.inl hlt => by
+    exact hlt
+  | Or.inr hor => by
+    exact match hor with
+    | Or.inl hgt => by
+      exact absurd (ofNat_strict_mono hgt) (lt_asymm_thm h)
+    | Or.inr heq => by
+      rw [heq] at h; exact absurd h (lt_irrefl_thm (T.ofNat m))
 
 theorem IsN_exists_ofNat {t : T} (h : T.IsN t) : ∃ n, t = T.ofNat n := by
   induction h with
@@ -821,9 +867,11 @@ theorem listLe_append_congr (Pre L1 L2 : List T) (h : T.listLe L1 L2) :
     T.listLe (Pre ++ L1) (Pre ++ L2) := by
   intro x hx
   rw [List.mem_append] at hx
-  rcases hx with hx | hx
-  · exact ⟨x, List.mem_append_left _ hx, Or.inr rfl⟩
-  · obtain ⟨y, hy1, hy2⟩ := h x hx
+  exact match hx with
+  | Or.inl hx => by
+    exact ⟨x, List.mem_append_left _ hx, Or.inr rfl⟩
+  | Or.inr hx => by
+    obtain ⟨y, hy1, hy2⟩ := h x hx
     exact ⟨y, List.mem_append_right _ hy1, hy2⟩
 
 theorem listLe_trans (L1 L2 L3 : List T) (h1 : T.listLe L1 L2) (h2 : T.listLe L2 L3) :
