@@ -64,6 +64,7 @@ SubspRepoが作業フォルダです。
 
 #### 暗黙の場合分け・パターン分解・等式処理
 
+- タクティクモードの `if ... then ... else ...`
 - `by_cases`
 - `by_contra`
 - `split`
@@ -116,7 +117,9 @@ SubspRepoが作業フォルダです。
 - `Decidable.byCases`
 - `cases (inferInstance : Decidable p)`
 
-特に命題の真偽で場合分けする場合、`by_cases` は使用せず、利用可能な `Decidable p` を明示的に消去してください。
+特に命題の真偽で場合分けする場合、タクティクモードの `if ... then ... else ...` や `by_cases` は使用せず、利用可能な `Decidable p` を明示的に消去してください。
+
+Lean のタクティクモードにおける `if p then tac1 else tac2` は、実質的に `by_cases p` の別構文として命題 `p` と `¬p` の2ケースへ分岐するため禁止します。一方、項・定義の中で値を構成する通常の `if p then t else e`（`ite` / `dite`）は、明示的な `Decidable p` に基づく構成的な式なので禁止しません。
 
 ### 原則
 
