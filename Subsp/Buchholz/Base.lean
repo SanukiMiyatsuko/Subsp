@@ -732,10 +732,11 @@ theorem mul_shape (s0 : Nat) (c t : T) (h : T.IsN t) :
       rw [h0]
       exact ⟨Z, T.add.eq_1 (P s0 c Z)⟩
     | inr h1 =>
-      obtain ⟨Y', hY'⟩ := h1
-      right
-      rw [hY']
-      exact ⟨T.add Y' (P s0 c Z), T.P_add_eq s0 c Y' (P s0 c Z)⟩
+      exact match h1 with
+      | ⟨Y', hY'⟩ => by
+        right
+        rw [hY']
+        exact ⟨T.add Y' (P s0 c Z), T.P_add_eq s0 c Y' (P s0 c Z)⟩
 
 theorem mul_ofNat_one_step (X : T) (hX : X ≠ Z) (n : Nat) :
     T.mul X (T.ofNat n) < T.mul X (T.ofNat (n+1)) := by
@@ -822,10 +823,11 @@ theorem IsN_exists_ofNat {t : T} (h : T.IsN t) : ∃ n, t = T.ofNat n := by
   induction h with
   | zero => exact ⟨0, rfl⟩
   | succ t' h' ih =>
-    obtain ⟨n', hn'⟩ := ih
-    refine ⟨n' + 1, ?_⟩
-    show P 0 Z t' = P 0 Z (T.ofNat n')
-    rw [hn']
+    exact match ih with
+    | ⟨n', hn'⟩ => by
+      refine ⟨n' + 1, ?_⟩
+      show P 0 Z t' = P 0 Z (T.ofNat n')
+      rw [hn']
 
 def T.iter (F : T → T) : T → T
 | Z => Z
@@ -871,12 +873,15 @@ theorem listLe_append_congr (Pre L1 L2 : List T) (h : T.listLe L1 L2) :
   | Or.inl hx => by
     exact ⟨x, List.mem_append_left _ hx, Or.inr rfl⟩
   | Or.inr hx => by
-    obtain ⟨y, hy1, hy2⟩ := h x hx
-    exact ⟨y, List.mem_append_right _ hy1, hy2⟩
+    exact match h x hx with
+    | ⟨y, hy1, hy2⟩ => by
+      exact ⟨y, List.mem_append_right _ hy1, hy2⟩
 
 theorem listLe_trans (L1 L2 L3 : List T) (h1 : T.listLe L1 L2) (h2 : T.listLe L2 L3) :
     T.listLe L1 L3 := by
   intro x hx
-  obtain ⟨y, hy1, hy2⟩ := h1 x hx
-  obtain ⟨w, hw1, hw2⟩ := h2 y hy1
-  exact ⟨w, hw1, partial_order.trans x y w hy2 hw2⟩
+  exact match h1 x hx with
+  | ⟨y, hy1, hy2⟩ => by
+    exact match h2 y hy1 with
+    | ⟨w, hw1, hw2⟩ => by
+      exact ⟨w, hw1, partial_order.trans x y w hy2 hw2⟩

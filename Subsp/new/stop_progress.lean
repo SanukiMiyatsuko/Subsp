@@ -83,16 +83,17 @@ theorem bridge_lt_add_left_of_size_lt (a b x : T)
   | Z => exact T.isNF1.z
   | P a0 a1 a2 ih1 ih2 =>
     rw [T.P_add_eq] at h
-    obtain ⟨ha1, htail, hg, hhead⟩ := T.isNF1_P_inv a0 a1 (T.add a2 b) h
-    have ha2 : T.isNF1 a2 := ih2 htail
-    apply T.isNF1.p a0 a1 a2 ha1 ha2 hg
-    cases a2 with
-    | Z => exact T.Z_le (T.P a0 a1 T.Z)
-    | P c0 c1 c2 =>
-      have heq : T.head (T.add (T.P c0 c1 c2) b) = T.head (T.P c0 c1 c2) :=
-        T.head_add_ne_Z c0 c1 c2 b
-      rw [heq] at hhead
-      exact hhead
+    exact match T.isNF1_P_inv a0 a1 (T.add a2 b) h with
+    | ⟨ha1, htail, hg, hhead⟩ => by
+      have ha2 : T.isNF1 a2 := ih2 htail
+      apply T.isNF1.p a0 a1 a2 ha1 ha2 hg
+      cases a2 with
+      | Z => exact T.Z_le (T.P a0 a1 T.Z)
+      | P c0 c1 c2 =>
+        have heq : T.head (T.add (T.P c0 c1 c2) b) = T.head (T.P c0 c1 c2) :=
+          T.head_add_ne_Z c0 c1 c2 b
+        rw [heq] at hhead
+        exact hhead
 
  theorem bridge_strong_add_prefix (a b : T)
     (ha : a ≠ T.Z)
@@ -173,9 +174,10 @@ theorem bridge_part_second_shape (s a b : T) (hp : T.part s = (a, b)) :
           rw [← hb]
           exact hz
         | inr hP =>
-          obtain ⟨c, d, heq⟩ := hP
-          apply Or.inr
-          exact ⟨c, d, by rw [← hb]; exact heq⟩
+          exact match hP with
+          | ⟨c, d, heq⟩ => by
+            apply Or.inr
+            exact ⟨c, d, by rw [← hb]; exact heq⟩
 
 theorem bridge_part_second_index0 (s a b : T)
     (hs : T.isNF1 s) (hp : T.part s = (a, b)) :
@@ -192,9 +194,10 @@ theorem bridge_part_second_index0 (s a b : T)
     rw [hz]
     exact T.index_Prop1.z
   | inr hP =>
-    obtain ⟨c, d, heq⟩ := hP
-    rw [heq] at hb ⊢
-    exact isNF1_index 0 0 c d hb (Nat.le_refl 0)
+    exact match hP with
+    | ⟨c, d, heq⟩ => by
+      rw [heq] at hb ⊢
+      exact isNF1_index 0 0 c d hb (Nat.le_refl 0)
 
 theorem bridge_stand_ne_Z (s : T) (hs : s ≠ T.Z) :
     T.stand s ≠ T.Z := by
