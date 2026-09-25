@@ -1,4 +1,4 @@
-name: Bootstrap Lean Headers
+name: Bootstrap Lean Runtime Libs
 
 on:
   push:
@@ -16,15 +16,17 @@ jobs:
           build: false
           test: false
           lint: false
-      - name: Package headers
+      - name: Package runtime libraries
         shell: bash
         run: |
           set -euo pipefail
           LEAN_BIN="$(elan which lean)"
           TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
-          tar -czf lean-headers.tar.gz -C "$TOOLCHAIN" include
+          cd "$TOOLCHAIN"
+          find lib -maxdepth 1 -type f -print0 | tar --null -czf "$GITHUB_WORKSPACE/lean-runtime-libs.tar.gz" --files-from=-
+          ls -lh "$GITHUB_WORKSPACE/lean-runtime-libs.tar.gz"
       - uses: actions/upload-artifact@v4
         with:
-          name: lean-4.34.0-headers
-          path: lean-headers.tar.gz
+          name: lean-4.34.0-runtime-libs
+          path: lean-runtime-libs.tar.gz
           compression-level: 0
