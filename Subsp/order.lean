@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 /-- Constructive excluded-middle for propositions carrying an explicit `Decidable` instance. -/
->>>>>>> 09cedc8d9b091f9290d43d6720d3ad49682f9ec7
 theorem constructive_cases {p : Prop} [Decidable p] : p ∨ ¬p :=
   match (inferInstance : Decidable p) with
   | isTrue h => Or.inl h
