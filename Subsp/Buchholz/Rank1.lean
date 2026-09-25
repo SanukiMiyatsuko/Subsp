@@ -1646,7 +1646,7 @@ theorem append_collapse_closed (v : Nat) (X : T → Prop)
   have idx : T.index_Prop1 v (P v b Z) := .p _ _ _ (Nat.le_refl v) .z
   exact match hb.2 with
   | Or.inl he => by
-    subst b
+    cases he
     cases v with
     | zero =>
       apply hp
@@ -1794,7 +1794,7 @@ theorem fund1_Ω_arg_le (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω 
     (z : T) (hz : T.index_Prop1 l z) : z ≤ T.fund1 a z := by
   exact match dom1_Ω_head a ha l hd with
   | ⟨i, s, t, he, hi⟩ => by
-    subst a
+    cases he
     have hsmall : ∀ b c, z < P i b c := by
       intro b c
       cases hz with
@@ -1865,9 +1865,9 @@ theorem fund1_Ω_above (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l
               | Or.inl h => by
                 exact .p_head j i x s y _ h
               | Or.inr (Or.inl ⟨h, hxs⟩) => by
-                subst j; exact .p_mid i x s y _ hxs
+                cases h; exact .p_mid i x s y _ hxs
               | Or.inr (Or.inr ⟨h, hxs, hyt⟩) => by
-                subst j; subst x
+                cases h; cases hxs
                 exact .p_tail i s y _ (iht ht hd y hy hyt hcut.2)
             | Z =>
               cases he : T.dom1 s with
@@ -1878,7 +1878,7 @@ theorem fund1_Ω_above (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l
                   rw [dom1_Psucc_of_Zero i s he] at hd
                   cases hd
                   have hsz := dom1_Zero_imp_eq_Z s he
-                  subst s
+                  cases hsz
                   exact match lt_inv j x y (l+1) Z Z hba with
                   | Or.inl h => by
                     exact False.elim (hj (Nat.le_of_lt_succ h))
@@ -1900,7 +1900,7 @@ theorem fund1_Ω_above (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l
                   | Or.inl h => by
                     exact .p_head j i x _ y Z h
                   | Or.inr (Or.inl ⟨h, hxs⟩) => by
-                    subst j
+                    cases h
                     exact .p_mid i x _ y Z (ihs hs he x hx hxs hcut.1)
                   | Or.inr (Or.inr ⟨_, _, h⟩) => by
                     exact False.elim (lt_Z_inv h)
@@ -1957,7 +1957,7 @@ theorem iter_cutBound (a : T) (l : Nat) (hd : T.dom1 a = .Ω l)
           exact List.mem_append_left _ (List.mem_append_right _ hx)
         apply Decidable.byCases (p := i = l)
         · intro hei
-          subst i
+          cases hei
           have hsmem : s ∈ T.G1 l (P l s t) := by
             rw [T.G1.eq_2, ite_eq_left (Nat.le_refl l)]
             exact List.mem_append_left _ (List.mem_append_left _ (List.mem_singleton_self s))
@@ -2049,7 +2049,7 @@ theorem fund1_One_upper (a : T) (hd : T.dom1 a = .One) :
     | Z =>
       exact match dom1_One_PZ i s hd with
       | ⟨hi, hs⟩ => by
-        subst i; subst s
+        cases hi; cases hs
         cases b with
         | Z => exact Or.inr rfl
         | P j x y =>
@@ -2070,9 +2070,9 @@ theorem fund1_One_upper (a : T) (hd : T.dom1 a = .One) :
         | Or.inl h => by
           exact Or.inl (.p_head k i c s d _ h)
         | Or.inr (Or.inl ⟨h, hcs⟩) => by
-          subst k; exact Or.inl (.p_mid i c s d _ hcs)
+          cases h; exact Or.inl (.p_mid i c s d _ hcs)
         | Or.inr (Or.inr ⟨h, hcs, hdt⟩) => by
-          subst k; subst c
+          cases h; cases hcs
           exact match iht hd d hdt with
           | Or.inl h => by
             exact Or.inl (.p_tail i s d _ h)
@@ -2169,7 +2169,7 @@ theorem mul_cofinal (i : Nat) (s : T) (b : T) (hb : T.isNF1 b)
         | Or.inl h => by
           exact ⟨1, .p_head j i x s y Z h⟩
         | Or.inr (Or.inl ⟨h, hxs⟩) => by
-          subst j; exact ⟨1, .p_mid i x s y Z hxs⟩
+          cases h; exact ⟨1, .p_mid i x s y Z hxs⟩
         | Or.inr (Or.inr ⟨_, _, h⟩) => by
           exact False.elim (lt_Z_inv h)
       | Or.inr hh => by
@@ -2204,10 +2204,10 @@ theorem fund1_ω_cofinal (a : T) (ha : T.isNF1 a) (hd : T.dom1 a = .ω) :
             | Or.inl h => by
               refine ⟨0, ?_⟩; rw [fund1_P_tail]; exact .p_head j i x s y _ h
             | Or.inr (Or.inl ⟨h, hxs⟩) => by
-              subst j
+              cases h
               refine ⟨0, ?_⟩; rw [fund1_P_tail]; exact .p_mid i x s y _ hxs
             | Or.inr (Or.inr ⟨h, hxs, hyt⟩) => by
-              subst j; subst x
+              cases h; cases hxs
               exact match iht ht hd y hy hyt with
               | ⟨n, hn⟩ => by
                 refine ⟨n, ?_⟩; rw [fund1_P_tail]; exact .p_tail i s y _ hn
@@ -2224,7 +2224,7 @@ theorem fund1_ω_cofinal (a : T) (ha : T.isNF1 a) (hd : T.dom1 a = .ω) :
                 rw [fund1_P_of_One i s (T.ofNat 1) he]
                 exact .p_head j i x _ y Z h
               | Or.inr (Or.inl ⟨h, hxs⟩) => by
-                subst j
+                cases h
                 exact match fund1_One_upper s he x hxs with
                 | Or.inl hxp => by
                   refine ⟨1, ?_⟩
@@ -2245,7 +2245,7 @@ theorem fund1_ω_cofinal (a : T) (ha : T.isNF1 a) (hd : T.dom1 a = .ω) :
                 refine ⟨0, ?_⟩
                 rw [fund1_P_of_ω i s (T.ofNat 0) he]; exact .p_head j i x _ y Z h
               | Or.inr (Or.inl ⟨h, hxs⟩) => by
-                subst j
+                cases h
                 exact match ihs hs he x hx hxs with
                 | ⟨n, hn⟩ => by
                   refine ⟨n, ?_⟩
@@ -2264,7 +2264,7 @@ theorem fund1_ω_cofinal (a : T) (ha : T.isNF1 a) (hd : T.dom1 a = .ω) :
                 refine ⟨0, ?_⟩
                 rw [fund1_P_of_Ω_le i s (T.ofNat 0) l he hil]; exact .p_head j i x _ y Z h
               | Or.inr (Or.inl ⟨h, hxs⟩) => by
-                subst j
+                cases h
                 have hgl : ∀ z ∈ T.G1 l x, z < x :=
                   fun z hz => hgx z (G1_antitone i l hil x z hz)
                 exact match iteration_cofinal s hs l he x hx hxs hgl with
@@ -2437,7 +2437,7 @@ theorem LF1_cofinal (a : T) (hc : a < P 1 Z Z) : ∃ n, a < T.LF1 n := by
         exact False.elim (lt_Z_inv h)
       | Or.inr (Or.inr ⟨_, _, h⟩) => by
         exact False.elim (lt_Z_inv h)
-    subst i
+    cases hi
     cases s with
     | Z => exact ⟨0, .p_mid 0 Z _ t Z (.Z_lt_P 0 Z Z)⟩
     | P j x y =>

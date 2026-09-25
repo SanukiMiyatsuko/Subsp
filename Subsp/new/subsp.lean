@@ -198,7 +198,7 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
   | P ls add =>
       apply Decidable.byCases (p := add = T.Z)
       · intro hadd
-        subst add
+        cases hadd
         rw [T.dom, ite_eq_left rfl] at hdom
         cases hmin : T.domVecMinIdx ls with
         | none =>
@@ -914,7 +914,7 @@ theorem T.fund_lt_self {lam : Nat}
       | P ls add =>
         apply Decidable.byCases (p := add = T.Z)
         · intro hadd
-          subst add
+          cases hadd
           cases hmin : T.domVecMinIdx ls with
           | none =>
             rw [T.fund_PZ_none ls b hmin]
@@ -944,12 +944,9 @@ theorem T.fund_lt_self {lam : Nat}
                   cases mv with
                   | zero =>
                     let mi : Fin lam := ⟨0, mh⟩
-                    conv =>
-                      lhs
-                      rw [T.fund, ite_eq_left rfl]
-                      rw [hmin]
-                      change (if d = .one then _ else _)
-                      rw [ite_eq_left hd1]
+                    rw [T.fund, ite_eq_left rfl]
+                    rw [hmin]
+                    cases hd1
                     change
                       T.mul
                         (T.P
@@ -977,12 +974,9 @@ theorem T.fund_lt_self {lam : Nat}
                     let mi : Fin lam := ⟨m' + 1, mh⟩
                     let j : Fin lam :=
                       ⟨m', Nat.lt_of_succ_lt mh⟩
-                    conv =>
-                      lhs
-                      rw [T.fund, ite_eq_left rfl]
-                      rw [hmin]
-                      change (if d = .one then _ else _)
-                      rw [ite_eq_left hd1]
+                    rw [T.fund, ite_eq_left rfl]
+                    rw [hmin]
+                    cases hd1
                     change
                       T.P
                         ((ls.rplc mi
@@ -1012,14 +1006,9 @@ theorem T.fund_lt_self {lam : Nat}
               · intro hd1
                 apply Decidable.byCases (p := d = .Omega)
                 · intro hdO
-                  conv =>
-                    lhs
-                    rw [T.fund, ite_eq_left rfl]
-                    rw [hmin]
-                    change (if d = .one then _ else _)
-                    rw [ite_eq_right hd1]
-                    change (if d = .Omega then _ else _)
-                    rw [ite_eq_left hdO]
+                  rw [T.fund, ite_eq_left rfl]
+                  rw [hmin]
+                  cases hdO
                   have hrec :
                       T.fund (ls.idx m)
                         (T.iter
@@ -1052,14 +1041,15 @@ theorem T.fund_lt_self {lam : Nat}
                             T.fund (ls.idx m) x) b)))
                     ls T.Z T.Z hvec
                 · intro hdO
-                  conv =>
-                    lhs
-                    rw [T.fund, ite_eq_left rfl]
-                    rw [hmin]
-                    change (if d = .one then _ else _)
-                    rw [ite_eq_right hd1]
-                    change (if d = .Omega then _ else _)
-                    rw [ite_eq_right hdO]
+                  rw [T.fund, ite_eq_left rfl]
+                  rw [hmin]
+                  have hdω : d = .omega := by
+                    cases d with
+                    | zero => exact False.elim (hspec.1 rfl)
+                    | one => exact False.elim (hd1 rfl)
+                    | omega => rfl
+                    | Omega => exact False.elim (hdO rfl)
+                  cases hdω
                   change
                     T.P
                       (ls.rplc m
@@ -2006,7 +1996,7 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
         | p _ _ h0 h1 h2 h3 =>
           apply Decidable.byCases (p := add = T.Z)
           · intro hadd
-            subst add
+            cases hadd
             have hnone : T.domVecMinIdx ls = none := by
               cases hmin : T.domVecMinIdx ls with
               | none =>
@@ -2015,10 +2005,8 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
                 exact match md with
                 | ⟨m, d⟩ => by
                   have hd' := hd
-                  conv at hd' =>
-                    lhs
-                    rw [T.dom, ite_eq_left rfl]
-                    rw [hmin]
+                  rw [T.dom, ite_eq_left rfl] at hd'
+                  rw [hmin] at hd'
                   change
                     (if d = Dom.one then
                       if m.val = 0 then Dom.omega else Dom.Omega
@@ -2640,7 +2628,7 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
       mid.idx i ≤ high.idx i := by
   cases hlm with
   | inr heq =>
-    subst mid
+    cases heq
     constructor
     · intro j hij
       exact heqAbove j hij
@@ -2683,7 +2671,7 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
                 | inl heqVal =>
                   have hpq : p = q :=
                     Fin.eq_of_val_eq heqVal.symm
-                  subst q
+                  cases hpq
                   have hlp : low.idx p = high.idx p :=
                     heqAbove p hip
                   have hcycle : low.idx p < low.idx p := by
@@ -2868,7 +2856,7 @@ theorem T.SDom_PZ_pivot_comp {lam : Nat}
             | inl hiq =>
               have hqi : q = i :=
                 Fin.eq_of_val_eq hiq
-              subst q
+              cases hqi
               have hLowMid :
                   low.idx i ≤ mid.idx i :=
                 hBetween.2.1
@@ -2949,9 +2937,7 @@ theorem T.fund_P_tail_eq {lam : Nat}
     (hadd : add ≠ T.Z) :
     T.fund (T.P ls add) t =
       T.P ls (T.fund add t) := by
-  conv =>
-    lhs
-    rw [T.fund, ite_eq_right hadd]
+  rw [T.fund, ite_eq_right hadd]
 
 theorem T.fund_Omega_ne_Z {lam : Nat}
     (s t : T lam) (hd : T.dom s = .Omega) :
@@ -2963,24 +2949,20 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
   | P ls add =>
     apply Decidable.byCases (p := add = T.Z)
     · intro hadd
-      subst add
+      cases hadd
       cases hmin : T.domVecMinIdx ls with
       | none =>
         have hd' := hd
-        conv at hd' =>
-          lhs
-          rw [T.dom, ite_eq_left rfl]
-          rw [hmin]
+        rw [T.dom, ite_eq_left rfl] at hd'
+        rw [hmin] at hd'
         change Dom.one = Dom.Omega at hd'
         cases hd'
       | some md =>
         exact match md with
         | ⟨m, d⟩ => by
           have hd' := hd
-          conv at hd' =>
-            lhs
-            rw [T.dom, ite_eq_left rfl]
-            rw [hmin]
+          rw [T.dom, ite_eq_left rfl] at hd'
+          rw [hmin] at hd'
           cases d with
           | zero =>
             change Dom.omega = Dom.Omega at hd'
@@ -3008,19 +2990,12 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
                   exact False.elim (hm0 rfl)
                 | succ k =>
                   intro heq
-                  conv at heq =>
-                    lhs
-                    rw [T.fund, ite_eq_left rfl]
-                    rw [hmin]
-                    change
-                      (if Dom.one = Dom.one then _ else _)
-                    rw [ite_eq_left rfl]
+                  rw [T.fund, ite_eq_left rfl] at heq
+                  rw [hmin] at heq
                   cases heq
     · intro hadd
       intro heq
-      conv at heq =>
-        lhs
-        rw [T.fund, ite_eq_right hadd]
+      rw [T.fund, ite_eq_right hadd] at heq
       cases heq
 
 theorem T.fund_Omega_strict_mono {lam : Nat}
@@ -3044,24 +3019,20 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
       | P ls add =>
         apply Decidable.byCases (p := add = T.Z)
         · intro hadd
-          subst add
+          cases hadd
           cases hmin : T.domVecMinIdx ls with
           | none =>
             have hd' := hdom
-            conv at hd' =>
-              lhs
-              rw [T.dom, ite_eq_left rfl]
-              rw [hmin]
+            rw [T.dom, ite_eq_left rfl] at hd'
+            rw [hmin] at hd'
             change Dom.one = Dom.Omega at hd'
             cases hd'
           | some md =>
             exact match md with
             | ⟨m, d⟩ => by
               have hd' := hdom
-              conv at hd' =>
-                lhs
-                rw [T.dom, ite_eq_left rfl]
-                rw [hmin]
+              rw [T.dom, ite_eq_left rfl] at hd'
+              rw [hmin] at hd'
               cases d with
               | zero =>
                 change Dom.omega = Dom.Omega at hd'
@@ -3105,13 +3076,8 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                       have hfu :
                           T.fund (T.P ls T.Z) u =
                             T.P (base.rplc mj u) T.Z := by
-                        conv =>
-                          lhs
-                          rw [T.fund, ite_eq_left rfl]
-                          rw [hmin]
-                          change
-                            (if Dom.one = Dom.one then _ else _)
-                          rw [ite_eq_left rfl]
+                        rw [T.fund, ite_eq_left rfl]
+                        rw [hmin]
                         change
                           T.P
                             ((ls.rplc mi
@@ -3123,13 +3089,8 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                       have hfv :
                           T.fund (T.P ls T.Z) v =
                             T.P (base.rplc mj v) T.Z := by
-                        conv =>
-                          lhs
-                          rw [T.fund, ite_eq_left rfl]
-                          rw [hmin]
-                          change
-                            (if Dom.one = Dom.one then _ else _)
-                          rw [ite_eq_left rfl]
+                        rw [T.fund, ite_eq_left rfl]
+                        rw [hmin]
                         change
                           T.P
                             ((ls.rplc mi
@@ -3145,9 +3106,7 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                         T.Z T.Z hvec
         · intro hadd
           have hdadd : T.dom add = .Omega := by
-            conv at hdom =>
-              lhs
-              rw [T.dom, ite_eq_right hadd]
+            rw [T.dom, ite_eq_right hadd] at hdom
             exact hdom
           have hsz : T.size add < n := by
             rw [← hn]
@@ -3237,14 +3196,12 @@ theorem T.fund_Omega_master {lam : Nat}
         | p _ _ h0 h1 h2 h3 =>
           apply Decidable.byCases (p := add = T.Z)
           · intro hadd
-            subst add
+            cases hadd
             cases hmin : T.domVecMinIdx ls with
             | none =>
               have hd' := hdom
-              conv at hd' =>
-                lhs
-                rw [T.dom, ite_eq_left rfl]
-                rw [hmin]
+              rw [T.dom, ite_eq_left rfl] at hd'
+              rw [hmin] at hd'
               change Dom.one = Dom.Omega at hd'
               cases hd'
             | some md =>
@@ -3253,10 +3210,8 @@ theorem T.fund_Omega_master {lam : Nat}
                 have hspec :=
                   T.domVecMinIdx_some_spec ls m d hmin
                 have hd' := hdom
-                conv at hd' =>
-                  lhs
-                  rw [T.dom, ite_eq_left rfl]
-                  rw [hmin]
+                rw [T.dom, ite_eq_left rfl] at hd'
+                rw [hmin] at hd'
                 cases d with
                 | zero =>
                   change Dom.omega = Dom.Omega at hd'
@@ -3416,14 +3371,8 @@ theorem T.fund_Omega_master {lam : Nat}
                         have hfundEq :
                             T.fund (T.P ls T.Z) w =
                               T.P low T.Z := by
-                          conv =>
-                            lhs
-                            rw [T.fund, ite_eq_left rfl]
-                            rw [hmin]
-                            change
-                              (if Dom.one = Dom.one then
-                                _ else _)
-                            rw [ite_eq_left rfl]
+                          rw [T.fund, ite_eq_left rfl]
+                          rw [hmin]
                           change
                             T.P
                               ((ls.rplc i
@@ -3438,9 +3387,7 @@ theorem T.fund_Omega_master {lam : Nat}
           · intro hadd
             have hdadd :
                 T.dom add = .Omega := by
-              conv at hdom =>
-                lhs
-                rw [T.dom, ite_eq_right hadd]
+              rw [T.dom, ite_eq_right hadd] at hdom
               exact hdom
             have hsz : T.size add < n := by
               rw [← hn]
@@ -3712,7 +3659,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
         | p _ _ h0 h1 h2 h3 =>
           apply Decidable.byCases (p := add = T.Z)
           · intro hadd
-            subst add
+            cases hadd
             have hparentNF :
                 T.isNF (T.P ls T.Z) :=
               T.isNF.p ls T.Z h0 h1 h2 h3
@@ -3721,18 +3668,14 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
               constructor
               · intro hd
                 have hd' := hd
-                conv at hd' =>
-                  lhs
-                  rw [T.dom, ite_eq_left rfl]
-                  rw [hmin]
+                rw [T.dom, ite_eq_left rfl] at hd'
+                rw [hmin] at hd'
                 change Dom.one = Dom.omega at hd'
                 cases hd'
               · intro hd
                 have hd' := hd
-                conv at hd' =>
-                  lhs
-                  rw [T.dom, ite_eq_left rfl]
-                  rw [hmin]
+                rw [T.dom, ite_eq_left rfl] at hd'
+                rw [hmin] at hd'
                 change Dom.one = Dom.Omega at hd'
                 cases hd'
             | some md =>
@@ -3802,27 +3745,15 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       have hfund :
                           T.fund (T.P ls T.Z) t =
                             T.P low T.Z := by
-                        conv =>
-                          lhs
-                          rw [T.fund, ite_eq_left rfl]
-                          rw [hmin]
-                          change
-                            (if Dom.omega = Dom.one then _
-                            else _)
-                          rw [ite_eq_right (by intro h; cases h)]
-                          change
-                            (if Dom.omega = Dom.Omega then _
-                            else _)
-                          rw [ite_eq_right (by intro h; cases h)]
+                        rw [T.fund, ite_eq_left rfl]
+                        rw [hmin]
                         rfl
                       rw [hfund]
                       exact ⟨hnf, hrel⟩
                   · intro hd
                     have hd' := hd
-                    conv at hd' =>
-                      lhs
-                      rw [T.dom, ite_eq_left rfl]
-                      rw [hmin]
+                    rw [T.dom, ite_eq_left rfl] at hd'
+                    rw [hmin] at hd'
                     change Dom.omega = Dom.Omega at hd'
                     cases hd'
                 | Omega =>
@@ -3946,27 +3877,15 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       have hfund :
                           T.fund (T.P ls T.Z) t =
                             T.P low T.Z := by
-                        conv =>
-                          lhs
-                          rw [T.fund, ite_eq_left rfl]
-                          rw [hmin]
-                          change
-                            (if Dom.Omega = Dom.one then _
-                            else _)
-                          rw [ite_eq_right (by intro h; cases h)]
-                          change
-                            (if Dom.Omega = Dom.Omega then _
-                            else _)
-                          rw [ite_eq_left rfl]
+                        rw [T.fund, ite_eq_left rfl]
+                        rw [hmin]
                         rfl
                       rw [hfund]
                       exact ⟨hnf, hrel⟩
                   · intro hd
                     have hd' := hd
-                    conv at hd' =>
-                      lhs
-                      rw [T.dom, ite_eq_left rfl]
-                      rw [hmin]
+                    rw [T.dom, ite_eq_left rfl] at hd'
+                    rw [hmin] at hd'
                     change Dom.omega = Dom.Omega at hd'
                     cases hd'
                 | one =>
@@ -4028,23 +3947,15 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                         have hfund :
                             T.fund (T.P ls T.Z) t =
                               T.mul (T.P low T.Z) t := by
-                          conv =>
-                            lhs
-                            rw [T.fund, ite_eq_left rfl]
-                            rw [hmin]
-                            change
-                              (if Dom.one = Dom.one then _
-                              else _)
-                            rw [ite_eq_left rfl]
+                          rw [T.fund, ite_eq_left rfl]
+                          rw [hmin]
                           rfl
                         rw [hfund]
                         exact ⟨hnf, hrel⟩
                       · intro hd
                         have hd' := hd
-                        conv at hd' =>
-                          lhs
-                          rw [T.dom, ite_eq_left rfl]
-                          rw [hmin]
+                        rw [T.dom, ite_eq_left rfl] at hd'
+                        rw [hmin] at hd'
                         change Dom.omega = Dom.Omega at hd'
                         cases hd'
                     | succ k =>
@@ -4055,10 +3966,8 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                       constructor
                       · intro hd
                         have hd' := hd
-                        conv at hd' =>
-                          lhs
-                          rw [T.dom, ite_eq_left rfl]
-                          rw [hmin]
+                        rw [T.dom, ite_eq_left rfl] at hd'
+                        rw [hmin] at hd'
                         change Dom.Omega = Dom.omega at hd'
                         cases hd'
                       · intro hd z hz
@@ -4085,14 +3994,8 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                         have hfund :
                             T.fund (T.P ls T.Z) z =
                               T.P low T.Z := by
-                          conv =>
-                            lhs
-                            rw [T.fund, ite_eq_left rfl]
-                            rw [hmin]
-                            change
-                              (if Dom.one = Dom.one then _
-                              else _)
-                            rw [ite_eq_left rfl]
+                          rw [T.fund, ite_eq_left rfl]
+                          rw [hmin]
                           change
                             T.P
                               ((ls.rplc mi
@@ -4115,9 +4018,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
             · intro hd t
               have hdadd :
                   T.dom add = .omega := by
-                conv at hd =>
-                  lhs
-                  rw [T.dom, ite_eq_right hadd]
+                rw [T.dom, ite_eq_right hadd] at hd
                 exact hd
               exact match hrec.1 hdadd t with
               | ⟨hfnf, hfrel⟩ => by
@@ -4143,9 +4044,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
             · intro hd z hz
               have hdadd :
                   T.dom add = .Omega := by
-                conv at hd =>
-                  lhs
-                  rw [T.dom, ite_eq_right hadd]
+                rw [T.dom, ite_eq_right hadd] at hd
                 exact hd
               exact match hrec.2 hdadd z hz with
               | ⟨hfnf, hfrel⟩ => by
@@ -4198,14 +4097,12 @@ theorem T.fund_omega_master {lam : Nat}
         | p _ _ h0 h1 h2 h3 =>
           apply Decidable.byCases (p := add = T.Z)
           · intro hadd
-            subst add
+            cases hadd
             cases hmin : T.domVecMinIdx ls with
             | none =>
               have hd' := hdom
-              conv at hd' =>
-                lhs
-                rw [T.dom, ite_eq_left rfl]
-                rw [hmin]
+              rw [T.dom, ite_eq_left rfl] at hd'
+              rw [hmin] at hd'
               change Dom.one = Dom.omega at hd'
               cases hd'
             | some md =>
@@ -4214,10 +4111,8 @@ theorem T.fund_omega_master {lam : Nat}
                 have hspec :=
                   T.domVecMinIdx_some_spec ls m d hmin
                 have hd' := hdom
-                conv at hd' =>
-                  lhs
-                  rw [T.dom, ite_eq_left rfl]
-                  rw [hmin]
+                rw [T.dom, ite_eq_left rfl] at hd'
+                rw [hmin] at hd'
                 cases d with
                 | zero =>
                   exact False.elim (hspec.1 rfl)
@@ -4236,7 +4131,7 @@ theorem T.fund_omega_master {lam : Nat}
                   cases m with
                   | mk mv mh =>
                     change mv = 0 at hm0
-                    subst mv
+                    cases hm0
                     let i : Fin lam := ⟨0, mh⟩
                     let child := ls.idx i
                     let childFund :=
@@ -4294,14 +4189,8 @@ theorem T.fund_omega_master {lam : Nat}
                     have hfundEq :
                         T.fund (T.P ls T.Z) u =
                           T.mul (T.P base T.Z) u := by
-                      conv =>
-                        lhs
-                        rw [T.fund, ite_eq_left rfl]
-                        rw [hmin]
-                        change
-                          (if Dom.one = Dom.one then
-                            _ else _)
-                        rw [ite_eq_left rfl]
+                      rw [T.fund, ite_eq_left rfl]
+                      rw [hmin]
                       change
                         T.mul
                           (T.P
@@ -4367,22 +4256,8 @@ theorem T.fund_omega_master {lam : Nat}
                     have hfundEq :
                         T.fund (T.P ls T.Z) u =
                           T.P base T.Z := by
-                      conv =>
-                        lhs
-                        rw [T.fund, ite_eq_left rfl]
-                        rw [hmin]
-                        change
-                          (if Dom.omega = Dom.one then
-                            _ else _)
-                        rw [ite_eq_right (by
-                          intro heq
-                          cases heq)]
-                        change
-                          (if Dom.omega = Dom.Omega then
-                            _ else _)
-                        rw [ite_eq_right (by
-                          intro heq
-                          cases heq)]
+                      rw [T.fund, ite_eq_left rfl]
+                      rw [hmin]
                       change
                         T.P
                           (ls.rplc m
@@ -4441,20 +4316,8 @@ theorem T.fund_omega_master {lam : Nat}
                   have hfundEq :
                       T.fund (T.P ls T.Z) u =
                         T.P base T.Z := by
-                    conv =>
-                      lhs
-                      rw [T.fund, ite_eq_left rfl]
-                      rw [hmin]
-                      change
-                        (if Dom.Omega = Dom.one then
-                          _ else _)
-                      rw [ite_eq_right (by
-                        intro heq
-                        cases heq)]
-                      change
-                        (if Dom.Omega = Dom.Omega then
-                          _ else _)
-                      rw [ite_eq_left rfl]
+                    rw [T.fund, ite_eq_left rfl]
+                    rw [hmin]
                     change
                       T.P
                         (ls.rplc m
@@ -4470,9 +4333,7 @@ theorem T.fund_omega_master {lam : Nat}
           · intro hadd
             have hdadd :
                 T.dom add = Dom.omega := by
-              conv at hdom =>
-                lhs
-                rw [T.dom, ite_eq_right hadd]
+              rw [T.dom, ite_eq_right hadd] at hdom
               exact hdom
             have hsz :
                 T.size add < n := by
@@ -4535,7 +4396,7 @@ theorem T.fund_one_arg_irrel {lam : Nat}
       | P ls add =>
         apply Decidable.byCases (p := add = T.Z)
         · intro hadd
-          subst add
+          cases hadd
           have hnone : T.domVecMinIdx ls = none := by
             cases hmin : T.domVecMinIdx ls with
             | none =>
@@ -4544,10 +4405,8 @@ theorem T.fund_one_arg_irrel {lam : Nat}
               exact match md with
               | ⟨m, d⟩ => by
                 have hd' := hdom
-                conv at hd' =>
-                  lhs
-                  rw [T.dom, ite_eq_left rfl]
-                  rw [hmin]
+                rw [T.dom, ite_eq_left rfl] at hd'
+                rw [hmin] at hd'
                 change
                   (if d = Dom.one then
                     if m.val = 0 then Dom.omega else Dom.Omega
@@ -4570,9 +4429,7 @@ theorem T.fund_one_arg_irrel {lam : Nat}
             T.fund_PZ_none ls T.Z hnone]
         · intro hadd
           have hdadd : T.dom add = .one := by
-            conv at hdom =>
-              lhs
-              rw [T.dom, ite_eq_right hadd]
+            rw [T.dom, ite_eq_right hadd] at hdom
             exact hdom
           have hsz : T.size add < n := by
             rw [← hn]

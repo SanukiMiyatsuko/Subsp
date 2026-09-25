@@ -131,8 +131,8 @@ theorem sg_tail_le_principal_add (i : Nat) (m b : T)
               cases hor with
               | inl hmid =>
                   have hqi : q = i := hmid.1
-                  subst i
-                  exact Or.inl (T.Lt.p_mid q e m f (T.P q e f) hmid.2)
+                  cases hqi
+                  exact Or.inl (T.Lt.p_mid i e m f (T.P i e f) hmid.2)
               | inr htail =>
                   exact False.elim (lt_Z_inv htail.2.2)
       | inr heq =>
@@ -188,7 +188,7 @@ theorem gc_card1_support_map : ∀ c : T,
       cases hi with
       | p _ _ _ hp hib =>
           have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
-          subst p
+          cases hp0
           exact match T.isNF1_P_inv 0 a b hc with
           | ⟨haNF, hbNF, haG, hheadb⟩ => by
             have hec := bridge_early_collapse_closed a haNF haG
@@ -304,11 +304,11 @@ theorem cs_self_lt_wrap (c : T)
       | p _ _ _ hp hib =>
           cases (Nat.le_one_iff_eq_zero_or_eq_one.mp hp) with
           | inl hp0 =>
-              subst p
+              cases hp0
               exact T.Lt.p_head 0 1 a (T.P 0 a b) b T.Z
                 (Nat.zero_lt_succ 0)
           | inr hp1 =>
-              subst p
+              cases hp1
               have haMem : a ∈ T.G1 1 (T.P 1 a b) := by
                 rw [T.G1.eq_2, ite_eq_left (Nat.le_refl 1)]
                 exact List.mem_append_left (T.G1 1 b)
@@ -335,7 +335,7 @@ theorem cs_card_support (n : Nat) : ∀ c s : T,
       cases hcIdx with
       | p _ _ _ hp hib =>
           have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
-          subst p
+          cases hp0
           exact match T.isNF1_P_inv 0 a b hcNF with
           | ⟨haNF, hbNF, haG, hheadb⟩ => by
             have hec := bridge_early_collapse_closed a haNF haG
@@ -443,7 +443,7 @@ theorem cs_one_del_card_succ_add (k : Nat) (c y : T)
       cases hcIdx with
       | p _ _ _ hp hbIdx =>
           have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
-          subst p
+          cases hp0
           rw [T.card_times.eq_3, ite_eq_left rfl]
           rw [← add_eq_hAdd]
           rw [Rank1Termination.add_assoc]
@@ -1112,7 +1112,7 @@ theorem bo_order_preserve_bounded {lam : Nat} (N : Nat)
               | eq =>
                 rw [hcmp] at hst
                 have hvw : v = w := new.Vec_eq_sound v w hcmp
-                subst w
+                cases hvw
                 have hsa : new.T.size a < new.T.size (new.T.P v a) :=
                   new.T.add_size_lt_P v a
                 have htb : new.T.size b < new.T.size (new.T.P v b) :=

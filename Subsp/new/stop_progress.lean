@@ -159,7 +159,7 @@ theorem bridge_part_second_shape (s a b : T) (hp : T.part s = (a, b)) :
     · intro h0
       rw [ite_eq_left h0] at hp
       cases hp
-      subst s0
+      cases h0
       exact Or.inr ⟨s1, s2, rfl⟩
     · intro h0
       rw [ite_eq_right h0] at hp
