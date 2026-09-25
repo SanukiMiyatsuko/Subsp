@@ -54,7 +54,7 @@ theorem Vec.idx_size_lt {lam m : Nat} :
     intro i
     show T.size (if h : i.val < k then Vec.idx xs ⟨i.val, h⟩ else x)
         < 1 + Vec.size xs + T.size x
-    by_cases h : i.val < k
+    by_cases_dec h : i.val < k
     · rw [dite_eq_left h]
       have h1 : T.size (Vec.idx xs ⟨i.val, h⟩) < Vec.size xs := ih ⟨i.val, h⟩
       have h2 : Vec.size xs < 1 + Vec.size xs + T.size x := by
@@ -138,10 +138,10 @@ theorem T.domVecMinIdx_spec {lam m : Nat} (v : Vec (T lam) m) :
             exact ih.2.2 ⟨j.val, hjk⟩ hj
       | none =>
           rw [hrec] at ih
-          by_cases hx : T.dom x = .zero
+          by_cases_dec hx : T.dom x = .zero
           · rw [ite_eq_left hx]
             intro i
-            by_cases hik : i.val < k
+            by_cases_dec hik : i.val < k
             · show T.dom
                 (if h : i.val < k then
                   Vec.idx xs ⟨i.val, h⟩ else x) = .zero
@@ -189,7 +189,7 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
   | Z =>
       rfl
   | P ls add =>
-      by_cases hadd : add = T.Z
+      by_cases_dec hadd : add = T.Z
       · subst add
         rw [T.dom, ite_eq_left rfl] at hdom
         cases hmin : T.domVecMinIdx ls with
@@ -204,9 +204,9 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
               (if d = Dom.one then
                 if i.val = 0 then Dom.omega else Dom.Omega
               else Dom.omega) = Dom.zero at hdom
-            by_cases hd1 : d = .one
+            by_cases_dec hd1 : d = .one
             · rw [ite_eq_left hd1] at hdom
-              by_cases hi : i.val = 0
+              by_cases_dec hi : i.val = 0
               · rw [ite_eq_left hi] at hdom
                 cases hdom
               · rw [ite_eq_right hi] at hdom
@@ -245,7 +245,7 @@ theorem Vec.idx_mem_toList {A : Type} {n : Nat}
         (if h : i.val < k then
           Vec.idx xs ⟨i.val, h⟩ else last) ∈
           Vec.toList xs ++ [last]
-      by_cases h : i.val < k
+      by_cases_dec h : i.val < k
       · rw [dite_eq_left h]
         exact List.mem_append_left [last] (ih ⟨i.val, h⟩)
       · rw [dite_eq_right h]
@@ -292,7 +292,7 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat}
       | snoc _ xs x =>
         cases w with
         | snoc _ ys y =>
-          by_cases hik : i.val = k
+          by_cases_dec hik : i.val = k
           · have hieq : i = Fin.last k :=
               Fin.eq_of_val_eq hik
             have hx :
@@ -437,7 +437,7 @@ theorem Vec.compare_lt_has_pivot {lam m : Nat}
                 ih xs ys h
               refine ⟨i.castSucc, ?_, ?_⟩
               · intro j hij
-                by_cases hjk : j.val < k
+                by_cases_dec hjk : j.val < k
                 · have hv :
                       (Vec.snoc k xs x).idx j =
                         xs.idx ⟨j.val, hjk⟩ := by
@@ -593,7 +593,7 @@ theorem Vec.compare_lt_preserve_from_index {lam m : Nat}
               exact hc
             rw [hc']
             rw [hc] at hlt
-            by_cases hq : q.val = k
+            by_cases_dec hq : q.val = k
             · have hqe : q = Fin.last k :=
                 Fin.eq_of_val_eq hq
               have haLast :
@@ -676,7 +676,7 @@ theorem Vec.compare_lt_after_pivot_update {lam m : Nat}
             (match compareT aLast oLast with
             | Ordering.eq => compareVec as os
             | ord => ord) = Ordering.lt at hold
-          by_cases hik : i.val = k
+          by_cases_dec hik : i.val = k
           · have hieq : i = Fin.last k :=
               Fin.eq_of_val_eq hik
             have haLast :
@@ -886,7 +886,7 @@ theorem T.fund_lt_self {lam : Nat}
       | Z =>
         exact False.elim (hanz rfl)
       | P ls add =>
-        by_cases hadd : add = T.Z
+        by_cases_dec hadd : add = T.Z
         · subst add
           cases hmin : T.domVecMinIdx ls with
           | none =>
@@ -909,7 +909,7 @@ theorem T.fund_lt_self {lam : Nat}
                 exact T.idx_size_lt_P ls T.Z m
               rw [hsize] at hlt
               exact hlt
-            by_cases hd1 : d = .one
+            by_cases_dec hd1 : d = .one
             · cases m with
               | mk mv mh =>
                 cases mv with
@@ -980,7 +980,7 @@ theorem T.fund_lt_self {lam : Nat}
                       (T.fund (ls.idx mi) T.Z)).rplc
                         j b)
                     ls T.Z T.Z hvec
-            · by_cases hdO : d = .Omega
+            · by_cases_dec hdO : d = .Omega
               · conv =>
                   lhs
                   rw [T.fund, ite_eq_left rfl]
@@ -1151,7 +1151,7 @@ theorem Vec.Gres_mem_of_idx {lam m : Nat}
         (if h : i.val < k then
           Vec.idx xs ⟨i.val, h⟩ else last) ∈
           T.G.res xs ++ [last] ++ T.G last
-      by_cases h : i.val < k
+      by_cases_dec h : i.val < k
       · rw [dite_eq_left h]
         exact List.mem_append_left (T.G last)
           (List.mem_append_left [last] (ih ⟨i.val, h⟩))
@@ -1170,7 +1170,7 @@ theorem Vec.Gres_mem_G_of_idx {lam m : Nat}
   | snoc k xs last ih =>
       change
         y ∈ T.G.res xs ++ [last] ++ T.G last
-      by_cases h : i.val < k
+      by_cases_dec h : i.val < k
       · have hy' : y ∈ T.G (Vec.idx xs ⟨i.val, h⟩) := by
           change
             y ∈ T.G
@@ -1473,7 +1473,7 @@ theorem T.term_lt_P_of_self_at {lam : Nat}
           cases hold
     obtain ⟨p, hpAbove, hpLt⟩ :=
       Vec.compare_lt_has_pivot xs v hvlt
-    by_cases hqp : q.val < p.val
+    by_cases_dec hqp : q.val < p.val
     · have hcmp : compareVec xs w = Ordering.lt := by
         apply Vec.compare_lt_of_pivot xs w p
         · intro j hpj
@@ -1522,7 +1522,7 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
       ∀ i : Fin lam,
         T.isNFComp ((ls.rplc m a).idx i) := by
     intro i
-    by_cases him : i.val = m.val
+    by_cases_dec him : i.val = m.val
     · have hieq : i = m :=
         Fin.eq_of_val_eq him
       rw [hieq, Vec.rplc_idx_same]
@@ -1542,7 +1542,7 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
       have hilt :
           (ls.rplc m a).idx i <
             T.P (ls.rplc m a) T.Z := by
-        by_cases him : i.val < m.val
+        by_cases_dec him : i.val < m.val
         · have hdom0 :
               T.dom (ls.idx i) = .zero :=
             hspec.2.2 i him
@@ -1555,7 +1555,7 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
             Vec.rplc_idx_of_ne ls m i a hine
           rw [hr, hzi]
           rfl
-        · by_cases hmi : m.val < i.val
+        · by_cases_dec hmi : m.val < i.val
           · have hine : i.val ≠ m.val :=
               Nat.ne_of_gt hmi
             have hr :
@@ -1869,7 +1869,7 @@ theorem T.NFComp_of_ZeroDom {lam : Nat}
     (a b : T lam) (hb : T.isNF b)
     (ha : T.isNFComp a) (hdom : T.ZeroDom b a) :
     T.isNFComp b := by
-  by_cases hbz : b = T.Z
+  by_cases_dec hbz : b = T.Z
   · rw [hbz]
     exact T.isNFComp_Z
   · have hzb : T.Z < b := by
@@ -1952,7 +1952,7 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
       | P ls add =>
         cases hs with
         | p _ _ h0 h1 h2 h3 =>
-          by_cases hadd : add = T.Z
+          by_cases_dec hadd : add = T.Z
           · subst add
             have hnone : T.domVecMinIdx ls = none := by
               cases hmin : T.domVecMinIdx ls with
@@ -1969,9 +1969,9 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
                   (if d = Dom.one then
                     if m.val = 0 then Dom.omega else Dom.Omega
                   else Dom.omega) = Dom.one at hd'
-                by_cases hd1 : d = .one
+                by_cases_dec hd1 : d = .one
                 · rw [ite_eq_left hd1] at hd'
-                  by_cases hm0 : m.val = 0
+                  by_cases_dec hm0 : m.val = 0
                   · rw [ite_eq_left hm0] at hd'
                     cases hd'
                   · rw [ite_eq_right hm0] at hd'
@@ -2312,7 +2312,7 @@ theorem T.NFComp_of_SDom_Z_or_eq {lam : Nat}
     (hb : T.isNF b) (ha : T.isNFComp a)
     (hdom : T.SDom T.Z b a) :
     T.isNFComp b := by
-  by_cases hbz : b = T.Z
+  by_cases_dec hbz : b = T.Z
   · rw [hbz]
     exact T.isNFComp_Z
   · have hzb : T.Z < b := by
@@ -2335,7 +2335,7 @@ theorem T.rplc_NF_closed {lam : Nat}
     T.isNF_P_coord_NFComp ls T.Z hs
   apply T.isNF_PZ_of_coords (ls.rplc i a)
   intro q
-  by_cases hqi : q.val = i.val
+  by_cases_dec hqi : q.val = i.val
   · have hq : q = i := Fin.eq_of_val_eq hqi
     rw [hq, Vec.rplc_idx_same]
     exact ha
@@ -2354,12 +2354,12 @@ theorem T.rplc_two_NF_closed {lam : Nat}
   apply T.isNF_PZ_of_coords
     ((ls.rplc i a).rplc j b)
   intro q
-  by_cases hqj : q.val = j.val
+  by_cases_dec hqj : q.val = j.val
   · have hq : q = j := Fin.eq_of_val_eq hqj
     rw [hq, Vec.rplc_idx_same]
     exact hb
   · rw [Vec.rplc_idx_of_ne (ls.rplc i a) j q b hqj]
-    by_cases hqi : q.val = i.val
+    by_cases_dec hqi : q.val = i.val
     · have hq : q = i := Fin.eq_of_val_eq hqi
       rw [hq, Vec.rplc_idx_same]
       exact ha
@@ -2581,7 +2581,7 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
     obtain ⟨p, hpEq, hpLt⟩ :=
       Vec.compare_lt_has_pivot low mid hlt
     have hpi : p.val ≤ i.val := by
-      by_cases hip : i.val < p.val
+      by_cases_dec hip : i.val < p.val
       · cases hmh with
         | inr hmeq =>
           have hmp : mid.idx p = high.idx p := by
@@ -2671,7 +2671,7 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
         obtain ⟨q, hqEq, hqLt⟩ :=
           Vec.compare_lt_has_pivot mid high hltmh
         have hqi : q.val ≤ i.val := by
-          by_cases hiq : i.val < q.val
+          by_cases_dec hiq : i.val < q.val
           · have heqQ : mid.idx q = high.idx q :=
               hhigh q hiq
             have hbad : high.idx q < high.idx q := by
@@ -2886,7 +2886,7 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
     change Dom.zero = Dom.Omega at hd
     cases hd
   | P ls add =>
-    by_cases hadd : add = T.Z
+    by_cases_dec hadd : add = T.Z
     · subst add
       cases hmin : T.domVecMinIdx ls with
       | none =>
@@ -2919,7 +2919,7 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
             (if m.val = 0 then
               Dom.omega else Dom.Omega) =
                 Dom.Omega at hd'
-          by_cases hm0 : m.val = 0
+          by_cases_dec hm0 : m.val = 0
           · rw [ite_eq_left hm0] at hd'
             cases hd'
           · cases m with
@@ -2962,7 +2962,7 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
         change Dom.zero = Dom.Omega at hdom
         cases hdom
       | P ls add =>
-        by_cases hadd : add = T.Z
+        by_cases_dec hadd : add = T.Z
         · subst add
           cases hmin : T.domVecMinIdx ls with
           | none =>
@@ -2995,7 +2995,7 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                 (if m.val = 0 then
                   Dom.omega else Dom.Omega) =
                     Dom.Omega at hd'
-              by_cases hm0 : m.val = 0
+              by_cases_dec hm0 : m.val = 0
               · rw [ite_eq_left hm0] at hd'
                 cases hd'
               · cases m with
@@ -3150,7 +3150,7 @@ theorem T.fund_Omega_master {lam : Nat}
           T.isNF_P_coord_NFComp ls add ha
         cases ha with
         | p _ _ h0 h1 h2 h3 =>
-          by_cases hadd : add = T.Z
+          by_cases_dec hadd : add = T.Z
           · subst add
             cases hmin : T.domVecMinIdx ls with
             | none =>
@@ -3185,7 +3185,7 @@ theorem T.fund_Omega_master {lam : Nat}
                   (if m.val = 0 then
                     Dom.omega else Dom.Omega) =
                       Dom.Omega at hd'
-                by_cases hm0 : m.val = 0
+                by_cases_dec hm0 : m.val = 0
                 · rw [ite_eq_left hm0] at hd'
                   cases hd'
                 · cases m with
@@ -3283,7 +3283,7 @@ theorem T.fund_Omega_master {lam : Nat}
                               low.idx q = T.Z ∨
                                 low.idx q = w := by
                         intro q hqi
-                        by_cases hqj :
+                        by_cases_dec hqj :
                             q.val = j.val
                         · have hq : q = j :=
                             Fin.eq_of_val_eq hqj
@@ -3567,7 +3567,7 @@ theorem T.SDom_rplc_lower {lam : Nat}
     rw [Vec.rplc_idx_same]
     exact hb
   · intro q hqm
-    by_cases hqj : q.val = j.val
+    by_cases_dec hqj : q.val = j.val
     · have hq : q = j :=
         Fin.eq_of_val_eq hqj
       rw [hq, Vec.rplc_idx_same]
@@ -3620,7 +3620,7 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
       | P ls add =>
         cases ha with
         | p _ _ h0 h1 h2 h3 =>
-          by_cases hadd : add = T.Z
+          by_cases_dec hadd : add = T.Z
           · subst add
             have hparentNF :
                 T.isNF (T.P ls T.Z) :=
@@ -4111,7 +4111,7 @@ theorem T.fund_omega_master {lam : Nat}
           T.isNF_P_coord_NFComp ls add ha
         cases ha with
         | p _ _ h0 h1 h2 h3 =>
-          by_cases hadd : add = T.Z
+          by_cases_dec hadd : add = T.Z
           · subst add
             cases hmin : T.domVecMinIdx ls with
             | none =>
@@ -4140,7 +4140,7 @@ theorem T.fund_omega_master {lam : Nat}
                     Dom.omega else Dom.Omega) =
                       Dom.omega at hd'
                 have hm0 : m.val = 0 := by
-                  by_cases hm : m.val = 0
+                  by_cases_dec hm : m.val = 0
                   · exact hm
                   · rw [ite_eq_right hm] at hd'
                     cases hd'
@@ -4445,7 +4445,7 @@ theorem T.fund_one_arg_irrel {lam : Nat}
         change Dom.zero = Dom.one at hdom
         cases hdom
       | P ls add =>
-        by_cases hadd : add = T.Z
+        by_cases_dec hadd : add = T.Z
         · subst add
           have hnone : T.domVecMinIdx ls = none := by
             cases hmin : T.domVecMinIdx ls with
@@ -4462,9 +4462,9 @@ theorem T.fund_one_arg_irrel {lam : Nat}
                 (if d = Dom.one then
                   if m.val = 0 then Dom.omega else Dom.Omega
                 else Dom.omega) = Dom.one at hd'
-              by_cases hd1 : d = .one
+              by_cases_dec hd1 : d = .one
               · rw [ite_eq_left hd1] at hd'
-                by_cases hm0 : m.val = 0
+                by_cases_dec hm0 : m.val = 0
                 · rw [ite_eq_left hm0] at hd'
                   cases hd'
                 · rw [ite_eq_right hm0] at hd'

@@ -1,3 +1,20 @@
+import Lean.Elab.Tactic.ElabTerm
+import Lean.Meta.Tactic.Cases
+
+open Lean Meta Elab Tactic
+
+/--
+Constructive case split for propositions with an explicit `Decidable` instance.
+Unlike Lean's built-in `by_cases`, this uses `MVarId.byCasesDec` and therefore
+does not introduce `Classical.em` / `Classical.choice`.
+-/
+elab "by_cases_dec " h:ident " : " p:term : tactic => withMainContext do
+  let pExpr ← elabTerm p none
+  let decExpr ← synthInstance (mkApp (mkConst ``Decidable) pExpr)
+  let goal ← getMainGoal
+  let (pos, neg) ← goal.byCasesDec pExpr decExpr h.getId
+  replaceMainGoal [pos.mvarId, neg.mvarId]
+
 class strict_partial_order (A : Type u) [LT A] where
   irrefl : ∀ a : A, ¬ a < a
   trans : ∀ a b c : A, a < b → b < c → a < c
