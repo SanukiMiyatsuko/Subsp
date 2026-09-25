@@ -6,6 +6,11 @@ import Subsp.new.subsp
 import Subsp.new.trans
 import Subsp.new.stop_nf_order_c
 
+theorem new.T.OT_iff_NF (lam : Nat) (s : T lam) :
+  isOT lam s ↔ isNF s ∧
+    (1 < lam → s < P (Vec.ofFn lam (fun x => if x.val = 1 then P (Vec.ofFn lam (fun y => Z)) Z else Z)) Z) := by
+  sorry
+
 theorem NF_is_NF1 (lam : Nat) (s : new.T lam) :
   new.T.isNF s → T.isNF1 (trans s) := by
   exact gnf_NF_is_NF1 s
@@ -39,13 +44,6 @@ theorem wellfounded_NF (lam : Nat) : WellFounded (fun s t : new.T.NF lam => s.va
   intro s
   let a : T.NF1 := ⟨trans s.1, NF_is_NF1 lam s.1 s.2⟩
   exact hacc a s rfl
-
-#print axioms wellfounded_NF
-
-theorem new.T.OT_iff_NF (lam : Nat) (s : T lam) :
-  isOT lam s ↔ isNF s ∧
-    (1 < lam → s < P (Vec.ofFn lam (fun x => if x.val = 1 then P (Vec.ofFn lam (fun y => Z)) Z else Z)) Z) := by
-  sorry
 
 def T.isSubNF (n : Nat) (s : T) :=
   isNF1 s ∧

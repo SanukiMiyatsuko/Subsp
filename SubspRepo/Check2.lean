@@ -1,0 +1,9 @@
+import Subsp.Buchholz.Rank1
+import Subsp.new.trans
+#check T.fund1.eq_3
+#check T.dom1
+#check T.dom1.eq_1
+#check T.dom1.eq_2
+#check T.dom1.eq_3
+#check T.card_times
+#check T.early_collapse
