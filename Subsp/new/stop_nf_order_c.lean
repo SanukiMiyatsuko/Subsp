@@ -84,12 +84,15 @@ theorem sg_early_G0_le (s : T)
         apply hg y
         rw [← hadd, bridge_G1_add_eq]
         exact List.mem_append_right _ hy
-      rcases constructive_cases (p := a = T.Z) with ha | ha
-      · rw [hec, ite_eq_left ha] at hx
+      apply Decidable.byCases (p := a = T.Z)
+      · intro ha
+        rw [hec, ite_eq_left ha] at hx
         exact Or.inl (hmemB x hx)
-      · rw [hec, ite_eq_right ha] at hx
-        rcases constructive_cases (p := T.head b ≤ T.P 0 a T.Z) with hkeep | hkeep
-        · rw [ite_eq_left hkeep] at hx
+      · intro ha
+        rw [hec, ite_eq_right ha] at hx
+        apply Decidable.byCases (p := T.head b ≤ T.P 0 a T.Z)
+        · intro hkeep
+          rw [ite_eq_left hkeep] at hx
           rw [T.G1.eq_2, ite_eq_left (Nat.le_refl 0)] at hx
           cases List.mem_append.mp hx with
           | inl hleft =>
@@ -105,7 +108,8 @@ theorem sg_early_G0_le (s : T)
                     (hgoodA x hGa) haLe)
           | inr hGb =>
               exact Or.inl (hmemB x hGb)
-        · rw [ite_eq_right hkeep] at hx
+        · intro hkeep
+          rw [ite_eq_right hkeep] at hx
           exact Or.inl (hmemB x hx)
 
 #print axioms sg_early_G0_le
@@ -871,8 +875,9 @@ theorem ts_support_decomp_step {lam : Nat} (s : new.T lam)
                               else T.P 0 a0 (trans a)) ∨
                             ∃ z : new.T (k + 1),
                               z ∈ new.T.G (new.T.P v a) ∧ y ≤ trans z)
-                      rcases constructive_cases (p := found = true) with hf | hf
-                      · rw [ite_eq_left hf] at ht ⊢
+                      apply Decidable.byCases (p := found = true)
+                      · intro hf
+                        rw [ite_eq_left hf] at ht ⊢
                         let A := T.card_times 1 (T.one_del sum)
                         let E := T.early_collapse a0
                         let M := T.add A E
@@ -938,9 +943,11 @@ theorem ts_support_decomp_step {lam : Nat} (s : new.T lam)
                             | inr hw =>
                                 obtain ⟨z, hz, hyz⟩ := hw
                                 exact Or.inr ⟨z, ts_tail_mem_G v a z hz, hyz⟩
-                      · rw [ite_eq_right hf] at ht ⊢
-                        rcases constructive_cases (p := a0 = T.Z) with ha0z | ha0z
-                        · rw [ite_eq_left ha0z] at ht ⊢
+                      · intro hf
+                        rw [ite_eq_right hf] at ht ⊢
+                        apply Decidable.byCases (p := a0 = T.Z)
+                        · intro ha0z
+                          rw [ite_eq_left ha0z] at ht ⊢
                           intro y hy
                           rw [T.G1.eq_2, ite_eq_left (Nat.le_refl 0),
                             List.mem_append, List.mem_append] at hy
@@ -964,7 +971,8 @@ theorem ts_support_decomp_step {lam : Nat} (s : new.T lam)
                               | inr hw =>
                                   obtain ⟨z, hz, hyz⟩ := hw
                                   exact Or.inr ⟨z, ts_tail_mem_G v a z hz, hyz⟩
-                        · rw [ite_eq_right ha0z] at ht ⊢
+                        · intro ha0z
+                          rw [ite_eq_right ha0z] at ht ⊢
                           intro y hy
                           rw [T.G1.eq_2, ite_eq_left (Nat.le_refl 0),
                             List.mem_append, List.mem_append] at hy

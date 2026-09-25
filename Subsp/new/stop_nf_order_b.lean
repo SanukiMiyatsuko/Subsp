@@ -960,20 +960,24 @@ theorem pn_principal_NF {lam : Nat} (v : new.Vec (new.T lam) lam)
                     (T.early_collapse a0)) T.Z
               else if a0 = T.Z then T.P 0 T.Z T.Z
               else T.P 0 a0 T.Z)
-          rcases constructive_cases (p := found = true) with hf | hf
-          · rw [ite_eq_left hf]
+          apply Decidable.byCases (p := found = true)
+          · intro hf
+            rw [ite_eq_left hf]
             have hm := pn_aux_found_middle_closed v hcoord found sum a0 haux hf
             exact T.isNF1.p 1
               (T.add (T.card_times 1 (T.one_del sum)) (T.early_collapse a0))
               T.Z hm.1 T.isNF1.z hm.2.2 (T.Z_le _)
-          · rw [ite_eq_right hf]
+          · intro hf
+            rw [ite_eq_right hf]
             have hi := tc_transAux_inv v hcoord found sum a0 haux
-            rcases constructive_cases (p := a0 = T.Z) with ha0 | ha0
-            · rw [ite_eq_left ha0]
+            apply Decidable.byCases (p := a0 = T.Z)
+            · intro ha0
+              rw [ite_eq_left ha0]
               exact T.isNF1.p 0 T.Z T.Z T.isNF1.z T.isNF1.z
                 (fun y hy => by rw [T.G1.eq_1] at hy; cases hy)
                 (T.Z_le _)
-            · rw [ite_eq_right ha0]
+            · intro ha0
+              rw [ite_eq_right ha0]
               exact T.isNF1.p 0 a0 T.Z hi.1 T.isNF1.z hi.2.1 (T.Z_le _)
 
 #print axioms pn_principal_NF
@@ -1069,15 +1073,19 @@ theorem oc_principal_lt_false_false {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z T.Z else T.P 0 av T.Z) <
       (if aw = T.Z then T.P 0 T.Z T.Z else T.P 0 aw T.Z)
-  rcases constructive_cases (p := av = T.Z) with havz | havz
-  · subst av
+  apply Decidable.byCases (p := av = T.Z)
+  · intro havz
+    subst av
     rw [ite_eq_left rfl]
-    rcases constructive_cases (p := aw = T.Z) with hawz | hawz
-    · subst aw
+    apply Decidable.byCases (p := aw = T.Z)
+    · intro hawz
+      subst aw
       exact False.elim (lt_irrefl_thm T.Z ha0lt)
-    · rw [ite_eq_right hawz]
+    · intro hawz
+      rw [ite_eq_right hawz]
       exact T.Lt.p_mid 0 T.Z aw T.Z T.Z ha0lt
-  · rw [ite_eq_right havz]
+  · intro havz
+    rw [ite_eq_right havz]
     have hawz : aw ≠ T.Z := by
       intro heq
       rw [heq] at ha0lt
@@ -1098,12 +1106,14 @@ theorem oc_principal_lt_false_true {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z T.Z else T.P 0 av T.Z) <
       T.P 1 (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw)) T.Z
-  rcases constructive_cases (p := av = T.Z) with havz | havz
-  · rw [ite_eq_left havz]
+  apply Decidable.byCases (p := av = T.Z)
+  · intro havz
+    rw [ite_eq_left havz]
     exact T.Lt.p_head 0 1 T.Z
       (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw))
       T.Z T.Z (Nat.zero_lt_succ 0)
-  · rw [ite_eq_right havz]
+  · intro havz
+    rw [ite_eq_right havz]
     exact T.Lt.p_head 0 1 av
       (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw))
       T.Z T.Z (Nat.zero_lt_succ 0)
@@ -1113,11 +1123,13 @@ theorem oc_principal_lt_false_true {k : Nat}
 
 theorem oc_one_del_P0 (a b : T) :
     T.one_del (T.P 0 a b) = if a = T.Z then b else T.P 0 a b := by
-  rcases constructive_cases (p := a = T.Z) with ha | ha
-  · subst a
+  apply Decidable.byCases (p := a = T.Z)
+  · intro ha
+    subst a
     rw [ite_eq_left rfl]
     exact T.one_del.eq_1 b
-  · rw [ite_eq_right ha]
+  · intro ha
+    rw [ite_eq_right ha]
     exact T.one_del.eq_2 (T.P 0 a b) (by
       intro s2 h
       injection h with hidx hmid htail
@@ -1141,11 +1153,13 @@ theorem oc_one_del_NF_index0 (s : T)
         have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
         subst p
         rw [oc_one_del_P0]
-        rcases constructive_cases (p := a = T.Z) with ha | ha
-        · rw [ite_eq_left ha]
+        apply Decidable.byCases (p := a = T.Z)
+        · intro ha
+          rw [ite_eq_left ha]
           have hbNF := (T.isNF1_P_inv 0 a b hs).2.1
           exact ⟨hbNF, hbidx⟩
-        · rw [ite_eq_right ha]
+        · intro ha
+          rw [ite_eq_right ha]
           exact ⟨hs, T.index_Prop1.p 0 a b (Nat.le_refl 0) hbidx⟩
 
 #print axioms oc_one_del_NF_index0
@@ -1195,10 +1209,12 @@ theorem oc_one_del_lt_index0 (a b : T)
           have hpb0 : pb = 0 := Nat.eq_zero_of_le_zero hpb
           subst pb
           rw [oc_one_del_P0, oc_one_del_P0]
-          rcases constructive_cases (p := aa = T.Z) with haaZ | haaZ
-          · rw [ite_eq_left haaZ]
-            rcases constructive_cases (p := ba = T.Z) with hbaZ | hbaZ
-            · rw [ite_eq_left hbaZ]
+          apply Decidable.byCases (p := aa = T.Z)
+          · intro haaZ
+            rw [ite_eq_left haaZ]
+            apply Decidable.byCases (p := ba = T.Z)
+            · intro hbaZ
+              rw [ite_eq_left hbaZ]
               subst aa
               subst ba
               cases lt_inv 0 T.Z ab 0 T.Z bb hab with
@@ -1207,7 +1223,8 @@ theorem oc_one_del_lt_index0 (a b : T)
                 cases hor with
                 | inl hm => exact False.elim (lt_Z_inv hm.2)
                 | inr ht => exact ht.2.2
-            · rw [ite_eq_right hbaZ]
+            · intro hbaZ
+              rw [ite_eq_right hbaZ]
               subst aa
               have habNF := (T.isNF1_P_inv 0 T.Z ab haNF).2.1
               have hheadab := (T.isNF1_P_inv 0 T.Z ab haNF).2.2.2
@@ -1219,9 +1236,11 @@ theorem oc_one_del_lt_index0 (a b : T)
                 obtain ⟨d, hd⟩ := hp
                 rw [hd]
                 exact T.Lt.p_mid 0 T.Z ba d bb (tc_Z_lt_of_ne ba hbaZ)
-          · rw [ite_eq_right haaZ]
-            rcases constructive_cases (p := ba = T.Z) with hbaZ | hbaZ
-            · rw [ite_eq_left hbaZ]
+          · intro haaZ
+            rw [ite_eq_right haaZ]
+            apply Decidable.byCases (p := ba = T.Z)
+            · intro hbaZ
+              rw [ite_eq_left hbaZ]
               subst ba
               cases lt_inv 0 aa ab 0 T.Z bb hab with
               | inl hh => exact False.elim (Nat.lt_irrefl 0 hh)
@@ -1231,7 +1250,8 @@ theorem oc_one_del_lt_index0 (a b : T)
                 | inr ht =>
                   have heq : aa = T.Z := ht.2.1
                   exact False.elim (haaZ heq)
-            · rw [ite_eq_right hbaZ]
+            · intro hbaZ
+              rw [ite_eq_right hbaZ]
               exact hab
 
 #print axioms oc_one_del_lt_index0
@@ -1749,15 +1769,19 @@ theorem oc_full_lt_false_false {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z (trans a) else T.P 0 av (trans a)) <
       (if aw = T.Z then T.P 0 T.Z (trans b) else T.P 0 aw (trans b))
-  rcases constructive_cases (p := av = T.Z) with havz | havz
-  · subst av
+  apply Decidable.byCases (p := av = T.Z)
+  · intro havz
+    subst av
     rw [ite_eq_left rfl]
-    rcases constructive_cases (p := aw = T.Z) with hawz | hawz
-    · subst aw
+    apply Decidable.byCases (p := aw = T.Z)
+    · intro hawz
+      subst aw
       exact False.elim (lt_irrefl_thm T.Z ha0lt)
-    · rw [ite_eq_right hawz]
+    · intro hawz
+      rw [ite_eq_right hawz]
       exact T.Lt.p_mid 0 T.Z aw (trans a) (trans b) ha0lt
-  · rw [ite_eq_right havz]
+  · intro havz
+    rw [ite_eq_right havz]
     have hawz : aw ≠ T.Z := by
       intro heq
       rw [heq] at ha0lt
@@ -1779,12 +1803,14 @@ theorem oc_full_lt_false_true {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z (trans a) else T.P 0 av (trans a)) <
       T.P 1 (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw)) (trans b)
-  rcases constructive_cases (p := av = T.Z) with havz | havz
-  · rw [ite_eq_left havz]
+  apply Decidable.byCases (p := av = T.Z)
+  · intro havz
+    rw [ite_eq_left havz]
     exact T.Lt.p_head 0 1 T.Z
       (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw))
       (trans a) (trans b) (Nat.zero_lt_succ 0)
-  · rw [ite_eq_right havz]
+  · intro havz
+    rw [ite_eq_right havz]
     exact T.Lt.p_head 0 1 av
       (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw))
       (trans a) (trans b) (Nat.zero_lt_succ 0)
@@ -2192,16 +2218,20 @@ theorem nfcore_trans_PZ_shape {lam : Nat}
                     (T.early_collapse a0)) T.Z
               else if a0 = T.Z then T.P 0 T.Z T.Z
               else T.P 0 a0 T.Z) = T.P i m T.Z
-          rcases constructive_cases (p := found = true) with hf | hf
-          · rw [ite_eq_left hf]
+          apply Decidable.byCases (p := found = true)
+          · intro hf
+            rw [ite_eq_left hf]
             exact ⟨1,
               T.add (T.card_times 1 (T.one_del sum))
                 (T.early_collapse a0), rfl⟩
-          · rw [ite_eq_right hf]
-            rcases constructive_cases (p := a0 = T.Z) with ha0 | ha0
-            · rw [ite_eq_left ha0]
+          · intro hf
+            rw [ite_eq_right hf]
+            apply Decidable.byCases (p := a0 = T.Z)
+            · intro ha0
+              rw [ite_eq_left ha0]
               exact ⟨0, T.Z, rfl⟩
-            · rw [ite_eq_right ha0]
+            · intro ha0
+              rw [ite_eq_right ha0]
               exact ⟨0, a0, rfl⟩
 
 #print axioms nfcore_trans_PZ_shape

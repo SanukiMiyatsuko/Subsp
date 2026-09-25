@@ -54,8 +54,9 @@ theorem Vec.idx_size_lt {lam m : Nat} :
     intro i
     show T.size (if h : i.val < k then Vec.idx xs ⟨i.val, h⟩ else x)
         < 1 + Vec.size xs + T.size x
-    rcases constructive_cases (p := i.val < k) with h | h
-    · rw [dite_eq_left h]
+    apply Decidable.byCases (p := i.val < k)
+    · intro h
+      rw [dite_eq_left h]
       have h1 : T.size (Vec.idx xs ⟨i.val, h⟩) < Vec.size xs := ih ⟨i.val, h⟩
       have h2 : Vec.size xs < 1 + Vec.size xs + T.size x := by
         have h2a : Vec.size xs ≤ Vec.size xs + T.size x := Nat.le_add_right _ _
@@ -67,7 +68,8 @@ theorem Vec.idx_size_lt {lam m : Nat} :
           _ < 1 + (Vec.size xs + T.size x) := h2b
           _ = 1 + Vec.size xs + T.size x := h2c
       exact Nat.lt_trans h1 h2
-    · rw [dite_eq_right h]
+    · intro h
+      rw [dite_eq_right h]
       have h3 : T.size x ≤ Vec.size xs + T.size x := Nat.le_add_left _ _
       have h4 : Vec.size xs + T.size x < 1 + (Vec.size xs + T.size x) :=
         Nat.lt_add_of_pos_left Nat.zero_lt_one
@@ -138,21 +140,25 @@ theorem T.domVecMinIdx_spec {lam m : Nat} (v : Vec (T lam) m) :
             exact ih.2.2 ⟨j.val, hjk⟩ hj
       | none =>
           rw [hrec] at ih
-          rcases constructive_cases (p := T.dom x = .zero) with hx | hx
-          · rw [ite_eq_left hx]
+          apply Decidable.byCases (p := T.dom x = .zero)
+          · intro hx
+            rw [ite_eq_left hx]
             intro i
-            rcases constructive_cases (p := i.val < k) with hik | hik
-            · show T.dom
+            apply Decidable.byCases (p := i.val < k)
+            · intro hik
+              show T.dom
                 (if h : i.val < k then
                   Vec.idx xs ⟨i.val, h⟩ else x) = .zero
               rw [dite_eq_left hik]
               exact ih ⟨i.val, hik⟩
-            · show T.dom
+            · intro hik
+              show T.dom
                 (if h : i.val < k then
                   Vec.idx xs ⟨i.val, h⟩ else x) = .zero
               rw [dite_eq_right hik]
               exact hx
-          · rw [ite_eq_right hx]
+          · intro hx
+            rw [ite_eq_right hx]
             refine ⟨hx, ?_, ?_⟩
             · show T.dom
                 (if h : k < k then Vec.idx xs ⟨k, h⟩ else x) =
@@ -189,8 +195,9 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
   | Z =>
       rfl
   | P ls add =>
-      rcases constructive_cases (p := add = T.Z) with hadd | hadd
-      · subst add
+      apply Decidable.byCases (p := add = T.Z)
+      · intro hadd
+        subst add
         rw [T.dom, ite_eq_left rfl] at hdom
         cases hmin : T.domVecMinIdx ls with
         | none =>
@@ -204,16 +211,21 @@ theorem T.dom_zero_eq_Z {lam : Nat} (s : T lam)
               (if d = Dom.one then
                 if i.val = 0 then Dom.omega else Dom.Omega
               else Dom.omega) = Dom.zero at hdom
-            rcases constructive_cases (p := d = .one) with hd1 | hd1
-            · rw [ite_eq_left hd1] at hdom
-              rcases constructive_cases (p := i.val = 0) with hi | hi
-              · rw [ite_eq_left hi] at hdom
+            apply Decidable.byCases (p := d = .one)
+            · intro hd1
+              rw [ite_eq_left hd1] at hdom
+              apply Decidable.byCases (p := i.val = 0)
+              · intro hi
+                rw [ite_eq_left hi] at hdom
                 cases hdom
-              · rw [ite_eq_right hi] at hdom
+              · intro hi
+                rw [ite_eq_right hi] at hdom
                 cases hdom
-            · rw [ite_eq_right hd1] at hdom
+            · intro hd1
+              rw [ite_eq_right hd1] at hdom
               cases hdom
-      · rw [T.dom, ite_eq_right hadd] at hdom
+      · intro hadd
+        rw [T.dom, ite_eq_right hadd] at hdom
         have heq : add = T.Z :=
           T.dom_zero_eq_Z add hdom
         exact False.elim (hadd heq)
@@ -245,10 +257,12 @@ theorem Vec.idx_mem_toList {A : Type} {n : Nat}
         (if h : i.val < k then
           Vec.idx xs ⟨i.val, h⟩ else last) ∈
           Vec.toList xs ++ [last]
-      rcases constructive_cases (p := i.val < k) with h | h
-      · rw [dite_eq_left h]
+      apply Decidable.byCases (p := i.val < k)
+      · intro h
+        rw [dite_eq_left h]
         exact List.mem_append_left [last] (ih ⟨i.val, h⟩)
-      · rw [dite_eq_right h]
+      · intro h
+        rw [dite_eq_right h]
         exact List.mem_append_right (Vec.toList xs)
           (List.mem_singleton_self last)
 
@@ -292,8 +306,9 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat}
       | snoc _ xs x =>
         cases w with
         | snoc _ ys y =>
-          rcases constructive_cases (p := i.val = k) with hik | hik
-          · have hieq : i = Fin.last k :=
+          apply Decidable.byCases (p := i.val = k)
+          · intro hik
+            have hieq : i = Fin.last k :=
               Fin.eq_of_val_eq hik
             have hx :
                 (Vec.snoc k xs x).idx (Fin.last k) = x := by
@@ -313,7 +328,8 @@ theorem Vec.compare_lt_of_pivot {lam m : Nat}
               | Ordering.eq => compareVec xs ys
               | ord => ord) = Ordering.lt
             rw [hlt]
-          · have hiklt : i.val < k := by
+          · intro hik
+            have hiklt : i.val < k := by
               have hle : i.val ≤ k :=
                 Nat.lt_succ_iff.mp i.isLt
               exact Nat.lt_of_le_of_ne hle hik
@@ -437,8 +453,9 @@ theorem Vec.compare_lt_has_pivot {lam m : Nat}
                 ih xs ys h
               refine ⟨i.castSucc, ?_, ?_⟩
               · intro j hij
-                rcases constructive_cases (p := j.val < k) with hjk | hjk
-                · have hv :
+                apply Decidable.byCases (p := j.val < k)
+                · intro hjk
+                  have hv :
                       (Vec.snoc k xs x).idx j =
                         xs.idx ⟨j.val, hjk⟩ := by
                     show
@@ -456,7 +473,8 @@ theorem Vec.compare_lt_has_pivot {lam m : Nat}
                     rw [dite_eq_left hjk]
                   rw [hv, hw]
                   exact hiAbove ⟨j.val, hjk⟩ hij
-                · have hjle : j.val ≤ k :=
+                · intro hjk
+                  have hjle : j.val ≤ k :=
                     Nat.lt_succ_iff.mp j.isLt
                   have hkj : k ≤ j.val :=
                     Nat.not_lt.mp hjk
@@ -593,8 +611,9 @@ theorem Vec.compare_lt_preserve_from_index {lam m : Nat}
               exact hc
             rw [hc']
             rw [hc] at hlt
-            rcases constructive_cases (p := q.val = k) with hq | hq
-            · have hqe : q = Fin.last k :=
+            apply Decidable.byCases (p := q.val = k)
+            · intro hq
+              have hqe : q = Fin.last k :=
                 Fin.eq_of_val_eq hq
               have haLast :
                   (Vec.snoc k as aLast).idx
@@ -607,7 +626,8 @@ theorem Vec.compare_lt_preserve_from_index {lam m : Nat}
               have heq : aLast = vLast :=
                 T_eq_sound aLast vLast hc
               exact False.elim (hne heq)
-            · have hqk : q.val < k := by
+            · intro hq
+              have hqk : q.val < k := by
                 have hle : q.val ≤ k :=
                   Nat.le_of_lt_succ q.isLt
                 exact Nat.lt_of_le_of_ne hle hq
@@ -676,8 +696,9 @@ theorem Vec.compare_lt_after_pivot_update {lam m : Nat}
             (match compareT aLast oLast with
             | Ordering.eq => compareVec as os
             | ord => ord) = Ordering.lt at hold
-          rcases constructive_cases (p := i.val = k) with hik | hik
-          · have hieq : i = Fin.last k :=
+          apply Decidable.byCases (p := i.val = k)
+          · intro hik
+            have hieq : i = Fin.last k :=
               Fin.eq_of_val_eq hik
             have haLast :
                 (Vec.snoc k as aLast).idx
@@ -695,7 +716,8 @@ theorem Vec.compare_lt_after_pivot_update {lam m : Nat}
               rw [dite_eq_right (Nat.lt_irrefl k)]
             rw [hieq, haLast, hnLast] at hpivot
             rw [hpivot]
-          · have hiklt : i.val < k := by
+          · intro hik
+            have hiklt : i.val < k := by
               have hle : i.val ≤ k :=
                 Nat.le_of_lt_succ i.isLt
               exact Nat.lt_of_le_of_ne hle hik
@@ -886,8 +908,9 @@ theorem T.fund_lt_self {lam : Nat}
       | Z =>
         exact False.elim (hanz rfl)
       | P ls add =>
-        rcases constructive_cases (p := add = T.Z) with hadd | hadd
-        · subst add
+        apply Decidable.byCases (p := add = T.Z)
+        · intro hadd
+          subst add
           cases hmin : T.domVecMinIdx ls with
           | none =>
             rw [T.fund_PZ_none ls b hmin]
@@ -909,8 +932,9 @@ theorem T.fund_lt_self {lam : Nat}
                 exact T.idx_size_lt_P ls T.Z m
               rw [hsize] at hlt
               exact hlt
-            rcases constructive_cases (p := d = .one) with hd1 | hd1
-            · cases m with
+            apply Decidable.byCases (p := d = .one)
+            · intro hd1
+              cases m with
               | mk mv mh =>
                 cases mv with
                 | zero =>
@@ -980,8 +1004,10 @@ theorem T.fund_lt_self {lam : Nat}
                       (T.fund (ls.idx mi) T.Z)).rplc
                         j b)
                     ls T.Z T.Z hvec
-            · rcases constructive_cases (p := d = .Omega) with hdO | hdO
-              · conv =>
+            · intro hd1
+              apply Decidable.byCases (p := d = .Omega)
+              · intro hdO
+                conv =>
                   lhs
                   rw [T.fund, ite_eq_left rfl]
                   rw [hmin]
@@ -1020,7 +1046,8 @@ theorem T.fund_lt_self {lam : Nat}
                         (fun x =>
                           T.fund (ls.idx m) x) b)))
                   ls T.Z T.Z hvec
-              · conv =>
+              · intro hdO
+                conv =>
                   lhs
                   rw [T.fund, ite_eq_left rfl]
                   rw [hmin]
@@ -1049,7 +1076,8 @@ theorem T.fund_lt_self {lam : Nat}
                   (ls.rplc m
                     (T.fund (ls.idx m) b))
                   ls T.Z T.Z hvec
-        · rw [T.fund]
+        · intro hadd
+          rw [T.fund]
           rw [ite_eq_right hadd]
           have haddsize : T.size add < n := by
             have hlt := T.add_size_lt_P ls add
@@ -1151,11 +1179,13 @@ theorem Vec.Gres_mem_of_idx {lam m : Nat}
         (if h : i.val < k then
           Vec.idx xs ⟨i.val, h⟩ else last) ∈
           T.G.res xs ++ [last] ++ T.G last
-      rcases constructive_cases (p := i.val < k) with h | h
-      · rw [dite_eq_left h]
+      apply Decidable.byCases (p := i.val < k)
+      · intro h
+        rw [dite_eq_left h]
         exact List.mem_append_left (T.G last)
           (List.mem_append_left [last] (ih ⟨i.val, h⟩))
-      · rw [dite_eq_right h]
+      · intro h
+        rw [dite_eq_right h]
         exact List.mem_append_left (T.G last)
           (List.mem_append_right (T.G.res xs)
             (List.mem_singleton_self last))
@@ -1170,8 +1200,9 @@ theorem Vec.Gres_mem_G_of_idx {lam m : Nat}
   | snoc k xs last ih =>
       change
         y ∈ T.G.res xs ++ [last] ++ T.G last
-      rcases constructive_cases (p := i.val < k) with h | h
-      · have hy' : y ∈ T.G (Vec.idx xs ⟨i.val, h⟩) := by
+      apply Decidable.byCases (p := i.val < k)
+      · intro h
+        have hy' : y ∈ T.G (Vec.idx xs ⟨i.val, h⟩) := by
           change
             y ∈ T.G
               (if h' : i.val < k then
@@ -1181,7 +1212,8 @@ theorem Vec.Gres_mem_G_of_idx {lam m : Nat}
         exact List.mem_append_left (T.G last)
           (List.mem_append_left [last]
             (ih ⟨i.val, h⟩ hy'))
-      · have hy' : y ∈ T.G last := by
+      · intro h
+        have hy' : y ∈ T.G last := by
           change
             y ∈ T.G
               (if h' : i.val < k then
@@ -1473,8 +1505,9 @@ theorem T.term_lt_P_of_self_at {lam : Nat}
           cases hold
     obtain ⟨p, hpAbove, hpLt⟩ :=
       Vec.compare_lt_has_pivot xs v hvlt
-    rcases constructive_cases (p := q.val < p.val) with hqp | hqp
-    · have hcmp : compareVec xs w = Ordering.lt := by
+    apply Decidable.byCases (p := q.val < p.val)
+    · intro hqp
+      have hcmp : compareVec xs w = Ordering.lt := by
         apply Vec.compare_lt_of_pivot xs w p
         · intro j hpj
           have hqj : q.val < j.val :=
@@ -1487,7 +1520,8 @@ theorem T.term_lt_P_of_self_at {lam : Nat}
           exact hpLt
       exact T.P_lt_P_of_compareVec_lt
         xs w xadd T.Z hcmp
-    · have hpq : p.val ≤ q.val :=
+    · intro hqp
+      have hpq : p.val ≤ q.val :=
         Nat.not_lt.mp hqp
       have hself :
           xs.idx q < T.P xs xadd := by
@@ -1522,12 +1556,14 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
       ∀ i : Fin lam,
         T.isNFComp ((ls.rplc m a).idx i) := by
     intro i
-    rcases constructive_cases (p := i.val = m.val) with him | him
-    · have hieq : i = m :=
+    apply Decidable.byCases (p := i.val = m.val)
+    · intro him
+      have hieq : i = m :=
         Fin.eq_of_val_eq him
       rw [hieq, Vec.rplc_idx_same]
       exact ha
-    · rw [Vec.rplc_idx_of_ne ls m i a him]
+    · intro him
+      rw [Vec.rplc_idx_of_ne ls m i a him]
       exact holdCoord i
   have hnf :
       T.isNF (T.P (ls.rplc m a) T.Z) :=
@@ -1542,8 +1578,9 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
       have hilt :
           (ls.rplc m a).idx i <
             T.P (ls.rplc m a) T.Z := by
-        rcases constructive_cases (p := i.val < m.val) with him | him
-        · have hdom0 :
+        apply Decidable.byCases (p := i.val < m.val)
+        · intro him
+          have hdom0 :
               T.dom (ls.idx i) = .zero :=
             hspec.2.2 i him
           have hzi : ls.idx i = T.Z :=
@@ -1555,8 +1592,10 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
             Vec.rplc_idx_of_ne ls m i a hine
           rw [hr, hzi]
           rfl
-        · rcases constructive_cases (p := m.val < i.val) with hmi | hmi
-          · have hine : i.val ≠ m.val :=
+        · intro him
+          apply Decidable.byCases (p := m.val < i.val)
+          · intro hmi
+            have hine : i.val ≠ m.val :=
               Nat.ne_of_gt hmi
             have hr :
                 (ls.rplc m a).idx i = ls.idx i :=
@@ -1583,7 +1622,8 @@ theorem T.rplc_min_NFComp_closed {lam : Nat}
                 (holdCoord i) holdLt hr hhigh
             rw [hr]
             exact hb
-          · have himle : i.val ≤ m.val :=
+          · intro hmi
+            have himle : i.val ≤ m.val :=
               Nat.not_lt.mp hmi
             have hmile : m.val ≤ i.val :=
               Nat.not_lt.mp him
@@ -1869,10 +1909,12 @@ theorem T.NFComp_of_ZeroDom {lam : Nat}
     (a b : T lam) (hb : T.isNF b)
     (ha : T.isNFComp a) (hdom : T.ZeroDom b a) :
     T.isNFComp b := by
-  rcases constructive_cases (p := b = T.Z) with hbz | hbz
-  · rw [hbz]
+  apply Decidable.byCases (p := b = T.Z)
+  · intro hbz
+    rw [hbz]
     exact T.isNFComp_Z
-  · have hzb : T.Z < b := by
+  · intro hbz
+    have hzb : T.Z < b := by
       cases T.Z_le b with
       | inl hlt =>
         exact hlt
@@ -1952,8 +1994,9 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
       | P ls add =>
         cases hs with
         | p _ _ h0 h1 h2 h3 =>
-          rcases constructive_cases (p := add = T.Z) with hadd | hadd
-          · subst add
+          apply Decidable.byCases (p := add = T.Z)
+          · intro hadd
+            subst add
             have hnone : T.domVecMinIdx ls = none := by
               cases hmin : T.domVecMinIdx ls with
               | none =>
@@ -1969,14 +2012,18 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
                   (if d = Dom.one then
                     if m.val = 0 then Dom.omega else Dom.Omega
                   else Dom.omega) = Dom.one at hd'
-                rcases constructive_cases (p := d = .one) with hd1 | hd1
-                · rw [ite_eq_left hd1] at hd'
-                  rcases constructive_cases (p := m.val = 0) with hm0 | hm0
-                  · rw [ite_eq_left hm0] at hd'
+                apply Decidable.byCases (p := d = .one)
+                · intro hd1
+                  rw [ite_eq_left hd1] at hd'
+                  apply Decidable.byCases (p := m.val = 0)
+                  · intro hm0
+                    rw [ite_eq_left hm0] at hd'
                     cases hd'
-                  · rw [ite_eq_right hm0] at hd'
+                  · intro hm0
+                    rw [ite_eq_right hm0] at hd'
                     cases hd'
-                · rw [ite_eq_right hd1] at hd'
+                · intro hd1
+                  rw [ite_eq_right hd1] at hd'
                   cases hd'
             rw [T.fund_PZ_none ls T.Z hnone]
             constructor
@@ -1986,7 +2033,8 @@ theorem T.fund_one_master {lam : Nat} (s : T lam) :
               · intro c hzc hcs x hx
                 change x ∈ ([] : List (T lam)) at hx
                 cases hx
-          · have hdadd : T.dom add = .one := by
+          · intro hadd
+            have hdadd : T.dom add = .one := by
               rw [T.dom, ite_eq_right hadd] at hd
               exact hd
             have hsz : T.size add < n := by
@@ -2312,10 +2360,12 @@ theorem T.NFComp_of_SDom_Z_or_eq {lam : Nat}
     (hb : T.isNF b) (ha : T.isNFComp a)
     (hdom : T.SDom T.Z b a) :
     T.isNFComp b := by
-  rcases constructive_cases (p := b = T.Z) with hbz | hbz
-  · rw [hbz]
+  apply Decidable.byCases (p := b = T.Z)
+  · intro hbz
+    rw [hbz]
     exact T.isNFComp_Z
-  · have hzb : T.Z < b := by
+  · intro hbz
+    have hzb : T.Z < b := by
       cases T.Z_le b with
       | inl hlt =>
         exact hlt
@@ -2335,11 +2385,13 @@ theorem T.rplc_NF_closed {lam : Nat}
     T.isNF_P_coord_NFComp ls T.Z hs
   apply T.isNF_PZ_of_coords (ls.rplc i a)
   intro q
-  rcases constructive_cases (p := q.val = i.val) with hqi | hqi
-  · have hq : q = i := Fin.eq_of_val_eq hqi
+  apply Decidable.byCases (p := q.val = i.val)
+  · intro hqi
+    have hq : q = i := Fin.eq_of_val_eq hqi
     rw [hq, Vec.rplc_idx_same]
     exact ha
-  · rw [Vec.rplc_idx_of_ne ls i q a hqi]
+  · intro hqi
+    rw [Vec.rplc_idx_of_ne ls i q a hqi]
     exact holdCoord q
 
 theorem T.rplc_two_NF_closed {lam : Nat}
@@ -2354,16 +2406,20 @@ theorem T.rplc_two_NF_closed {lam : Nat}
   apply T.isNF_PZ_of_coords
     ((ls.rplc i a).rplc j b)
   intro q
-  rcases constructive_cases (p := q.val = j.val) with hqj | hqj
-  · have hq : q = j := Fin.eq_of_val_eq hqj
+  apply Decidable.byCases (p := q.val = j.val)
+  · intro hqj
+    have hq : q = j := Fin.eq_of_val_eq hqj
     rw [hq, Vec.rplc_idx_same]
     exact hb
-  · rw [Vec.rplc_idx_of_ne (ls.rplc i a) j q b hqj]
-    rcases constructive_cases (p := q.val = i.val) with hqi | hqi
-    · have hq : q = i := Fin.eq_of_val_eq hqi
+  · intro hqj
+    rw [Vec.rplc_idx_of_ne (ls.rplc i a) j q b hqj]
+    apply Decidable.byCases (p := q.val = i.val)
+    · intro hqi
+      have hq : q = i := Fin.eq_of_val_eq hqi
       rw [hq, Vec.rplc_idx_same]
       exact ha
-    · rw [Vec.rplc_idx_of_ne ls i q a hqi]
+    · intro hqi
+      rw [Vec.rplc_idx_of_ne ls i q a hqi]
       exact holdCoord q
 
 theorem T.mul_PZ_lt_next {lam : Nat}
@@ -2581,8 +2637,9 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
     obtain ⟨p, hpEq, hpLt⟩ :=
       Vec.compare_lt_has_pivot low mid hlt
     have hpi : p.val ≤ i.val := by
-      rcases constructive_cases (p := i.val < p.val) with hip | hip
-      · cases hmh with
+      apply Decidable.byCases (p := i.val < p.val)
+      · intro hip
+        cases hmh with
         | inr hmeq =>
           have hmp : mid.idx p = high.idx p := by
             rw [hmeq]
@@ -2638,7 +2695,8 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
               exact False.elim
                 (strict_partial_order.irrefl
                   (high.idx q) hbad)
-      · exact Nat.not_lt.mp hip
+      · intro hip
+        exact Nat.not_lt.mp hip
     have hhigh :
         ∀ j : Fin m, i.val < j.val →
           mid.idx j = high.idx j := by
@@ -2671,8 +2729,9 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
         obtain ⟨q, hqEq, hqLt⟩ :=
           Vec.compare_lt_has_pivot mid high hltmh
         have hqi : q.val ≤ i.val := by
-          rcases constructive_cases (p := i.val < q.val) with hiq | hiq
-          · have heqQ : mid.idx q = high.idx q :=
+          apply Decidable.byCases (p := i.val < q.val)
+          · intro hiq
+            have heqQ : mid.idx q = high.idx q :=
               hhigh q hiq
             have hbad : high.idx q < high.idx q := by
               rw [heqQ] at hqLt
@@ -2680,7 +2739,8 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
             exact False.elim
               (strict_partial_order.irrefl
                 (high.idx q) hbad)
-          · exact Nat.not_lt.mp hiq
+          · intro hiq
+            exact Nat.not_lt.mp hiq
         cases Nat.lt_or_eq_of_le hqi with
         | inl hqiLt =>
           have heq : mid.idx i = high.idx i :=
@@ -2886,8 +2946,9 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
     change Dom.zero = Dom.Omega at hd
     cases hd
   | P ls add =>
-    rcases constructive_cases (p := add = T.Z) with hadd | hadd
-    · subst add
+    apply Decidable.byCases (p := add = T.Z)
+    · intro hadd
+      subst add
       cases hmin : T.domVecMinIdx ls with
       | none =>
         have hd' := hd
@@ -2919,10 +2980,12 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
             (if m.val = 0 then
               Dom.omega else Dom.Omega) =
                 Dom.Omega at hd'
-          rcases constructive_cases (p := m.val = 0) with hm0 | hm0
-          · rw [ite_eq_left hm0] at hd'
+          apply Decidable.byCases (p := m.val = 0)
+          · intro hm0
+            rw [ite_eq_left hm0] at hd'
             cases hd'
-          · cases m with
+          · intro hm0
+            cases m with
             | mk mv mh =>
               cases mv with
               | zero =>
@@ -2937,7 +3000,8 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
                     (if Dom.one = Dom.one then _ else _)
                   rw [ite_eq_left rfl]
                 cases heq
-    · intro heq
+    · intro hadd
+      intro heq
       conv at heq =>
         lhs
         rw [T.fund, ite_eq_right hadd]
@@ -2962,8 +3026,9 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
         change Dom.zero = Dom.Omega at hdom
         cases hdom
       | P ls add =>
-        rcases constructive_cases (p := add = T.Z) with hadd | hadd
-        · subst add
+        apply Decidable.byCases (p := add = T.Z)
+        · intro hadd
+          subst add
           cases hmin : T.domVecMinIdx ls with
           | none =>
             have hd' := hdom
@@ -2995,10 +3060,12 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                 (if m.val = 0 then
                   Dom.omega else Dom.Omega) =
                     Dom.Omega at hd'
-              rcases constructive_cases (p := m.val = 0) with hm0 | hm0
-              · rw [ite_eq_left hm0] at hd'
+              apply Decidable.byCases (p := m.val = 0)
+              · intro hm0
+                rw [ite_eq_left hm0] at hd'
                 cases hd'
-              · cases m with
+              · intro hm0
+                cases m with
                 | mk mv mh =>
                   cases mv with
                   | zero =>
@@ -3059,7 +3126,8 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                       (base.rplc mj u)
                       (base.rplc mj v)
                       T.Z T.Z hvec
-        · have hdadd : T.dom add = .Omega := by
+        · intro hadd
+          have hdadd : T.dom add = .Omega := by
             conv at hdom =>
               lhs
               rw [T.dom, ite_eq_right hadd]
@@ -3150,8 +3218,9 @@ theorem T.fund_Omega_master {lam : Nat}
           T.isNF_P_coord_NFComp ls add ha
         cases ha with
         | p _ _ h0 h1 h2 h3 =>
-          rcases constructive_cases (p := add = T.Z) with hadd | hadd
-          · subst add
+          apply Decidable.byCases (p := add = T.Z)
+          · intro hadd
+            subst add
             cases hmin : T.domVecMinIdx ls with
             | none =>
               have hd' := hdom
@@ -3185,10 +3254,12 @@ theorem T.fund_Omega_master {lam : Nat}
                   (if m.val = 0 then
                     Dom.omega else Dom.Omega) =
                       Dom.Omega at hd'
-                rcases constructive_cases (p := m.val = 0) with hm0 | hm0
-                · rw [ite_eq_left hm0] at hd'
+                apply Decidable.byCases (p := m.val = 0)
+                · intro hm0
+                  rw [ite_eq_left hm0] at hd'
                   cases hd'
-                · cases m with
+                · intro hm0
+                  cases m with
                   | mk mv mh =>
                     cases mv with
                     | zero =>
@@ -3283,8 +3354,9 @@ theorem T.fund_Omega_master {lam : Nat}
                               low.idx q = T.Z ∨
                                 low.idx q = w := by
                         intro q hqi
-                        rcases constructive_cases (p := q.val = j.val) with hqj | hqj
-                        · have hq : q = j :=
+                        apply Decidable.byCases (p := q.val = j.val)
+                        · intro hqj
+                          have hq : q = j :=
                             Fin.eq_of_val_eq hqj
                           rw [hq]
                           apply Or.inr
@@ -3292,7 +3364,8 @@ theorem T.fund_Omega_master {lam : Nat}
                             ((ls.rplc i childFund).rplc
                               j w).idx j = w
                           rw [Vec.rplc_idx_same]
-                        · have hqine :
+                        · intro hqj
+                          have hqine :
                               q.val ≠ i.val :=
                             Nat.ne_of_lt hqi
                           have hold :
@@ -3344,7 +3417,8 @@ theorem T.fund_Omega_master {lam : Nat}
                         rfl
                       rw [hfundEq]
                       exact ⟨hnf, hsd⟩
-          · have hdadd :
+          · intro hadd
+            have hdadd :
                 T.dom add = .Omega := by
               conv at hdom =>
                 lhs
@@ -3566,12 +3640,14 @@ theorem T.SDom_rplc_lower {lam : Nat}
     rw [Vec.rplc_idx_same]
     exact hb
   · intro q hqm
-    rcases constructive_cases (p := q.val = j.val) with hqj | hqj
-    · have hq : q = j :=
+    apply Decidable.byCases (p := q.val = j.val)
+    · intro hqj
+      have hq : q = j :=
         Fin.eq_of_val_eq hqj
       rw [hq, Vec.rplc_idx_same]
       exact Or.inr rfl
-    · apply Or.inl
+    · intro hqj
+      apply Or.inl
       rw [Vec.rplc_idx_of_ne
         (ls.rplc m b) j q z hqj]
       have hqmne : q.val ≠ m.val :=
@@ -3619,8 +3695,9 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
       | P ls add =>
         cases ha with
         | p _ _ h0 h1 h2 h3 =>
-          rcases constructive_cases (p := add = T.Z) with hadd | hadd
-          · subst add
+          apply Decidable.byCases (p := add = T.Z)
+          · intro hadd
+            subst add
             have hparentNF :
                 T.isNF (T.P ls T.Z) :=
               T.isNF.p ls T.Z h0 h1 h2 h3
@@ -4018,7 +4095,8 @@ theorem T.fund_dom_master {lam : Nat} (s : T lam)
                         rfl
                       rw [hfund]
                       exact ⟨hnf, hrel⟩
-          · have hsz :
+          · intro hadd
+            have hsz :
                 T.size add < n := by
               rw [← hn]
               exact T.add_size_lt_P ls add
@@ -4110,8 +4188,9 @@ theorem T.fund_omega_master {lam : Nat}
           T.isNF_P_coord_NFComp ls add ha
         cases ha with
         | p _ _ h0 h1 h2 h3 =>
-          rcases constructive_cases (p := add = T.Z) with hadd | hadd
-          · subst add
+          apply Decidable.byCases (p := add = T.Z)
+          · intro hadd
+            subst add
             cases hmin : T.domVecMinIdx ls with
             | none =>
               have hd' := hdom
@@ -4139,9 +4218,11 @@ theorem T.fund_omega_master {lam : Nat}
                     Dom.omega else Dom.Omega) =
                       Dom.omega at hd'
                 have hm0 : m.val = 0 := by
-                  rcases constructive_cases (p := m.val = 0) with hm | hm
-                  · exact hm
-                  · rw [ite_eq_right hm] at hd'
+                  apply Decidable.byCases (p := m.val = 0)
+                  · intro hm
+                    exact hm
+                  · intro hm
+                    rw [ite_eq_right hm] at hd'
                     cases hd'
                 cases m with
                 | mk mv mh =>
@@ -4378,7 +4459,8 @@ theorem T.fund_omega_master {lam : Nat}
                   rfl
                 rw [hfundEq]
                 exact ⟨hnf, hsd⟩
-          · have hdadd :
+          · intro hadd
+            have hdadd :
                 T.dom add = Dom.omega := by
               conv at hdom =>
                 lhs
@@ -4444,8 +4526,9 @@ theorem T.fund_one_arg_irrel {lam : Nat}
         change Dom.zero = Dom.one at hdom
         cases hdom
       | P ls add =>
-        rcases constructive_cases (p := add = T.Z) with hadd | hadd
-        · subst add
+        apply Decidable.byCases (p := add = T.Z)
+        · intro hadd
+          subst add
           have hnone : T.domVecMinIdx ls = none := by
             cases hmin : T.domVecMinIdx ls with
             | none =>
@@ -4461,19 +4544,24 @@ theorem T.fund_one_arg_irrel {lam : Nat}
                 (if d = Dom.one then
                   if m.val = 0 then Dom.omega else Dom.Omega
                 else Dom.omega) = Dom.one at hd'
-              rcases constructive_cases (p := d = .one) with hd1 | hd1
-              · rw [ite_eq_left hd1] at hd'
-                rcases constructive_cases (p := m.val = 0) with hm0 | hm0
-                · rw [ite_eq_left hm0] at hd'
+              apply Decidable.byCases (p := d = .one)
+              · intro hd1
+                rw [ite_eq_left hd1] at hd'
+                apply Decidable.byCases (p := m.val = 0)
+                · intro hm0
+                  rw [ite_eq_left hm0] at hd'
                   cases hd'
-                · rw [ite_eq_right hm0] at hd'
+                · intro hm0
+                  rw [ite_eq_right hm0] at hd'
                   cases hd'
-              · rw [ite_eq_right hd1] at hd'
+              · intro hd1
+                rw [ite_eq_right hd1] at hd'
                 cases hd'
           rw [
             T.fund_PZ_none ls u hnone,
             T.fund_PZ_none ls T.Z hnone]
-        · have hdadd : T.dom add = .one := by
+        · intro hadd
+          have hdadd : T.dom add = .one := by
             conv at hdom =>
               lhs
               rw [T.dom, ite_eq_right hadd]
