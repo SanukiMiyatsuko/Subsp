@@ -1,3 +1,9 @@
+/-- Constructive excluded-middle for propositions carrying an explicit `Decidable` instance. -/
+theorem constructive_cases {p : Prop} [Decidable p] : p ∨ ¬p :=
+  match (inferInstance : Decidable p) with
+  | isTrue h => Or.inl h
+  | isFalse h => Or.inr h
+
 class strict_partial_order (A : Type u) [LT A] where
   irrefl : ∀ a : A, ¬ a < a
   trans : ∀ a b c : A, a < b → b < c → a < c

@@ -91,7 +91,7 @@ theorem dom1_P_of_Ω (s0 : Nat) (s1 : T) (l : Nat) (h : T.dom1 s1 = Dom1.Ω l) :
     rw [dom1_P0_of_Ω s1 l h]
     rw [ite_eq_left (Nat.zero_le l)]
   | succ l0 =>
-    by_cases hle : l0+1 ≤ l
+    rcases constructive_cases (p := l0+1 ≤ l) with hle | hle
     · rw [dom1_Psucc_of_Ω_le l0 l s1 h hle, ite_eq_left hle]
     · rw [dom1_Psucc_of_Ω_gt l0 l s1 h hle, ite_eq_right hle]
 
@@ -320,7 +320,7 @@ theorem T.fund1_fall (s t : T) (hv : T.ValidArg1 s t) : T.fund1 s t < s := by
         rw [fund1_P_of_ω s0 s1 t hd]
         exact T.Lt.p_mid s0 (T.fund1 s1 t) s1 Z Z hlt1
       | Ω l =>
-        by_cases hle : s0 ≤ l
+        rcases constructive_cases (p := s0 ≤ l) with hle | hle
         · have hindex : T.index_Prop1 l (T.iter (fun x => P l (T.fund1 s1 x) Z) t) :=
             iter_index_Prop1 l (fun x => P l (T.fund1 s1 x) Z) (fun x => ⟨T.fund1 s1 x, rfl⟩) t
           have hva1 : T.ValidArg1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t) ↔
@@ -464,7 +464,7 @@ theorem T.fund1_strict_mono_dec (s t0 t1 : T) (hlt : t0 < t1)
         rw [fund1_P_of_ω s0 s1 t0 hd, fund1_P_of_ω s0 s1 t1 hd]
         exact T.Lt.p_mid s0 (T.fund1 s1 t0) (T.fund1 s1 t1) Z Z hlt1
       | Ω l =>
-        by_cases hle : s0 ≤ l
+        rcases constructive_cases (p := s0 ≤ l) with hle | hle
         · have hdm : T.dom1 (P s0 s1 Z) = Dom1.ω := by
             rw [dom1_P_of_Ω s0 s1 l hd, ite_eq_left hle]
           have hva0 : T.ValidArg1 (P s0 s1 Z) t0 ↔ T.IsN t0 := ValidArg1_ω_iff (P s0 s1 Z) t0 hdm
@@ -612,13 +612,13 @@ theorem find_violating_source (u : Nat) (b : T) :
     cases hw
   | P p0 p1 p2 ih1 ih2 =>
     intro w hw hbw
-    by_cases hup : u ≤ p0
+    rcases constructive_cases (p := u ≤ p0) with hup | hup
     · rw [T.G1.eq_2, ite_eq_left hup] at hw
       rw [List.mem_append, List.mem_append] at hw
       rcases hw with (hw1 | hw2) | hw3
       · rw [List.mem_singleton] at hw1
         cases hw1
-        by_cases hviol : ∃ x ∈ T.G1 u p1, b ≤ x
+        rcases constructive_cases (p := ∃ x ∈ T.G1 u p1, b ≤ x) with hviol | hviol
         · obtain ⟨x, hx1, hx2⟩ := hviol
           obtain ⟨c, hc1, hc2, hc3⟩ := ih1 x hx1 hx2
           refine ⟨c, ?_, hc2, hc3⟩
@@ -630,7 +630,7 @@ theorem find_violating_source (u : Nat) (b : T) :
             rw [List.mem_append, List.mem_append]
             exact Or.inl (Or.inl (List.mem_singleton_self p1))
           · intro x hx
-            by_cases hxb : b ≤ x
+            rcases constructive_cases (p := b ≤ x) with hxb | hxb
             · exact absurd ⟨x, hx, hxb⟩ hviol
             · rcases linear_order.total x b with h1 | h1
               · rcases h1 with h1 | h1
@@ -699,7 +699,7 @@ theorem SDom_tail (z b0 b : T) (s0 : Nat) (s1 : T) (hb0 : T.SDom z b0 b) :
       · obtain ⟨c0, hceq, hbc0, hc0b⟩ := sandwich_tail s0 s1 b0 c b hc1lt hc2lt
         rw [hceq]
         have hlisteq := hb0.2 u c0 (Or.inl hbc0) (Or.inl hc0b)
-        by_cases hus : u ≤ s0
+        rcases constructive_cases (p := u ≤ s0) with hus | hus
         · rw [T.G1.eq_2, ite_eq_left hus, T.G1.eq_2, ite_eq_left hus, List.append_assoc, List.append_assoc]
           exact listLe_append_congr [s1] _ _ (listLe_append_congr (T.G1 u s1) _ _ hlisteq)
         · rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
@@ -708,7 +708,7 @@ theorem SDom_tail (z b0 b : T) (s0 : Nat) (s1 : T) (hb0 : T.SDom z b0 b) :
         have hbb : b0 ≤ b := Or.inl hb0.1
         have hbbb : b ≤ b := partial_order.refl b
         have hlisteq := hb0.2 u b hbb hbbb
-        by_cases hus : u ≤ s0
+        rcases constructive_cases (p := u ≤ s0) with hus | hus
         · rw [T.G1.eq_2, ite_eq_left hus, T.G1.eq_2, ite_eq_left hus, List.append_assoc, List.append_assoc]
           exact listLe_append_congr [s1] _ _ (listLe_append_congr (T.G1 u s1) _ _ hlisteq)
         · rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
@@ -734,7 +734,7 @@ theorem SDom_wrap (z b0 b : T) (s0 : Nat) (hb0 : T.SDom z b0 b) :
       · obtain ⟨c1, c2, hceq, hbc1, hc1b⟩ := sandwich_mid s0 b0 b c hb0.1 hc1lt hc2lt
         rw [hceq]
         have hlisteq := hb0.2 u c1 hbc1 (Or.inl hc1b)
-        by_cases hus : u ≤ s0
+        rcases constructive_cases (p := u ≤ s0) with hus | hus
         · rw [G1_PZ_pos u s0 b0 hus, T.G1.eq_2, ite_eq_left hus]
           intro x hx
           rw [List.mem_append] at hx
@@ -757,7 +757,7 @@ theorem SDom_wrap (z b0 b : T) (s0 : Nat) (hb0 : T.SDom z b0 b) :
         have hbb : b0 ≤ b := Or.inl hb0.1
         have hbbb : b ≤ b := partial_order.refl b
         have hlisteq := hb0.2 u b hbb hbbb
-        by_cases hus : u ≤ s0
+        rcases constructive_cases (p := u ≤ s0) with hus | hus
         · rw [G1_PZ_pos u s0 b0 hus, G1_PZ_pos u s0 b hus]
           intro x hx
           rw [List.mem_append] at hx
@@ -828,7 +828,7 @@ theorem IsN_G1_eq_Z (t : T) (h : T.IsN t) (u : Nat) : ∀ x ∈ T.G1 u t, x = Z 
     cases hx
   | succ t' h' ih =>
     intro x hx
-    by_cases hu : u ≤ 0
+    rcases constructive_cases (p := u ≤ 0) with hu | hu
     · rw [T.G1.eq_2, ite_eq_left hu] at hx
       rw [List.mem_append, List.mem_append] at hx
       rcases hx with (hx | hx) | hx
@@ -921,7 +921,7 @@ theorem mul_SDom (s0 : Nat) (c s1 : T) (hSDc : T.SDom Z c s1) :
         have hMc' : T.mul (P s0 c Z) (T.ofNat n) < c' :=
           lt_trans_thm (T.mul (P s0 c Z) (T.ofNat n)) (P s0 c (T.mul (P s0 c Z) (T.ofNat n))) c' hMlt hc1lt
         rw [hceq]
-        by_cases hus : u ≤ s0
+        rcases constructive_cases (p := u ≤ s0) with hus | hus
         · rw [G1_P_pos u s0 c (T.mul (P s0 c Z) (T.ofNat n)) hus, G1_P_pos u s0 c1' c2' hus]
           have hSD2 := hSDc.2 u c1' hcc1 (Or.inl hc1s1)
           have hih2 := ih.2 u c' (Or.inl hMc') (Or.inl hc2lt)
@@ -961,7 +961,7 @@ theorem mul_SDom (s0 : Nat) (c s1 : T) (hSDc : T.SDom Z c s1) :
           · exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) hw1, hw2⟩
           · obtain ⟨w', hw1', hw2'⟩ := GZ_ofNat_le u n (T.ofNat (n+1)) w hw1
             exact ⟨w', List.mem_append_right (T.G1 u c2') hw1', partial_order.trans x w w' hw2 hw2'⟩
-      · by_cases hus2 : u ≤ s0
+      · rcases constructive_cases (p := u ≤ s0) with hus2 | hus2
         · have hgoal : T.listLe ([c] ++ T.G1 u c ++ T.G1 u (T.mul (P s0 c Z) (T.ofNat n)))
               (([s1] ++ T.G1 u s1) ++ T.GZ u (T.ofNat (n+1))) := by
             have hSD2 := hSDc.2 u s1 (Or.inl hcs1) (partial_order.refl s1)
@@ -1012,7 +1012,7 @@ theorem G1_antitone (u v : Nat) (huv : u ≤ v) (s : T) :
   | Z => intro x hx; exact hx
   | P s0 s1 s2 ih1 ih2 =>
     intro x hx
-    by_cases hv : v ≤ s0
+    rcases constructive_cases (p := v ≤ s0) with hv | hv
     · have hu := Nat.le_trans huv hv
       rw [T.G1.eq_2, ite_eq_left hv, List.mem_append, List.mem_append] at hx
       rw [T.G1.eq_2, ite_eq_left hu, List.mem_append, List.mem_append]
@@ -1021,7 +1021,7 @@ theorem G1_antitone (u v : Nat) (huv : u ≤ v) (s : T) :
       · exact Or.inl (Or.inr (ih1 x hx))
       · exact Or.inr (ih2 x hx)
     · rw [T.G1.eq_2, ite_eq_right hv] at hx
-      by_cases hu : u ≤ s0
+      rcases constructive_cases (p := u ≤ s0) with hu | hu
       · rw [T.G1.eq_2, ite_eq_left hu]
         exact List.mem_append_right _ (ih2 x hx)
       · rw [T.G1.eq_2, ite_eq_right hu]
@@ -1034,7 +1034,7 @@ theorem SDom_wrap_transfer (z w b a : T) (k : Nat) (h : T.SDom w b a)
   have hw := SDom_wrap w b a k h
   refine ⟨hw.1, ?_⟩
   intro u c hbc hca x hx
-  by_cases hu : u ≤ k
+  rcases constructive_cases (p := u ≤ k) with hu | hu
   · obtain ⟨y, hy, hxy⟩ := hw.2 u c hbc hca x hx
     rw [List.mem_append] at hy
     rcases hy with hy | hy
@@ -1062,7 +1062,7 @@ theorem iteration_master (a : T) (k l : Nat) (hkl : k ≤ l)
     have hv := (ValidArg1_Ω_iff a Z l hd).mpr T.index_Prop1.z
     obtain ⟨hc, hs⟩ := ih Z T.isNF1.z hv
     refine ⟨T.isNF1.z, hc, ?_, SDom_wrap Z _ a k hs⟩
-    by_cases he : T.fund1 a Z = Z
+    rcases constructive_cases (p := T.fund1 a Z = Z) with he | he
     · rw [he]; intro x hx; cases hx
     · apply lemma_3_4 Z _ a k hs hbound
       intro x hx
@@ -1160,7 +1160,7 @@ theorem master (a : T) : ∀ z : T, T.isNF1 a → T.isNF1 z → T.ValidArg1 a z 
         have hvz : T.IsN z := (ValidArg1_ω_iff (P a0 a1 Z) z (dom1_P_of_One a0 a1 hd)).mp hv
         obtain ⟨m, hm⟩ := IsN_exists_ofNat hvz
         have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 Z), x < T.fund1 a1 Z := by
-          by_cases hcZ : T.fund1 a1 Z = Z
+          rcases constructive_cases (p := T.fund1 a1 Z = Z) with hcZ | hcZ
           · rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
           · apply lemma_3_4 Z (T.fund1 a1 Z) a1 a0 hSDc h1
             intro x hx
@@ -1178,7 +1178,7 @@ theorem master (a : T) : ∀ z : T, T.isNF1 a → T.isNF1 z → T.ValidArg1 a z 
         obtain ⟨hc, hSDc⟩ := ih1 z has1 hz hz1
         rw [fund1_P_of_ω a0 a1 z hd]
         have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 z), x < T.fund1 a1 z := by
-          by_cases hcZ : T.fund1 a1 z = Z
+          rcases constructive_cases (p := T.fund1 a1 z = Z) with hcZ | hcZ
           · rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
           · apply lemma_3_4 z (T.fund1 a1 z) a1 a0 hSDc h1
             intro x hx
@@ -1198,7 +1198,7 @@ theorem master (a : T) : ∀ z : T, T.isNF1 a → T.isNF1 z → T.ValidArg1 a z 
         exact ⟨T.isNF1.p a0 (T.fund1 a1 z) Z hc T.isNF1.z hcbound (T.Z_le (P a0 (T.fund1 a1 z) Z)),
           SDom_wrap z (T.fund1 a1 z) a1 a0 hSDc⟩
       | Ω l =>
-        by_cases hle : a0 ≤ l
+        rcases constructive_cases (p := a0 ≤ l) with hle | hle
         · have hdom : T.dom1 (P a0 a1 Z) = Dom1.ω := by
             rw [dom1_P_of_Ω a0 a1 l hd, ite_eq_left hle]
           obtain ⟨n, hn⟩ := IsN_exists_ofNat ((ValidArg1_ω_iff _ z hdom).mp hv)
@@ -1213,7 +1213,7 @@ theorem master (a : T) : ∀ z : T, T.isNF1 a → T.isNF1 z → T.ValidArg1 a z 
           obtain ⟨hc, hSDc⟩ := ih1 z has1 hz hz1
           rw [fund1_P_of_Ω_gt a0 a1 z l hd hle]
           have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 z), x < T.fund1 a1 z := by
-            by_cases hcZ : T.fund1 a1 z = Z
+            rcases constructive_cases (p := T.fund1 a1 z = Z) with hcZ | hcZ
             · rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
             · apply lemma_3_4 z (T.fund1 a1 z) a1 a0 hSDc h1
               intro x hx
@@ -1406,7 +1406,7 @@ theorem collapse_closed (v : Nat) :
       intro z hz
       rw [fund1_P_of_ω q b z hd]
       exact hf z ((ValidArg1_ω_iff b z hd).mpr ((ValidArg1_ω_iff _ z hp).mp hz)) q hq
-  · by_cases hqm : q ≤ m
+  · rcases constructive_cases (p := q ≤ m) with hqm | hqm
     · have hp : T.dom1 (P q b Z) = .ω := by
         rw [dom1_P_of_Ω q b m hd, ite_eq_left hqm]
       apply W_nat q _ (.p _ _ _ (Nat.le_refl q) .z) (Or.inr hp)
@@ -1549,7 +1549,7 @@ theorem dom1_Ω_head (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l) 
       | ω => rw [dom1_P_of_ω i s he] at hd; cases hd
       | Ω m =>
         rw [dom1_P_of_Ω i s m he] at hd
-        by_cases him : i ≤ m
+        rcases constructive_cases (p := i ≤ m) with him | him
         · rw [ite_eq_left him] at hd; cases hd
         · rw [ite_eq_right him] at hd
           cases hd
@@ -1587,7 +1587,7 @@ theorem fund1_Ω_arg_le (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω 
     | One => rw [dom1_P_of_One i s hs] at hd; cases hd
     | ω => rw [dom1_P_of_ω i s hs] at hd; cases hd
     | Ω m =>
-      by_cases him : i ≤ m
+      rcases constructive_cases (p := i ≤ m) with him | him
       · rw [dom1_P_of_Ω i s m hs, ite_eq_left him] at hd; cases hd
       · rw [fund1_P_of_Ω_gt i s z m hs him]; exact Or.inl (hsmall _ _)
 
@@ -1601,7 +1601,7 @@ theorem cutBound_mono (l : Nat) (z w b : T) (hzw : z ≤ w) (hb : cutBound l z b
   | Z => exact lt_of_lt_of_le_thm T Z z w hb hzw
   | P i s t ihs iht =>
     unfold cutBound at hb ⊢
-    by_cases hi : i ≤ l
+    rcases constructive_cases (p := i ≤ l) with hi | hi
     · rw [ite_eq_left hi] at hb ⊢
       exact lt_of_lt_of_le_thm T _ z w hb hzw
     · rw [ite_eq_right hi] at hb ⊢
@@ -1618,7 +1618,7 @@ theorem fund1_Ω_above (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l
     cases b with
     | Z => exact lt_of_lt_of_le_thm T Z z _ hcut (fund1_Ω_arg_le _ ha l hd z hz)
     | P j x y =>
-      by_cases hj : j ≤ l
+      rcases constructive_cases (p := j ≤ l) with hj | hj
       · change (if j ≤ l then P j x y < z else _) at hcut
         rw [ite_eq_left hj] at hcut
         exact lt_of_lt_of_le_thm T _ z _ hcut (fund1_Ω_arg_le _ ha l hd z hz)
@@ -1651,7 +1651,7 @@ theorem fund1_Ω_above (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l
           | One => rw [dom1_P_of_One i s he] at hd; cases hd
           | ω => rw [dom1_P_of_ω i s he] at hd; cases hd
           | Ω m =>
-            by_cases him : i ≤ m
+            rcases constructive_cases (p := i ≤ m) with him | him
             · rw [dom1_P_of_Ω i s m he, ite_eq_left him] at hd; cases hd
             · rw [dom1_P_of_Ω i s m he, ite_eq_right him] at hd
               cases hd
@@ -1671,7 +1671,7 @@ theorem G1_size_lt (l : Nat) (b : T) : ∀ x ∈ T.G1 l b, x.size < b.size := by
       Nat.lt_succ_of_le (Nat.le_add_right s.size t.size)
     have ht : t.size < (P i s t).size :=
       Nat.lt_succ_of_le (Nat.le_add_left t.size s.size)
-    by_cases hi : l ≤ i
+    rcases constructive_cases (p := l ≤ i) with hi | hi
     · rw [T.G1.eq_2, ite_eq_left hi, List.mem_append, List.mem_append] at hx
       rcases hx with (hx | hx) | hx
       · rw [List.mem_singleton] at hx; rw [hx]; exact hs
@@ -1694,7 +1694,7 @@ theorem iter_cutBound (a : T) (l : Nat) (hd : T.dom1 a = .Ω l)
   | Z => exact ⟨1, T.Lt.Z_lt_P l _ Z⟩
   | P i s t ihs iht =>
     obtain ⟨hs, ht, hgs, _⟩ := T.isNF1_P_inv i s t hb
-    by_cases hil : i < l
+    rcases constructive_cases (p := i < l) with hil | hil
     · refine ⟨1, ?_⟩
       unfold cutBound
       rw [ite_eq_left (Nat.le_of_lt hil)]
@@ -1704,7 +1704,7 @@ theorem iter_cutBound (a : T) (l : Nat) (hd : T.dom1 a = .Ω l)
         intro x hx
         rw [T.G1.eq_2, ite_eq_left hli]
         exact List.mem_append_left _ (List.mem_append_right _ hx)
-      by_cases hei : i = l
+      rcases constructive_cases (p := i = l) with hei | hei
       · subst i
         have hsmem : s ∈ T.G1 l (P l s t) := by
           rw [T.G1.eq_2, ite_eq_left (Nat.le_refl l)]
@@ -1761,7 +1761,7 @@ theorem dom1_One_PZ (i : Nat) (s : T) (hd : T.dom1 (P i s Z) = .One) :
   | ω => rw [dom1_P_of_ω i s hs] at hd; cases hd
   | Ω l =>
     rw [dom1_P_of_Ω i s l hs] at hd
-    by_cases hi : i ≤ l
+    rcases constructive_cases (p := i ≤ l) with hi | hi
     · rw [ite_eq_left hi] at hd; cases hd
     · rw [ite_eq_right hi] at hd; cases hd
 
@@ -1853,7 +1853,7 @@ theorem cutBound_exists (l : Nat) (b : T) (hb : T.isNF1 b) :
       .p 0 Z Z (Nat.zero_le l) .z, .Z_lt_P 0 Z Z⟩
   | P i s t ihs iht =>
     obtain ⟨hs, ht, _, _⟩ := T.isNF1_P_inv i s t hb
-    by_cases hi : i ≤ l
+    rcases constructive_cases (p := i ≤ l) with hi | hi
     · refine ⟨T.add (P i s t) (P 0 Z Z), isNF1_succ _ hb,
         Rank1Termination.index_add l _ _ (isNF1_index l i s t hb hi)
           (.p 0 Z Z (Nat.zero_le l) .z), ?_⟩
@@ -1948,7 +1948,7 @@ theorem fund1_ω_cofinal (a : T) (ha : T.isNF1 a) (hd : T.dom1 a = .ω) :
           · exact False.elim (lt_Z_inv h)
         | Ω l =>
           have hil : i ≤ l := by
-            by_cases h : i ≤ l
+            rcases constructive_cases (p := i ≤ l) with h | h
             · exact h
             · rw [dom1_P_of_Ω i s l he, ite_eq_right h] at hd; cases hd
           rcases lt_inv j x y i s Z hba with h | ⟨h, hxs⟩ | ⟨_, _, h⟩
