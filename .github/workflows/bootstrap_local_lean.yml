@@ -27,11 +27,25 @@ jobs:
           cp "$TOOLCHAIN/bin/lake" bootstrap/lean/bin/
           cp -a "$TOOLCHAIN/lib/lean" bootstrap/lean/lib/
           tar --zstd -cf bootstrap/lean-minimal.tar.zst -C bootstrap lean
+          split -b 300M bootstrap/lean-minimal.tar.zst bootstrap/lean-part-
           tar --zstd -cf bootstrap/subsp-src.tar.zst --exclude=.git --exclude=bootstrap .
       - uses: actions/upload-artifact@v4
         with:
-          name: local-lean-4.34.0
-          path: |
-            bootstrap/lean-minimal.tar.zst
-            bootstrap/subsp-src.tar.zst
+          name: local-lean-part-aa
+          path: bootstrap/lean-part-aa
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-lean-part-ab
+          path: bootstrap/lean-part-ab
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-lean-part-ac
+          path: bootstrap/lean-part-ac
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-subsp-source
+          path: bootstrap/subsp-src.tar.zst
           compression-level: 0
