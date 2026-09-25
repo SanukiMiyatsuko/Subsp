@@ -1,0 +1,37 @@
+name: Bootstrap Local Lean
+
+on:
+  push:
+    branches:
+      - constructive-by-cases
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+      - name: Package Lean 4.34.0 and source
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_BIN="$(elan which lean)"
+          TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
+          mkdir -p bootstrap/lean/bin bootstrap/lean/lib
+          cp "$TOOLCHAIN/bin/lean" bootstrap/lean/bin/
+          cp "$TOOLCHAIN/bin/lake" bootstrap/lean/bin/
+          cp -a "$TOOLCHAIN/lib/lean" bootstrap/lean/lib/
+          tar --zstd -cf bootstrap/lean-minimal.tar.zst -C bootstrap lean
+          tar --zstd -cf bootstrap/subsp-src.tar.zst --exclude=.git --exclude=bootstrap .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-lean-4.34.0
+          path: |
+            bootstrap/lean-minimal.tar.zst
+            bootstrap/subsp-src.tar.zst
+          compression-level: 0
