@@ -400,15 +400,17 @@ theorem Vec.ofFn_idx {A : Type} : ∀ (k : Nat) (f : Fin k → A) (i : Fin k),
     show (Vec.snoc k (Vec.ofFn k (fun j => f j.castSucc)) (f (Fin.last k))).idx i = f i
     show (if h : i.val < k then Vec.idx (Vec.ofFn k (fun j => f j.castSucc)) ⟨i.val, h⟩
           else f (Fin.last k)) = f i
-    rcases constructive_cases (p := i.val < k) with h | h
-    · rw [dite_eq_left h]
+    apply Decidable.byCases (p := i.val < k)
+    · intro h
+      rw [dite_eq_left h]
       have heq : (⟨i.val, h⟩ : Fin k).castSucc = i := by
         apply Fin.eq_of_val_eq
         rfl
       rw [ih (fun j => f j.castSucc) ⟨i.val, h⟩]
       show f ((⟨i.val, h⟩ : Fin k).castSucc) = f i
       rw [heq]
-    · rw [dite_eq_right h]
+    · intro h
+      rw [dite_eq_right h]
       have hik : i.val ≤ k := Nat.lt_succ_iff.mp i.isLt
       have hge : k ≤ i.val := Nat.not_lt.mp h
       have hval : i.val = k := Nat.le_antisymm hik hge

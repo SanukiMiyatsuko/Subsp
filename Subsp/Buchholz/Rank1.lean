@@ -91,9 +91,11 @@ theorem dom1_P_of_Ω (s0 : Nat) (s1 : T) (l : Nat) (h : T.dom1 s1 = Dom1.Ω l) :
     rw [dom1_P0_of_Ω s1 l h]
     rw [ite_eq_left (Nat.zero_le l)]
   | succ l0 =>
-    rcases constructive_cases (p := l0+1 ≤ l) with hle | hle
-    · rw [dom1_Psucc_of_Ω_le l0 l s1 h hle, ite_eq_left hle]
-    · rw [dom1_Psucc_of_Ω_gt l0 l s1 h hle, ite_eq_right hle]
+    apply Decidable.byCases (p := l0+1 ≤ l)
+    · intro hle
+      rw [dom1_Psucc_of_Ω_le l0 l s1 h hle, ite_eq_left hle]
+    · intro hle
+      rw [dom1_Psucc_of_Ω_gt l0 l s1 h hle, ite_eq_right hle]
 
 theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.Zero := by
   induction s2 generalizing s0 s1 with
@@ -107,9 +109,13 @@ theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.
       | Ω l =>
         rw [T.dom1.eq_2, hd]
         show (if (0:Nat) ≤ l then Dom1.ω else Dom1.Ω l) ≠ Dom1.Zero
-        split
-        · intro h; cases h
-        · intro h; cases h
+        apply Decidable.byCases (p := (0 : Nat) ≤ l)
+        · intro hle
+          rw [ite_eq_left hle]
+          intro h; cases h
+        · intro hle
+          rw [ite_eq_right hle]
+          intro h; cases h
     | succ l =>
       cases hd : T.dom1 s1 with
       | Zero => rw [T.dom1.eq_3, hd]; intro h; cases h
@@ -118,9 +124,13 @@ theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.
       | Ω l' =>
         rw [T.dom1.eq_3, hd]
         show (if l+1 ≤ l' then Dom1.ω else Dom1.Ω l') ≠ Dom1.Zero
-        split
-        · intro h; cases h
-        · intro h; cases h
+        apply Decidable.byCases (p := l + 1 ≤ l')
+        · intro hle
+          rw [ite_eq_left hle]
+          intro h; cases h
+        · intro hle
+          rw [ite_eq_right hle]
+          intro h; cases h
   | P s20 s21 s22 ih1 ih2 =>
     intro h
     rw [dom1_P_tail s0 s1 s20 s21 s22] at h
@@ -250,9 +260,10 @@ theorem iter_index_Prop1 (l : Nat) (g : T → T) (hg : ∀ x, ∃ y, g x = P l y
   | Z => rw [T.iter.eq_1]; exact T.index_Prop1.z
   | P n t0 t1 =>
     rw [T.iter.eq_2]
-    obtain ⟨y, hy⟩ := hg (T.iter g t1)
-    rw [hy]
-    exact T.index_Prop1.p l y Z (Nat.le_refl l) T.index_Prop1.z
+    exact match hg (T.iter g t1) with
+    | ⟨y, hy⟩ => by
+      rw [hy]
+      exact T.index_Prop1.p l y Z (Nat.le_refl l) T.index_Prop1.z
 
 def T.ValidArg1 (s t : T) : Prop :=
   match T.dom1 s with
@@ -307,9 +318,11 @@ theorem T.fund1_fall (s t : T) (hv : T.ValidArg1 s t) : T.fund1 s t < s := by
         have hv1 : T.ValidArg1 s1 Z := hva1.mpr rfl
         have hlt1 : T.fund1 s1 Z < s1 := ih1 Z hv1
         rw [fund1_P_of_One s0 s1 t hd]
-        rcases mul_shape s0 (T.fund1 s1 Z) t hisn with hZ | ⟨Y, hY⟩
-        · rw [hZ]; exact T.Lt.Z_lt_P s0 s1 Z
-        · rw [hY]; exact T.Lt.p_mid s0 (T.fund1 s1 Z) s1 Y Z hlt1
+        exact match mul_shape s0 (T.fund1 s1 Z) t hisn with
+        | Or.inl hZ => by
+          rw [hZ]; exact T.Lt.Z_lt_P s0 s1 Z
+        | Or.inr ⟨Y, hY⟩ => by
+          rw [hY]; exact T.Lt.p_mid s0 (T.fund1 s1 Z) s1 Y Z hlt1
       | ω =>
         have hva : T.ValidArg1 (P s0 s1 Z) t ↔ T.IsN t :=
           ValidArg1_ω_iff (P s0 s1 Z) t (dom1_P_of_ω s0 s1 hd)
@@ -320,8 +333,9 @@ theorem T.fund1_fall (s t : T) (hv : T.ValidArg1 s t) : T.fund1 s t < s := by
         rw [fund1_P_of_ω s0 s1 t hd]
         exact T.Lt.p_mid s0 (T.fund1 s1 t) s1 Z Z hlt1
       | Ω l =>
-        rcases constructive_cases (p := s0 ≤ l) with hle | hle
-        · have hindex : T.index_Prop1 l (T.iter (fun x => P l (T.fund1 s1 x) Z) t) :=
+        apply Decidable.byCases (p := s0 ≤ l)
+        · intro hle
+          have hindex : T.index_Prop1 l (T.iter (fun x => P l (T.fund1 s1 x) Z) t) :=
             iter_index_Prop1 l (fun x => P l (T.fund1 s1 x) Z) (fun x => ⟨T.fund1 s1 x, rfl⟩) t
           have hva1 : T.ValidArg1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t) ↔
               T.index_Prop1 l (T.iter (fun x => P l (T.fund1 s1 x) Z) t) :=
@@ -330,7 +344,8 @@ theorem T.fund1_fall (s t : T) (hv : T.ValidArg1 s t) : T.fund1 s t < s := by
           have hlt1 : T.fund1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t) < s1 := ih1 _ hv1
           rw [fund1_P_of_Ω_le s0 s1 t l hd hle]
           exact T.Lt.p_mid s0 _ s1 Z Z hlt1
-        · have hdm : T.dom1 (P s0 s1 Z) = Dom1.Ω l := by
+        · intro hle
+          have hdm : T.dom1 (P s0 s1 Z) = Dom1.Ω l := by
             rw [dom1_P_of_Ω s0 s1 l hd, ite_eq_right hle]
           have hva : T.ValidArg1 (P s0 s1 Z) t ↔ T.index_Prop1 l t :=
             ValidArg1_Ω_iff (P s0 s1 Z) t l hdm
@@ -395,23 +410,27 @@ theorem iter_F_strict_mono_ofNat (s1 : T) (l : Nat) (hd : T.dom1 s1 = Dom1.Ω l)
   | succ n1' ih =>
     intro n0 h
     have hle : n0 ≤ n1' := Nat.le_of_lt_succ h
-    rcases Nat.lt_or_eq_of_le hle with hlt2 | heq2
-    · exact lt_trans_thm _ _ _ (ih n0 hlt2) (iter_F_step_mono s1 l hd mono1 n1')
-    · rw [heq2]; exact iter_F_step_mono s1 l hd mono1 n1'
+    exact match Nat.lt_or_eq_of_le hle with
+    | Or.inl hlt2 => by
+      exact lt_trans_thm _ _ _ (ih n0 hlt2) (iter_F_step_mono s1 l hd mono1 n1')
+    | Or.inr heq2 => by
+      rw [heq2]; exact iter_F_step_mono s1 l hd mono1 n1'
 
 theorem iter_F_strict_mono (s1 : T) (l : Nat) (hd : T.dom1 s1 = Dom1.Ω l)
     (mono1 : ∀ t0 t1, t0 < t1 → T.ValidArg1 s1 t0 → T.ValidArg1 s1 t1 →
       T.fund1 s1 t0 < T.fund1 s1 t1)
     (t0 t1 : T) (hlt : t0 < t1) (hIsN0 : T.IsN t0) (hIsN1 : T.IsN t1) :
     T.iter (fun x => P l (T.fund1 s1 x) Z) t0 < T.iter (fun x => P l (T.fund1 s1 x) Z) t1 := by
-  obtain ⟨n0, hn0⟩ := IsN_exists_ofNat hIsN0
-  obtain ⟨n1, hn1⟩ := IsN_exists_ofNat hIsN1
-  have hnlt : n0 < n1 := by
-    apply ofNat_reflect_lt
-    rw [← hn0, ← hn1]
-    exact hlt
-  rw [hn0, hn1]
-  exact iter_F_strict_mono_ofNat s1 l hd mono1 n1 n0 hnlt
+  exact match IsN_exists_ofNat hIsN0 with
+  | ⟨n0, hn0⟩ => by
+    exact match IsN_exists_ofNat hIsN1 with
+    | ⟨n1, hn1⟩ => by
+      have hnlt : n0 < n1 := by
+        apply ofNat_reflect_lt
+        rw [← hn0, ← hn1]
+        exact hlt
+      rw [hn0, hn1]
+      exact iter_F_strict_mono_ofNat s1 l hd mono1 n1 n0 hnlt
 
 theorem T.fund1_strict_mono_dec (s t0 t1 : T) (hlt : t0 < t1)
     (ht0 : T.ValidArg1 s t0) (ht1 : T.ValidArg1 s t1) :
@@ -444,13 +463,15 @@ theorem T.fund1_strict_mono_dec (s t0 t1 : T) (hlt : t0 < t1)
           ValidArg1_ω_iff (P s0 s1 Z) t1 (dom1_P_of_One s0 s1 hd)
         have hisn0 : T.IsN t0 := hva0.mp ht0
         have hisn1 : T.IsN t1 := hva1.mp ht1
-        obtain ⟨n0, hn0⟩ := IsN_exists_ofNat hisn0
-        obtain ⟨n1, hn1⟩ := IsN_exists_ofNat hisn1
-        have hnlt : n0 < n1 := by
-          apply ofNat_reflect_lt; rw [← hn0, ← hn1]; exact hlt
-        have hXne : (P s0 (T.fund1 s1 Z) Z : T) ≠ Z := fun hcontra => by cases hcontra
-        rw [fund1_P_of_One s0 s1 t0 hd, fund1_P_of_One s0 s1 t1 hd, hn0, hn1]
-        exact mul_ofNat_strict_mono (P s0 (T.fund1 s1 Z) Z) hXne n1 n0 hnlt
+        exact match IsN_exists_ofNat hisn0 with
+        | ⟨n0, hn0⟩ => by
+          exact match IsN_exists_ofNat hisn1 with
+          | ⟨n1, hn1⟩ => by
+            have hnlt : n0 < n1 := by
+              apply ofNat_reflect_lt; rw [← hn0, ← hn1]; exact hlt
+            have hXne : (P s0 (T.fund1 s1 Z) Z : T) ≠ Z := fun hcontra => by cases hcontra
+            rw [fund1_P_of_One s0 s1 t0 hd, fund1_P_of_One s0 s1 t1 hd, hn0, hn1]
+            exact mul_ofNat_strict_mono (P s0 (T.fund1 s1 Z) Z) hXne n1 n0 hnlt
       | ω =>
         have hva0 : T.ValidArg1 (P s0 s1 Z) t0 ↔ T.IsN t0 :=
           ValidArg1_ω_iff (P s0 s1 Z) t0 (dom1_P_of_ω s0 s1 hd)
@@ -464,8 +485,9 @@ theorem T.fund1_strict_mono_dec (s t0 t1 : T) (hlt : t0 < t1)
         rw [fund1_P_of_ω s0 s1 t0 hd, fund1_P_of_ω s0 s1 t1 hd]
         exact T.Lt.p_mid s0 (T.fund1 s1 t0) (T.fund1 s1 t1) Z Z hlt1
       | Ω l =>
-        rcases constructive_cases (p := s0 ≤ l) with hle | hle
-        · have hdm : T.dom1 (P s0 s1 Z) = Dom1.ω := by
+        apply Decidable.byCases (p := s0 ≤ l)
+        · intro hle
+          have hdm : T.dom1 (P s0 s1 Z) = Dom1.ω := by
             rw [dom1_P_of_Ω s0 s1 l hd, ite_eq_left hle]
           have hva0 : T.ValidArg1 (P s0 s1 Z) t0 ↔ T.IsN t0 := ValidArg1_ω_iff (P s0 s1 Z) t0 hdm
           have hva1 : T.ValidArg1 (P s0 s1 Z) t1 ↔ T.IsN t1 := ValidArg1_ω_iff (P s0 s1 Z) t1 hdm
@@ -491,7 +513,8 @@ theorem T.fund1_strict_mono_dec (s t0 t1 : T) (hlt : t0 < t1)
           exact T.Lt.p_mid s0
             (T.fund1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t0))
             (T.fund1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t1)) Z Z hlt1
-        · have hdm : T.dom1 (P s0 s1 Z) = Dom1.Ω l := by
+        · intro hle
+          have hdm : T.dom1 (P s0 s1 Z) = Dom1.Ω l := by
             rw [dom1_P_of_Ω s0 s1 l hd, ite_eq_right hle]
           have hva0 : T.ValidArg1 (P s0 s1 Z) t0 ↔ T.index_Prop1 l t0 :=
             ValidArg1_Ω_iff (P s0 s1 Z) t0 l hdm
@@ -592,14 +615,17 @@ theorem SDom_G1_lt_a (z b a : T) (u : Nat) (hb : T.SDom z b a)
   intro y hy
   have hba : b ≤ a := Or.inl hb.1
   have haa : a ≤ a := partial_order.refl a
-  obtain ⟨w, hw, hyw⟩ := hb.2 u a hba haa y hy
-  rw [List.mem_append] at hw
-  rcases hw with hw1 | hw2
-  · have hwa : w < a := hGa w hw1
-    exact lt_of_le_of_lt_thm T y w a hyw hwa
-  · have hwb : w < b := hGz w hw2
-    have hyb : y < b := lt_of_le_of_lt_thm T y w b hyw hwb
-    exact lt_of_lt_of_le_thm T y b a hyb hba
+  exact match hb.2 u a hba haa y hy with
+  | ⟨w, hw, hyw⟩ => by
+    rw [List.mem_append] at hw
+    exact match hw with
+    | Or.inl hw1 => by
+      have hwa : w < a := hGa w hw1
+      exact lt_of_le_of_lt_thm T y w a hyw hwa
+    | Or.inr hw2 => by
+      have hwb : w < b := hGz w hw2
+      have hyb : y < b := lt_of_le_of_lt_thm T y w b hyw hwb
+      exact lt_of_lt_of_le_thm T y b a hyb hba
 
 theorem find_violating_source (u : Nat) (b : T) :
     ∀ c₀ : T, ∀ w : T, w ∈ T.G1 u c₀ → b ≤ w →
@@ -612,108 +638,147 @@ theorem find_violating_source (u : Nat) (b : T) :
     cases hw
   | P p0 p1 p2 ih1 ih2 =>
     intro w hw hbw
-    rcases constructive_cases (p := u ≤ p0) with hup | hup
-    · rw [T.G1.eq_2, ite_eq_left hup] at hw
+    apply Decidable.byCases (p := u ≤ p0)
+    · intro hup
+      rw [T.G1.eq_2, ite_eq_left hup] at hw
       rw [List.mem_append, List.mem_append] at hw
-      rcases hw with (hw1 | hw2) | hw3
-      · rw [List.mem_singleton] at hw1
+      exact match hw with
+      | Or.inl (Or.inl hw1) => by
+        rw [List.mem_singleton] at hw1
         cases hw1
-        rcases constructive_cases (p := ∃ x ∈ T.G1 u p1, b ≤ x) with hviol | hviol
-        · obtain ⟨x, hx1, hx2⟩ := hviol
-          obtain ⟨c, hc1, hc2, hc3⟩ := ih1 x hx1 hx2
-          refine ⟨c, ?_, hc2, hc3⟩
-          rw [T.G1.eq_2, ite_eq_left hup]
-          rw [List.mem_append, List.mem_append]
-          exact Or.inl (Or.inr hc1)
-        · refine ⟨p1, ?_, hbw, ?_⟩
+        apply Decidable.byCases (p := ∃ x ∈ T.G1 u p1, b ≤ x)
+        · intro hviol
+          exact match hviol with
+          | ⟨x, hx1, hx2⟩ => by
+            exact match ih1 x hx1 hx2 with
+            | ⟨c, hc1, hc2, hc3⟩ => by
+              refine ⟨c, ?_, hc2, hc3⟩
+              rw [T.G1.eq_2, ite_eq_left hup]
+              rw [List.mem_append, List.mem_append]
+              exact Or.inl (Or.inr hc1)
+        · intro hviol
+          refine ⟨p1, ?_, hbw, ?_⟩
           · rw [T.G1.eq_2, ite_eq_left hup]
             rw [List.mem_append, List.mem_append]
             exact Or.inl (Or.inl (List.mem_singleton_self p1))
           · intro x hx
-            rcases constructive_cases (p := b ≤ x) with hxb | hxb
-            · exact absurd ⟨x, hx, hxb⟩ hviol
-            · rcases linear_order.total x b with h1 | h1
-              · rcases h1 with h1 | h1
-                · exact h1
-                · exact absurd (Or.inr h1.symm) hxb
-              · exact absurd h1 hxb
-      · obtain ⟨c, hc1, hc2, hc3⟩ := ih1 w hw2 hbw
+            apply Decidable.byCases (p := b ≤ x)
+            · intro hxb
+              exact absurd ⟨x, hx, hxb⟩ hviol
+            · intro hxb
+              exact match linear_order.total x b with
+              | Or.inl h1 => by
+                exact match h1 with
+                | Or.inl h1 => by
+                  exact h1
+                | Or.inr h1 => by
+                  exact absurd (Or.inr h1.symm) hxb
+              | Or.inr h1 => by
+                exact absurd h1 hxb
+      | Or.inl (Or.inr hw2) => by
+        exact match ih1 w hw2 hbw with
+        | ⟨c, hc1, hc2, hc3⟩ => by
+          refine ⟨c, ?_, hc2, hc3⟩
+          rw [T.G1.eq_2, ite_eq_left hup]
+          rw [List.mem_append, List.mem_append]
+          exact Or.inl (Or.inr hc1)
+      | Or.inr hw3 => by
+        exact match ih2 w hw3 hbw with
+        | ⟨c, hc1, hc2, hc3⟩ => by
+          refine ⟨c, ?_, hc2, hc3⟩
+          rw [T.G1.eq_2, ite_eq_left hup]
+          rw [List.mem_append, List.mem_append]
+          exact Or.inr hc1
+    · intro hup
+      rw [T.G1.eq_2, ite_eq_right hup] at hw
+      exact match ih2 w hw hbw with
+      | ⟨c, hc1, hc2, hc3⟩ => by
         refine ⟨c, ?_, hc2, hc3⟩
-        rw [T.G1.eq_2, ite_eq_left hup]
-        rw [List.mem_append, List.mem_append]
-        exact Or.inl (Or.inr hc1)
-      · obtain ⟨c, hc1, hc2, hc3⟩ := ih2 w hw3 hbw
-        refine ⟨c, ?_, hc2, hc3⟩
-        rw [T.G1.eq_2, ite_eq_left hup]
-        rw [List.mem_append, List.mem_append]
-        exact Or.inr hc1
-    · rw [T.G1.eq_2, ite_eq_right hup] at hw
-      obtain ⟨c, hc1, hc2, hc3⟩ := ih2 w hw hbw
-      refine ⟨c, ?_, hc2, hc3⟩
-      rw [T.G1.eq_2, ite_eq_right hup]
-      exact hc1
+        rw [T.G1.eq_2, ite_eq_right hup]
+        exact hc1
 
 theorem lemma_3_4 (z b a : T) (u : Nat) (hSDom : T.SDom z b a)
     (hGa : ∀ x ∈ T.G1 u a, x < a) (hGz : ∀ x ∈ T.GZ u z, x < b) :
     ∀ y ∈ T.G1 u b, y < b := by
   intro y hy
-  rcases linear_order.total y b with hcase | hcase
-  · rcases hcase with hcase | hcase
-    · exact hcase
-    · exfalso
+  exact match linear_order.total y b with
+  | Or.inl hcase => by
+    exact match hcase with
+    | Or.inl hcase => by
+      exact hcase
+    | Or.inr hcase => by
+      exfalso
       have hby : b ≤ y := Or.inr hcase.symm
-      obtain ⟨c, hcG, hbc, hcbound⟩ := find_violating_source u b b y hy hby
+      exact match find_violating_source u b b y hy hby with
+      | ⟨c, hcG, hbc, hcbound⟩ => by
+        have hca : c < a := SDom_G1_lt_a z b a u hSDom hGa hGz c hcG
+        have hca' : c ≤ a := Or.inl hca
+        have hlisteq := hSDom.2 u c hbc hca'
+        exact match hlisteq y hy with
+        | ⟨wit, hwit1, hwit2⟩ => by
+          rw [List.mem_append] at hwit1
+          have hwitb : wit < b := by
+            exact match hwit1 with
+            | Or.inl hwit1 => by
+              exact hcbound wit hwit1
+            | Or.inr hwit1 => by
+              exact hGz wit hwit1
+          have hyb : y < b := lt_of_le_of_lt_thm T y wit b hwit2 hwitb
+          exact lt_irrefl_thm y (hcase ▸ hyb)
+  | Or.inr hcase => by
+    exfalso
+    have hby : b ≤ y := hcase
+    exact match find_violating_source u b b y hy hby with
+    | ⟨c, hcG, hbc, hcbound⟩ => by
       have hca : c < a := SDom_G1_lt_a z b a u hSDom hGa hGz c hcG
       have hca' : c ≤ a := Or.inl hca
       have hlisteq := hSDom.2 u c hbc hca'
-      obtain ⟨wit, hwit1, hwit2⟩ := hlisteq y hy
-      rw [List.mem_append] at hwit1
-      have hwitb : wit < b := by
-        rcases hwit1 with hwit1 | hwit1
-        · exact hcbound wit hwit1
-        · exact hGz wit hwit1
-      have hyb : y < b := lt_of_le_of_lt_thm T y wit b hwit2 hwitb
-      exact lt_irrefl_thm y (hcase ▸ hyb)
-  · exfalso
-    have hby : b ≤ y := hcase
-    obtain ⟨c, hcG, hbc, hcbound⟩ := find_violating_source u b b y hy hby
-    have hca : c < a := SDom_G1_lt_a z b a u hSDom hGa hGz c hcG
-    have hca' : c ≤ a := Or.inl hca
-    have hlisteq := hSDom.2 u c hbc hca'
-    obtain ⟨wit, hwit1, hwit2⟩ := hlisteq y hy
-    rw [List.mem_append] at hwit1
-    have hwitb : wit < b := by
-      rcases hwit1 with hwit1 | hwit1
-      · exact hcbound wit hwit1
-      · exact hGz wit hwit1
-    have hyb : y < b := lt_of_le_of_lt_thm T y wit b hwit2 hwitb
-    exact lt_irrefl_thm y (lt_of_lt_of_le_thm T y b y hyb hcase)
+      exact match hlisteq y hy with
+      | ⟨wit, hwit1, hwit2⟩ => by
+        rw [List.mem_append] at hwit1
+        have hwitb : wit < b := by
+          exact match hwit1 with
+          | Or.inl hwit1 => by
+            exact hcbound wit hwit1
+          | Or.inr hwit1 => by
+            exact hGz wit hwit1
+        have hyb : y < b := lt_of_le_of_lt_thm T y wit b hwit2 hwitb
+        exact lt_irrefl_thm y (lt_of_lt_of_le_thm T y b y hyb hcase)
 
 theorem SDom_tail (z b0 b : T) (s0 : Nat) (s1 : T) (hb0 : T.SDom z b0 b) :
     T.SDom z (P s0 s1 b0) (P s0 s1 b) := by
   constructor
   · exact T.Lt.p_tail s0 s1 b0 b hb0.1
   · intro u c hc1 hc2
-    rcases hc1 with hc1lt | hc1eq
-    · rcases hc2 with hc2lt | hc2eq
-      · obtain ⟨c0, hceq, hbc0, hc0b⟩ := sandwich_tail s0 s1 b0 c b hc1lt hc2lt
-        rw [hceq]
-        have hlisteq := hb0.2 u c0 (Or.inl hbc0) (Or.inl hc0b)
-        rcases constructive_cases (p := u ≤ s0) with hus | hus
-        · rw [T.G1.eq_2, ite_eq_left hus, T.G1.eq_2, ite_eq_left hus, List.append_assoc, List.append_assoc]
-          exact listLe_append_congr [s1] _ _ (listLe_append_congr (T.G1 u s1) _ _ hlisteq)
-        · rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
-          exact hlisteq
-      · rw [hc2eq]
+    exact match hc1 with
+    | Or.inl hc1lt => by
+      exact match hc2 with
+      | Or.inl hc2lt => by
+        exact match sandwich_tail s0 s1 b0 c b hc1lt hc2lt with
+        | ⟨c0, hceq, hbc0, hc0b⟩ => by
+          rw [hceq]
+          have hlisteq := hb0.2 u c0 (Or.inl hbc0) (Or.inl hc0b)
+          apply Decidable.byCases (p := u ≤ s0)
+          · intro hus
+            rw [T.G1.eq_2, ite_eq_left hus, T.G1.eq_2, ite_eq_left hus, List.append_assoc, List.append_assoc]
+            exact listLe_append_congr [s1] _ _ (listLe_append_congr (T.G1 u s1) _ _ hlisteq)
+          · intro hus
+            rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
+            exact hlisteq
+      | Or.inr hc2eq => by
+        rw [hc2eq]
         have hbb : b0 ≤ b := Or.inl hb0.1
         have hbbb : b ≤ b := partial_order.refl b
         have hlisteq := hb0.2 u b hbb hbbb
-        rcases constructive_cases (p := u ≤ s0) with hus | hus
-        · rw [T.G1.eq_2, ite_eq_left hus, T.G1.eq_2, ite_eq_left hus, List.append_assoc, List.append_assoc]
+        apply Decidable.byCases (p := u ≤ s0)
+        · intro hus
+          rw [T.G1.eq_2, ite_eq_left hus, T.G1.eq_2, ite_eq_left hus, List.append_assoc, List.append_assoc]
           exact listLe_append_congr [s1] _ _ (listLe_append_congr (T.G1 u s1) _ _ hlisteq)
-        · rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
+        · intro hus
+          rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
           exact hlisteq
-    · rw [← hc1eq]
+    | Or.inr hc1eq => by
+      rw [← hc1eq]
       exact listLe_self_append _ _
 
 theorem G1_PZ_pos (u p0 : Nat) (p1 : T) (h : u ≤ p0) :
@@ -729,54 +794,73 @@ theorem SDom_wrap (z b0 b : T) (s0 : Nat) (hb0 : T.SDom z b0 b) :
   constructor
   · exact T.Lt.p_mid s0 b0 b Z Z hb0.1
   · intro u c hc1 hc2
-    rcases hc1 with hc1lt | hc1eq
-    · rcases hc2 with hc2lt | hc2eq
-      · obtain ⟨c1, c2, hceq, hbc1, hc1b⟩ := sandwich_mid s0 b0 b c hb0.1 hc1lt hc2lt
-        rw [hceq]
-        have hlisteq := hb0.2 u c1 hbc1 (Or.inl hc1b)
-        rcases constructive_cases (p := u ≤ s0) with hus | hus
-        · rw [G1_PZ_pos u s0 b0 hus, T.G1.eq_2, ite_eq_left hus]
-          intro x hx
-          rw [List.mem_append] at hx
-          rcases hx with hx | hx
-          · rw [List.mem_singleton] at hx
+    exact match hc1 with
+    | Or.inl hc1lt => by
+      exact match hc2 with
+      | Or.inl hc2lt => by
+        exact match sandwich_mid s0 b0 b c hb0.1 hc1lt hc2lt with
+        | ⟨c1, c2, hceq, hbc1, hc1b⟩ => by
+          rw [hceq]
+          have hlisteq := hb0.2 u c1 hbc1 (Or.inl hc1b)
+          apply Decidable.byCases (p := u ≤ s0)
+          · intro hus
+            rw [G1_PZ_pos u s0 b0 hus, T.G1.eq_2, ite_eq_left hus]
+            intro x hx
+            rw [List.mem_append] at hx
+            exact match hx with
+            | Or.inl hx => by
+              rw [List.mem_singleton] at hx
+              cases hx
+              refine ⟨c1, ?_, hbc1⟩
+              exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ (List.mem_singleton_self c1)))
+            | Or.inr hx => by
+              exact match hlisteq x hx with
+              | ⟨w, hw1, hw2⟩ => by
+                rw [List.mem_append] at hw1
+                exact match hw1 with
+                | Or.inl hw1 => by
+                  refine ⟨w, ?_, hw2⟩
+                  exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_right _ hw1))
+                | Or.inr hw1 => by
+                  refine ⟨w, ?_, hw2⟩
+                  exact List.mem_append_right _ hw1
+          · intro hus
+            rw [G1_PZ_neg u s0 b0 hus]
+            intro x hx
             cases hx
-            refine ⟨c1, ?_, hbc1⟩
-            exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ (List.mem_singleton_self c1)))
-          · obtain ⟨w, hw1, hw2⟩ := hlisteq x hx
-            rw [List.mem_append] at hw1
-            rcases hw1 with hw1 | hw1
-            · refine ⟨w, ?_, hw2⟩
-              exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_right _ hw1))
-            · refine ⟨w, ?_, hw2⟩
-              exact List.mem_append_right _ hw1
-        · rw [G1_PZ_neg u s0 b0 hus]
-          intro x hx
-          cases hx
-      · rw [hc2eq]
+      | Or.inr hc2eq => by
+        rw [hc2eq]
         have hbb : b0 ≤ b := Or.inl hb0.1
         have hbbb : b ≤ b := partial_order.refl b
         have hlisteq := hb0.2 u b hbb hbbb
-        rcases constructive_cases (p := u ≤ s0) with hus | hus
-        · rw [G1_PZ_pos u s0 b0 hus, G1_PZ_pos u s0 b hus]
+        apply Decidable.byCases (p := u ≤ s0)
+        · intro hus
+          rw [G1_PZ_pos u s0 b0 hus, G1_PZ_pos u s0 b hus]
           intro x hx
           rw [List.mem_append] at hx
-          rcases hx with hx | hx
-          · rw [List.mem_singleton] at hx
+          exact match hx with
+          | Or.inl hx => by
+            rw [List.mem_singleton] at hx
             cases hx
             refine ⟨b, ?_, Or.inl hb0.1⟩
             exact List.mem_append_left _ (List.mem_append_left _ (List.mem_singleton_self b))
-          · obtain ⟨w, hw1, hw2⟩ := hlisteq x hx
-            rw [List.mem_append] at hw1
-            rcases hw1 with hw1 | hw1
-            · refine ⟨w, ?_, hw2⟩
-              exact List.mem_append_left _ (List.mem_append_right _ hw1)
-            · refine ⟨w, ?_, hw2⟩
-              exact List.mem_append_right _ hw1
-        · rw [G1_PZ_neg u s0 b0 hus]
+          | Or.inr hx => by
+            exact match hlisteq x hx with
+            | ⟨w, hw1, hw2⟩ => by
+              rw [List.mem_append] at hw1
+              exact match hw1 with
+              | Or.inl hw1 => by
+                refine ⟨w, ?_, hw2⟩
+                exact List.mem_append_left _ (List.mem_append_right _ hw1)
+              | Or.inr hw1 => by
+                refine ⟨w, ?_, hw2⟩
+                exact List.mem_append_right _ hw1
+        · intro hus
+          rw [G1_PZ_neg u s0 b0 hus]
           intro x hx
           cases hx
-    · rw [← hc1eq]
+    | Or.inr hc1eq => by
+      rw [← hc1eq]
       exact listLe_self_append _ _
 
 theorem T.isNF1_tail_le : ∀ x : T, T.isNF1 x → ∀ x0 x1 x2, x = P x0 x1 x2 → x2 ≤ P x0 x1 x2 := by
@@ -785,40 +869,40 @@ theorem T.isNF1_tail_le : ∀ x : T, T.isNF1 x → ∀ x0 x1 x2, x = P x0 x1 x2 
   | Z => intro _ x0 x1 x2 he; cases he
   | P a0 a1 a2 ih1 ih2 =>
     intro ha x0 x1 x2 he
-    injection he with he0 he1 he2
-    cases he0; cases he1; cases he2
-    obtain ⟨_hs1, hs2, _h1, h2⟩ := T.isNF1_P_inv a0 a1 a2 ha
-    cases a2 with
-    | Z => exact T.Z_le _
-    | P b0 b1 b2 =>
-      have hheadeq : T.head (P b0 b1 b2) = P b0 b1 Z := rfl
-      rw [hheadeq] at h2
-      cases h2 with
-      | inl hlt =>
-        have hinv := lt_inv b0 b1 Z a0 a1 Z hlt
-        cases hinv with
-        | inl hh =>
-          exact Or.inl (T.Lt.p_head b0 a0 b1 a1 b2 (P b0 b1 b2) hh)
-        | inr hor =>
-          cases hor with
-          | inl hmid =>
-            obtain ⟨heq0, hlt1⟩ := hmid
-            cases heq0
-            exact Or.inl (T.Lt.p_mid a0 b1 a1 b2 (P a0 b1 b2) hlt1)
-          | inr htail =>
-            obtain ⟨_heq0, _heq1, hZZ⟩ := htail
-            exact absurd hZZ (lt_irrefl_thm Z)
-      | inr heq =>
-        injection heq with heq0 heq1
-        cases heq0
-        cases heq1
-        have hrec : b2 ≤ P a0 a1 b2 := ih2 hs2 a0 a1 b2 rfl
-        cases hrec with
-        | inl hlt2 =>
-          exact Or.inl (T.Lt.p_tail a0 a1 b2 (P a0 a1 b2) hlt2)
-        | inr heq2 =>
-          rw [← heq2]
-          exact Or.inr heq2
+    cases he
+    exact match T.isNF1_P_inv a0 a1 a2 ha with
+    | ⟨_hs1, hs2, _h1, h2⟩ => by
+      cases a2 with
+      | Z => exact T.Z_le _
+      | P b0 b1 b2 =>
+        have hheadeq : T.head (P b0 b1 b2) = P b0 b1 Z := rfl
+        rw [hheadeq] at h2
+        cases h2 with
+        | inl hlt =>
+          have hinv := lt_inv b0 b1 Z a0 a1 Z hlt
+          cases hinv with
+          | inl hh =>
+            exact Or.inl (T.Lt.p_head b0 a0 b1 a1 b2 (P b0 b1 b2) hh)
+          | inr hor =>
+            cases hor with
+            | inl hmid =>
+              exact match hmid with
+              | ⟨heq0, hlt1⟩ => by
+                cases heq0
+                exact Or.inl (T.Lt.p_mid a0 b1 a1 b2 (P a0 b1 b2) hlt1)
+            | inr htail =>
+              exact match htail with
+              | ⟨_heq0, _heq1, hZZ⟩ => by
+                exact absurd hZZ (lt_irrefl_thm Z)
+        | inr heq =>
+          cases heq
+          have hrec : b2 ≤ P a0 a1 b2 := ih2 hs2 a0 a1 b2 rfl
+          cases hrec with
+          | inl hlt2 =>
+            exact Or.inl (T.Lt.p_tail a0 a1 b2 (P a0 a1 b2) hlt2)
+          | inr heq2 =>
+            rw [← heq2]
+            exact Or.inr heq2
 
 theorem IsN_G1_eq_Z (t : T) (h : T.IsN t) (u : Nat) : ∀ x ∈ T.G1 u t, x = Z := by
   induction h with
@@ -828,14 +912,19 @@ theorem IsN_G1_eq_Z (t : T) (h : T.IsN t) (u : Nat) : ∀ x ∈ T.G1 u t, x = Z 
     cases hx
   | succ t' h' ih =>
     intro x hx
-    rcases constructive_cases (p := u ≤ 0) with hu | hu
-    · rw [T.G1.eq_2, ite_eq_left hu] at hx
+    apply Decidable.byCases (p := u ≤ 0)
+    · intro hu
+      rw [T.G1.eq_2, ite_eq_left hu] at hx
       rw [List.mem_append, List.mem_append] at hx
-      rcases hx with (hx | hx) | hx
-      · rw [List.mem_singleton] at hx; exact hx
-      · rw [T.G1.eq_1] at hx; cases hx
-      · exact ih x hx
-    · rw [T.G1.eq_2, ite_eq_right hu] at hx
+      exact match hx with
+      | Or.inl (Or.inl hx) => by
+        rw [List.mem_singleton] at hx; exact hx
+      | Or.inl (Or.inr hx) => by
+        rw [T.G1.eq_1] at hx; cases hx
+      | Or.inr hx => by
+        exact ih x hx
+    · intro hu
+      rw [T.G1.eq_2, ite_eq_right hu] at hx
       exact ih x hx
 
 theorem index_Prop1_G1_empty (l : Nat) (t : T) (h : T.index_Prop1 l t) (u : Nat) (hlu : l < u) :
@@ -879,10 +968,12 @@ theorem GZ_ofNat_le (u n : Nat) (w : T) : T.listLe (T.GZ u (T.ofNat n)) (T.GZ u 
   intro x hx
   unfold T.GZ at hx
   rw [List.mem_append] at hx
-  rcases hx with hx | hx
-  · have hxZ : x = Z := IsN_G1_eq_Z (T.ofNat n) (ofNat_IsN n) u x hx
+  exact match hx with
+  | Or.inl hx => by
+    have hxZ : x = Z := IsN_G1_eq_Z (T.ofNat n) (ofNat_IsN n) u x hx
     exact ⟨Z, GZ_Z_mem u w, Or.inr hxZ⟩
-  · rw [List.mem_singleton] at hx
+  | Or.inr hx => by
+    rw [List.mem_singleton] at hx
     exact ⟨Z, GZ_Z_mem u w, Or.inr hx⟩
 
 theorem G1_P_pos (u p0 : Nat) (p1 p2 : T) (h : u ≤ p0) :
@@ -906,100 +997,140 @@ theorem mul_SDom (s0 : Nat) (c s1 : T) (hSDc : T.SDom Z c s1) :
     rw [mul_succ_shape s0 c n]
     refine ⟨T.Lt.p_mid s0 c s1 (T.mul (P s0 c Z) (T.ofNat n)) Z hcs1, ?_⟩
     intro u c' hc1 hc2
-    rcases hc1 with hc1lt | hc1eq
-    · rcases hc2 with hc2lt | hc2eq
-      · obtain ⟨c1', c2', hceq, hcase⟩ :=
-          sandwich_mid_tail s0 c (T.mul (P s0 c Z) (T.ofNat n)) s1 c' hc1lt hc2lt
-        have hcc1 : c ≤ c1' := by
-          rcases hcase with ⟨h1, _⟩ | ⟨h1, _⟩
-          · exact Or.inl h1
-          · exact Or.inr h1.symm
-        have hc1s1 : c1' < s1 := by
-          rcases hcase with ⟨_, h2⟩ | ⟨h1, _⟩
-          · exact h2
-          · rw [h1]; exact hcs1
-        have hMc' : T.mul (P s0 c Z) (T.ofNat n) < c' :=
-          lt_trans_thm (T.mul (P s0 c Z) (T.ofNat n)) (P s0 c (T.mul (P s0 c Z) (T.ofNat n))) c' hMlt hc1lt
-        rw [hceq]
-        rcases constructive_cases (p := u ≤ s0) with hus | hus
-        · rw [G1_P_pos u s0 c (T.mul (P s0 c Z) (T.ofNat n)) hus, G1_P_pos u s0 c1' c2' hus]
-          have hSD2 := hSDc.2 u c1' hcc1 (Or.inl hc1s1)
-          have hih2 := ih.2 u c' (Or.inl hMc') (Or.inl hc2lt)
-          rw [hceq, G1_P_pos u s0 c1' c2' hus] at hih2
-          intro x hx
-          rw [List.mem_append, List.mem_append] at hx
-          rcases hx with (hx | hx) | hx
-          · rw [List.mem_singleton] at hx
-            cases hx
-            exact ⟨c1', List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_left (T.G1 u c1') (List.mem_singleton_self c1'))), hcc1⟩
-          · obtain ⟨w, hw1, hw2⟩ := hSD2 x hx
-            rw [List.mem_append] at hw1
-            rcases hw1 with hw1 | hw1
-            · exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_right ([c1']) hw1)), hw2⟩
-            · have hwZ : w = Z := by
-                unfold T.GZ at hw1
-                rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hw1
-                exact hw1
-              exact ⟨Z, List.mem_append_right (([c1'] ++ T.G1 u c1') ++ T.G1 u c2') (hwZ ▸ GZ_Z_mem u (T.ofNat (n+1))), hwZ ▸ hw2⟩
-          · obtain ⟨w, hw1, hw2⟩ := hih2 x hx
-            rw [List.mem_append, List.mem_append, List.mem_append] at hw1
-            rcases hw1 with ((hw1 | hw1) | hw1) | hw1
-            · rw [List.mem_singleton] at hw1
-              cases hw1
-              exact ⟨c1', List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_left (T.G1 u c1') (List.mem_singleton_self c1'))), hw2⟩
-            · exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_right ([c1']) hw1)), hw2⟩
-            · exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_right ([c1'] ++ T.G1 u c1') hw1), hw2⟩
-            · obtain ⟨w', hw1', hw2'⟩ := GZ_ofNat_le u n (T.ofNat (n+1)) w hw1
-              exact ⟨w', List.mem_append_right (([c1'] ++ T.G1 u c1') ++ T.G1 u c2') hw1', partial_order.trans x w w' hw2 hw2'⟩
-        · rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
-          have hih2 := ih.2 u c' (Or.inl hMc') (Or.inl hc2lt)
-          rw [hceq, T.G1.eq_2, ite_eq_right hus] at hih2
-          intro x hx
-          obtain ⟨w, hw1, hw2⟩ := hih2 x hx
-          rw [List.mem_append] at hw1
-          rcases hw1 with hw1 | hw1
-          · exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) hw1, hw2⟩
-          · obtain ⟨w', hw1', hw2'⟩ := GZ_ofNat_le u n (T.ofNat (n+1)) w hw1
-            exact ⟨w', List.mem_append_right (T.G1 u c2') hw1', partial_order.trans x w w' hw2 hw2'⟩
-      · rcases constructive_cases (p := u ≤ s0) with hus2 | hus2
-        · have hgoal : T.listLe ([c] ++ T.G1 u c ++ T.G1 u (T.mul (P s0 c Z) (T.ofNat n)))
+    exact match hc1 with
+    | Or.inl hc1lt => by
+      exact match hc2 with
+      | Or.inl hc2lt => by
+        exact match sandwich_mid_tail s0 c (T.mul (P s0 c Z) (T.ofNat n)) s1 c' hc1lt hc2lt with
+        | ⟨c1', c2', hceq, hcase⟩ => by
+          have hcc1 : c ≤ c1' := by
+            exact match hcase with
+            | Or.inl ⟨h1, _⟩ => by
+              exact Or.inl h1
+            | Or.inr ⟨h1, _⟩ => by
+              exact Or.inr h1.symm
+          have hc1s1 : c1' < s1 := by
+            exact match hcase with
+            | Or.inl ⟨_, h2⟩ => by
+              exact h2
+            | Or.inr ⟨h1, _⟩ => by
+              rw [h1]; exact hcs1
+          have hMc' : T.mul (P s0 c Z) (T.ofNat n) < c' :=
+            lt_trans_thm (T.mul (P s0 c Z) (T.ofNat n)) (P s0 c (T.mul (P s0 c Z) (T.ofNat n))) c' hMlt hc1lt
+          rw [hceq]
+          apply Decidable.byCases (p := u ≤ s0)
+          · intro hus
+            rw [G1_P_pos u s0 c (T.mul (P s0 c Z) (T.ofNat n)) hus, G1_P_pos u s0 c1' c2' hus]
+            have hSD2 := hSDc.2 u c1' hcc1 (Or.inl hc1s1)
+            have hih2 := ih.2 u c' (Or.inl hMc') (Or.inl hc2lt)
+            rw [hceq, G1_P_pos u s0 c1' c2' hus] at hih2
+            intro x hx
+            rw [List.mem_append, List.mem_append] at hx
+            exact match hx with
+            | Or.inl (Or.inl hx) => by
+              rw [List.mem_singleton] at hx
+              cases hx
+              exact ⟨c1', List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_left (T.G1 u c1') (List.mem_singleton_self c1'))), hcc1⟩
+            | Or.inl (Or.inr hx) => by
+              exact match hSD2 x hx with
+              | ⟨w, hw1, hw2⟩ => by
+                rw [List.mem_append] at hw1
+                exact match hw1 with
+                | Or.inl hw1 => by
+                  exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_right ([c1']) hw1)), hw2⟩
+                | Or.inr hw1 => by
+                  have hwZ : w = Z := by
+                    unfold T.GZ at hw1
+                    rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hw1
+                    exact hw1
+                  exact ⟨Z, List.mem_append_right (([c1'] ++ T.G1 u c1') ++ T.G1 u c2') (hwZ ▸ GZ_Z_mem u (T.ofNat (n+1))), hwZ ▸ hw2⟩
+            | Or.inr hx => by
+              exact match hih2 x hx with
+              | ⟨w, hw1, hw2⟩ => by
+                rw [List.mem_append, List.mem_append, List.mem_append] at hw1
+                exact match hw1 with
+                | Or.inl (Or.inl (Or.inl hw1)) => by
+                  rw [List.mem_singleton] at hw1
+                  cases hw1
+                  exact ⟨c1', List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_left (T.G1 u c1') (List.mem_singleton_self c1'))), hw2⟩
+                | Or.inl (Or.inl (Or.inr hw1)) => by
+                  exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u c2') (List.mem_append_right ([c1']) hw1)), hw2⟩
+                | Or.inl (Or.inr hw1) => by
+                  exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_right ([c1'] ++ T.G1 u c1') hw1), hw2⟩
+                | Or.inr hw1 => by
+                  exact match GZ_ofNat_le u n (T.ofNat (n+1)) w hw1 with
+                  | ⟨w', hw1', hw2'⟩ => by
+                    exact ⟨w', List.mem_append_right (([c1'] ++ T.G1 u c1') ++ T.G1 u c2') hw1', partial_order.trans x w w' hw2 hw2'⟩
+          · intro hus
+            rw [T.G1.eq_2, ite_eq_right hus, T.G1.eq_2, ite_eq_right hus]
+            have hih2 := ih.2 u c' (Or.inl hMc') (Or.inl hc2lt)
+            rw [hceq, T.G1.eq_2, ite_eq_right hus] at hih2
+            intro x hx
+            exact match hih2 x hx with
+            | ⟨w, hw1, hw2⟩ => by
+              rw [List.mem_append] at hw1
+              exact match hw1 with
+              | Or.inl hw1 => by
+                exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) hw1, hw2⟩
+              | Or.inr hw1 => by
+                exact match GZ_ofNat_le u n (T.ofNat (n+1)) w hw1 with
+                | ⟨w', hw1', hw2'⟩ => by
+                  exact ⟨w', List.mem_append_right (T.G1 u c2') hw1', partial_order.trans x w w' hw2 hw2'⟩
+      | Or.inr hc2eq => by
+        apply Decidable.byCases (p := u ≤ s0)
+        · intro hus2
+          have hgoal : T.listLe ([c] ++ T.G1 u c ++ T.G1 u (T.mul (P s0 c Z) (T.ofNat n)))
               (([s1] ++ T.G1 u s1) ++ T.GZ u (T.ofNat (n+1))) := by
             have hSD2 := hSDc.2 u s1 (Or.inl hcs1) (partial_order.refl s1)
             have hih2 := ih.2 u (P s0 s1 Z) (Or.inl ih.1) (partial_order.refl (P s0 s1 Z))
             rw [G1_PZ_pos u s0 s1 hus2] at hih2
             intro x hx
             rw [List.mem_append, List.mem_append] at hx
-            rcases hx with (hx | hx) | hx
-            · rw [List.mem_singleton] at hx
+            exact match hx with
+            | Or.inl (Or.inl hx) => by
+              rw [List.mem_singleton] at hx
               cases hx
               exact ⟨s1, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_left (T.G1 u s1) (List.mem_singleton_self s1)), Or.inl hcs1⟩
-            · obtain ⟨w, hw1, hw2⟩ := hSD2 x hx
-              rw [List.mem_append] at hw1
-              rcases hw1 with hw1 | hw1
-              · exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_right ([s1]) hw1), hw2⟩
-              · have hwZ : w = Z := by
-                  unfold T.GZ at hw1
-                  rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hw1
-                  exact hw1
-                exact ⟨Z, List.mem_append_right ([s1] ++ T.G1 u s1) (hwZ ▸ GZ_Z_mem u (T.ofNat (n+1))), hwZ ▸ hw2⟩
-            · obtain ⟨w, hw1, hw2⟩ := hih2 x hx
-              rw [List.mem_append] at hw1
-              rcases hw1 with hw1 | hw1
-              · exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) hw1, hw2⟩
-              · obtain ⟨w', hw1', hw2'⟩ := GZ_ofNat_le u n (T.ofNat (n+1)) w hw1
-                exact ⟨w', List.mem_append_right ([s1] ++ T.G1 u s1) hw1', partial_order.trans x w w' hw2 hw2'⟩
+            | Or.inl (Or.inr hx) => by
+              exact match hSD2 x hx with
+              | ⟨w, hw1, hw2⟩ => by
+                rw [List.mem_append] at hw1
+                exact match hw1 with
+                | Or.inl hw1 => by
+                  exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) (List.mem_append_right ([s1]) hw1), hw2⟩
+                | Or.inr hw1 => by
+                  have hwZ : w = Z := by
+                    unfold T.GZ at hw1
+                    rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hw1
+                    exact hw1
+                  exact ⟨Z, List.mem_append_right ([s1] ++ T.G1 u s1) (hwZ ▸ GZ_Z_mem u (T.ofNat (n+1))), hwZ ▸ hw2⟩
+            | Or.inr hx => by
+              exact match hih2 x hx with
+              | ⟨w, hw1, hw2⟩ => by
+                rw [List.mem_append] at hw1
+                exact match hw1 with
+                | Or.inl hw1 => by
+                  exact ⟨w, List.mem_append_left (T.GZ u (T.ofNat (n+1))) hw1, hw2⟩
+                | Or.inr hw1 => by
+                  exact match GZ_ofNat_le u n (T.ofNat (n+1)) w hw1 with
+                  | ⟨w', hw1', hw2'⟩ => by
+                    exact ⟨w', List.mem_append_right ([s1] ++ T.G1 u s1) hw1', partial_order.trans x w w' hw2 hw2'⟩
           rw [hc2eq, G1_P_pos u s0 c (T.mul (P s0 c Z) (T.ofNat n)) hus2, G1_PZ_pos u s0 s1 hus2]
           exact hgoal
-        · have hgoal : T.listLe (T.G1 u (T.mul (P s0 c Z) (T.ofNat n))) (([] : List T) ++ T.GZ u (T.ofNat (n+1))) := by
+        · intro hus2
+          have hgoal : T.listLe (T.G1 u (T.mul (P s0 c Z) (T.ofNat n))) (([] : List T) ++ T.GZ u (T.ofNat (n+1))) := by
             have hih2 := ih.2 u (P s0 s1 Z) (Or.inl ih.1) (partial_order.refl (P s0 s1 Z))
             rw [G1_PZ_neg u s0 s1 hus2, List.nil_append] at hih2
             intro x hx
-            obtain ⟨w, hw1, hw2⟩ := hih2 x hx
-            obtain ⟨w', hw1', hw2'⟩ := GZ_ofNat_le u n (T.ofNat (n+1)) w hw1
-            exact ⟨w', List.mem_append_right [] hw1', partial_order.trans x w w' hw2 hw2'⟩
+            exact match hih2 x hx with
+            | ⟨w, hw1, hw2⟩ => by
+              exact match GZ_ofNat_le u n (T.ofNat (n+1)) w hw1 with
+              | ⟨w', hw1', hw2'⟩ => by
+                exact ⟨w', List.mem_append_right [] hw1', partial_order.trans x w w' hw2 hw2'⟩
           rw [hc2eq, T.G1.eq_2, ite_eq_right hus2, G1_PZ_neg u s0 s1 hus2]
           exact hgoal
-    · rw [← hc1eq]
+    | Or.inr hc1eq => by
+      rw [← hc1eq]
       exact listLe_self_append _ _
 
 theorem GZ_z_sub_self (u : Nat) (z : T) : T.listLe (T.G1 u z) (T.GZ u z) := by
@@ -1012,19 +1143,26 @@ theorem G1_antitone (u v : Nat) (huv : u ≤ v) (s : T) :
   | Z => intro x hx; exact hx
   | P s0 s1 s2 ih1 ih2 =>
     intro x hx
-    rcases constructive_cases (p := v ≤ s0) with hv | hv
-    · have hu := Nat.le_trans huv hv
+    apply Decidable.byCases (p := v ≤ s0)
+    · intro hv
+      have hu := Nat.le_trans huv hv
       rw [T.G1.eq_2, ite_eq_left hv, List.mem_append, List.mem_append] at hx
       rw [T.G1.eq_2, ite_eq_left hu, List.mem_append, List.mem_append]
-      rcases hx with (hx | hx) | hx
-      · exact Or.inl (Or.inl hx)
-      · exact Or.inl (Or.inr (ih1 x hx))
-      · exact Or.inr (ih2 x hx)
-    · rw [T.G1.eq_2, ite_eq_right hv] at hx
-      rcases constructive_cases (p := u ≤ s0) with hu | hu
-      · rw [T.G1.eq_2, ite_eq_left hu]
+      exact match hx with
+      | Or.inl (Or.inl hx) => by
+        exact Or.inl (Or.inl hx)
+      | Or.inl (Or.inr hx) => by
+        exact Or.inl (Or.inr (ih1 x hx))
+      | Or.inr hx => by
+        exact Or.inr (ih2 x hx)
+    · intro hv
+      rw [T.G1.eq_2, ite_eq_right hv] at hx
+      apply Decidable.byCases (p := u ≤ s0)
+      · intro hu
+        rw [T.G1.eq_2, ite_eq_left hu]
         exact List.mem_append_right _ (ih2 x hx)
-      · rw [T.G1.eq_2, ite_eq_right hu]
+      · intro hu
+        rw [T.G1.eq_2, ite_eq_right hu]
         exact ih2 x hx
 
 theorem SDom_wrap_transfer (z w b a : T) (k : Nat) (h : T.SDom w b a)
@@ -1034,14 +1172,20 @@ theorem SDom_wrap_transfer (z w b a : T) (k : Nat) (h : T.SDom w b a)
   have hw := SDom_wrap w b a k h
   refine ⟨hw.1, ?_⟩
   intro u c hbc hca x hx
-  rcases constructive_cases (p := u ≤ k) with hu | hu
-  · obtain ⟨y, hy, hxy⟩ := hw.2 u c hbc hca x hx
-    rw [List.mem_append] at hy
-    rcases hy with hy | hy
-    · exact ⟨y, List.mem_append_left _ hy, hxy⟩
-    · obtain ⟨v, hv, hyv⟩ := hsupport u hu c hbc hca y hy
-      exact ⟨v, hv, partial_order.trans x y v hxy hyv⟩
-  · rw [G1_PZ_neg u k b hu] at hx
+  apply Decidable.byCases (p := u ≤ k)
+  · intro hu
+    exact match hw.2 u c hbc hca x hx with
+    | ⟨y, hy, hxy⟩ => by
+      rw [List.mem_append] at hy
+      exact match hy with
+      | Or.inl hy => by
+        exact ⟨y, List.mem_append_left _ hy, hxy⟩
+      | Or.inr hy => by
+        exact match hsupport u hu c hbc hca y hy with
+        | ⟨v, hv, hyv⟩ => by
+          exact ⟨v, hv, partial_order.trans x y v hxy hyv⟩
+  · intro hu
+    rw [G1_PZ_neg u k b hu] at hx
     cases hx
 
 theorem iteration_master (a : T) (k l : Nat) (hkl : k ≤ l)
@@ -1060,18 +1204,23 @@ theorem iteration_master (a : T) (k l : Nat) (hkl : k ≤ l)
       (∀ x ∈ T.G1 k (T.fund1 a Z), x < T.fund1 a Z) ∧
       T.SDom Z (P k (T.fund1 a Z) Z) (P k a Z)
     have hv := (ValidArg1_Ω_iff a Z l hd).mpr T.index_Prop1.z
-    obtain ⟨hc, hs⟩ := ih Z T.isNF1.z hv
-    refine ⟨T.isNF1.z, hc, ?_, SDom_wrap Z _ a k hs⟩
-    rcases constructive_cases (p := T.fund1 a Z = Z) with he | he
-    · rw [he]; intro x hx; cases hx
-    · apply lemma_3_4 Z _ a k hs hbound
-      intro x hx
-      unfold T.GZ at hx
-      rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hx
-      rw [hx]
-      rcases T.Z_le (T.fund1 a Z) with hlt | heq
-      · exact hlt
-      · exact False.elim (he heq.symm)
+    exact match ih Z T.isNF1.z hv with
+    | ⟨hc, hs⟩ => by
+      refine ⟨T.isNF1.z, hc, ?_, SDom_wrap Z _ a k hs⟩
+      apply Decidable.byCases (p := T.fund1 a Z = Z)
+      · intro he
+        rw [he]; intro x hx; cases hx
+      · intro he
+        apply lemma_3_4 Z _ a k hs hbound
+        intro x hx
+        unfold T.GZ at hx
+        rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hx
+        rw [hx]
+        exact match T.Z_le (T.fund1 a Z) with
+        | Or.inl hlt => by
+          exact hlt
+        | Or.inr heq => by
+          exact False.elim (he heq.symm)
   | succ n hn =>
     let w := T.iter (fun x => P l (T.fund1 a x) Z) (T.ofNat n)
     let b := T.fund1 a w
@@ -1083,42 +1232,52 @@ theorem iteration_master (a : T) (k l : Nat) (hkl : k ≤ l)
         (fun x hx => hn.2.2.1 x (G1_antitone k l hkl b x hx)) (T.Z_le _)
     have hv := (ValidArg1_Ω_iff a (P l b Z) l hd).mpr
       (T.index_Prop1.p l b Z (Nat.le_refl l) T.index_Prop1.z)
-    obtain ⟨hc, hs⟩ := ih (P l b Z) hw hv
-    have hb : b < T.fund1 a (P l b Z) := by
-      apply T.fund1_strict_mono_dec a
-      · exact iter_F_step_mono a l hd
-          (fun t0 t1 h ht0 ht1 => T.fund1_strict_mono_dec a t0 t1 h ht0 ht1) n
-      · exact (ValidArg1_Ω_iff a w l hd).mpr
-          (iter_index_Prop1 l _ (fun x => ⟨T.fund1 a x, rfl⟩) (T.ofNat n))
-      · exact hv
-    refine ⟨hw, hc, ?_, ?_⟩
-    · apply lemma_3_4 (P l b Z) _ a k hs hbound
-      intro x hx
-      unfold T.GZ at hx
-      rw [G1_PZ_pos k l b hkl, List.mem_append, List.mem_append] at hx
-      rcases hx with (hx | hx) | hx
-      · rw [List.mem_singleton] at hx
-        rw [hx]; exact hb
-      · exact lt_trans_thm x b _ (hn.2.2.1 x hx) hb
-      · rw [List.mem_singleton] at hx
-        rw [hx]; exact lt_of_le_of_lt_thm T Z b _ (T.Z_le b) hb
-    · apply SDom_wrap_transfer (T.ofNat (n+1)) (P l b Z) _ a k hs
-      intro u hu c hbc hca x hx
-      unfold T.GZ at hx
-      rw [List.mem_append] at hx
-      rcases hx with hx | hx
-      · rw [G1_PZ_pos u l b (Nat.le_trans hu hkl),
-          ← G1_PZ_pos u k b hu] at hx
-        have hprev : P k b Z ≤ c := Or.inl
-          (lt_of_lt_of_le_thm T _ _ c (T.Lt.p_mid k b _ Z Z hb) hbc)
-        obtain ⟨y, hy, hxy⟩ := hn.2.2.2.2 u c hprev hca x hx
-        rw [List.mem_append] at hy
-        rcases hy with hy | hy
-        · exact ⟨y, List.mem_append_left _ hy, hxy⟩
-        · obtain ⟨v, hv', hyv⟩ := GZ_ofNat_le u n (T.ofNat (n+1)) y hy
-          exact ⟨v, List.mem_append_right _ hv', partial_order.trans x y v hxy hyv⟩
-      · rw [List.mem_singleton] at hx
-        exact ⟨Z, List.mem_append_right _ (GZ_Z_mem u (T.ofNat (n+1))), Or.inr hx⟩
+    exact match ih (P l b Z) hw hv with
+    | ⟨hc, hs⟩ => by
+      have hb : b < T.fund1 a (P l b Z) := by
+        apply T.fund1_strict_mono_dec a
+        · exact iter_F_step_mono a l hd
+            (fun t0 t1 h ht0 ht1 => T.fund1_strict_mono_dec a t0 t1 h ht0 ht1) n
+        · exact (ValidArg1_Ω_iff a w l hd).mpr
+            (iter_index_Prop1 l _ (fun x => ⟨T.fund1 a x, rfl⟩) (T.ofNat n))
+        · exact hv
+      refine ⟨hw, hc, ?_, ?_⟩
+      · apply lemma_3_4 (P l b Z) _ a k hs hbound
+        intro x hx
+        unfold T.GZ at hx
+        rw [G1_PZ_pos k l b hkl, List.mem_append, List.mem_append] at hx
+        exact match hx with
+        | Or.inl (Or.inl hx) => by
+          rw [List.mem_singleton] at hx
+          rw [hx]; exact hb
+        | Or.inl (Or.inr hx) => by
+          exact lt_trans_thm x b _ (hn.2.2.1 x hx) hb
+        | Or.inr hx => by
+          rw [List.mem_singleton] at hx
+          rw [hx]; exact lt_of_le_of_lt_thm T Z b _ (T.Z_le b) hb
+      · apply SDom_wrap_transfer (T.ofNat (n+1)) (P l b Z) _ a k hs
+        intro u hu c hbc hca x hx
+        unfold T.GZ at hx
+        rw [List.mem_append] at hx
+        exact match hx with
+        | Or.inl hx => by
+          rw [G1_PZ_pos u l b (Nat.le_trans hu hkl),
+            ← G1_PZ_pos u k b hu] at hx
+          have hprev : P k b Z ≤ c := Or.inl
+            (lt_of_lt_of_le_thm T _ _ c (T.Lt.p_mid k b _ Z Z hb) hbc)
+          exact match hn.2.2.2.2 u c hprev hca x hx with
+          | ⟨y, hy, hxy⟩ => by
+            rw [List.mem_append] at hy
+            exact match hy with
+            | Or.inl hy => by
+              exact ⟨y, List.mem_append_left _ hy, hxy⟩
+            | Or.inr hy => by
+              exact match GZ_ofNat_le u n (T.ofNat (n+1)) y hy with
+              | ⟨v, hv', hyv⟩ => by
+                exact ⟨v, List.mem_append_right _ hv', partial_order.trans x y v hxy hyv⟩
+        | Or.inr hx => by
+          rw [List.mem_singleton] at hx
+          exact ⟨Z, List.mem_append_right _ (GZ_Z_mem u (T.ofNat (n+1))), Or.inr hx⟩
 
 theorem master (a : T) : ∀ z : T, T.isNF1 a → T.isNF1 z → T.ValidArg1 a z →
     T.isNF1 (T.fund1 a z) ∧ T.SDom z (T.fund1 a z) a := by
@@ -1130,114 +1289,141 @@ theorem master (a : T) : ∀ z : T, T.isNF1 a → T.isNF1 z → T.ValidArg1 a z 
     intro z ha hz hv
     cases a2 with
     | Z =>
-      obtain ⟨has1, has2, h1, h2⟩ := T.isNF1_P_inv a0 a1 Z ha
-      cases hd : T.dom1 a1 with
-      | Zero =>
-        have ha1Z : a1 = Z := dom1_Zero_imp_eq_Z a1 hd
-        cases a0 with
-        | zero =>
-          rw [fund1_P0_of_Zero a1 z hd]
-          constructor
-          · exact T.isNF1.z
-          · constructor
-            · exact T.Lt.Z_lt_P 0 a1 Z
-            · intro u c _ _ x hx
-              rw [T.G1.eq_1] at hx
-              cases hx
-        | succ l0 =>
-          have hzlt : z < P (l0+1) a1 Z := by
-            have h := T.fund1_fall (P (l0+1) a1 Z) z hv
-            rw [fund1_Psucc_of_Zero l0 a1 z hd] at h
-            exact h
-          rw [fund1_Psucc_of_Zero l0 a1 z hd]
-          refine ⟨hz, hzlt, ?_⟩
-          intro u c _hc1 _hc2 x hx
-          obtain ⟨y, hy1, hy2⟩ := GZ_z_sub_self u z x hx
-          exact ⟨y, List.mem_append_right (T.G1 u c) hy1, hy2⟩
-      | One =>
-        have hz1 : T.ValidArg1 a1 Z := (ValidArg1_One_iff a1 Z hd).mpr rfl
-        obtain ⟨hc, hSDc⟩ := ih1 Z has1 T.isNF1.z hz1
-        have hvz : T.IsN z := (ValidArg1_ω_iff (P a0 a1 Z) z (dom1_P_of_One a0 a1 hd)).mp hv
-        obtain ⟨m, hm⟩ := IsN_exists_ofNat hvz
-        have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 Z), x < T.fund1 a1 Z := by
-          rcases constructive_cases (p := T.fund1 a1 Z = Z) with hcZ | hcZ
-          · rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
-          · apply lemma_3_4 Z (T.fund1 a1 Z) a1 a0 hSDc h1
-            intro x hx
-            unfold T.GZ at hx
-            rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hx
-            rw [hx]
-            rcases T.Z_le (T.fund1 a1 Z) with hh | hh
-            · exact hh
-            · exact absurd hh.symm hcZ
-        rw [hm, fund1_P_of_One a0 a1 (T.ofNat m) hd]
-        exact ⟨(mul_isNF1_and_head a0 (T.fund1 a1 Z) hc hcbound m).1, mul_SDom a0 (T.fund1 a1 Z) a1 hSDc m⟩
-      | ω =>
-        have hvz : T.IsN z := (ValidArg1_ω_iff (P a0 a1 Z) z (dom1_P_of_ω a0 a1 hd)).mp hv
-        have hz1 : T.ValidArg1 a1 z := (ValidArg1_ω_iff a1 z hd).mpr hvz
-        obtain ⟨hc, hSDc⟩ := ih1 z has1 hz hz1
-        rw [fund1_P_of_ω a0 a1 z hd]
-        have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 z), x < T.fund1 a1 z := by
-          rcases constructive_cases (p := T.fund1 a1 z = Z) with hcZ | hcZ
-          · rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
-          · apply lemma_3_4 z (T.fund1 a1 z) a1 a0 hSDc h1
-            intro x hx
-            unfold T.GZ at hx
-            rw [List.mem_append] at hx
-            rcases hx with hx | hx
-            · have hxZ : x = Z := IsN_G1_eq_Z z hvz a0 x hx
-              rw [hxZ]
-              rcases T.Z_le (T.fund1 a1 z) with hh | hh
-              · exact hh
-              · exact absurd hh.symm hcZ
-            · rw [List.mem_singleton] at hx
-              rw [hx]
-              rcases T.Z_le (T.fund1 a1 z) with hh | hh
-              · exact hh
-              · exact absurd hh.symm hcZ
-        exact ⟨T.isNF1.p a0 (T.fund1 a1 z) Z hc T.isNF1.z hcbound (T.Z_le (P a0 (T.fund1 a1 z) Z)),
-          SDom_wrap z (T.fund1 a1 z) a1 a0 hSDc⟩
-      | Ω l =>
-        rcases constructive_cases (p := a0 ≤ l) with hle | hle
-        · have hdom : T.dom1 (P a0 a1 Z) = Dom1.ω := by
-            rw [dom1_P_of_Ω a0 a1 l hd, ite_eq_left hle]
-          obtain ⟨n, hn⟩ := IsN_exists_ofNat ((ValidArg1_ω_iff _ z hdom).mp hv)
-          rw [hn, fund1_P_of_Ω_le a0 a1 (T.ofNat n) l hd hle]
-          have hi := iteration_master a1 a0 l hle hd h1
-            (fun t ht hvt => ih1 t has1 ht hvt) n
-          exact ⟨T.isNF1.p a0 _ Z hi.2.1 T.isNF1.z hi.2.2.1 (T.Z_le _), hi.2.2.2⟩
-        · have hdomeq : T.dom1 (P a0 a1 Z) = Dom1.Ω l := by
-            rw [dom1_P_of_Ω a0 a1 l hd, ite_eq_right hle]
-          have hvz : T.index_Prop1 l z := (ValidArg1_Ω_iff (P a0 a1 Z) z l hdomeq).mp hv
-          have hz1 : T.ValidArg1 a1 z := (ValidArg1_Ω_iff a1 z l hd).mpr hvz
-          obtain ⟨hc, hSDc⟩ := ih1 z has1 hz hz1
-          rw [fund1_P_of_Ω_gt a0 a1 z l hd hle]
-          have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 z), x < T.fund1 a1 z := by
-            rcases constructive_cases (p := T.fund1 a1 z = Z) with hcZ | hcZ
-            · rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
-            · apply lemma_3_4 z (T.fund1 a1 z) a1 a0 hSDc h1
-              intro x hx
-              unfold T.GZ at hx
-              rw [index_Prop1_G1_empty l z hvz a0 (Nat.lt_of_not_le hle), List.nil_append,
-                  List.mem_singleton] at hx
-              rw [hx]
-              rcases T.Z_le (T.fund1 a1 z) with hh | hh
-              · exact hh
-              · exact absurd hh.symm hcZ
-          exact ⟨T.isNF1.p a0 (T.fund1 a1 z) Z hc T.isNF1.z hcbound (T.Z_le (P a0 (T.fund1 a1 z) Z)),
-            SDom_wrap z (T.fund1 a1 z) a1 a0 hSDc⟩
+      exact match T.isNF1_P_inv a0 a1 Z ha with
+      | ⟨has1, has2, h1, h2⟩ => by
+        cases hd : T.dom1 a1 with
+        | Zero =>
+          have ha1Z : a1 = Z := dom1_Zero_imp_eq_Z a1 hd
+          cases a0 with
+          | zero =>
+            rw [fund1_P0_of_Zero a1 z hd]
+            constructor
+            · exact T.isNF1.z
+            · constructor
+              · exact T.Lt.Z_lt_P 0 a1 Z
+              · intro u c _ _ x hx
+                rw [T.G1.eq_1] at hx
+                cases hx
+          | succ l0 =>
+            have hzlt : z < P (l0+1) a1 Z := by
+              have h := T.fund1_fall (P (l0+1) a1 Z) z hv
+              rw [fund1_Psucc_of_Zero l0 a1 z hd] at h
+              exact h
+            rw [fund1_Psucc_of_Zero l0 a1 z hd]
+            refine ⟨hz, hzlt, ?_⟩
+            intro u c _hc1 _hc2 x hx
+            exact match GZ_z_sub_self u z x hx with
+            | ⟨y, hy1, hy2⟩ => by
+              exact ⟨y, List.mem_append_right (T.G1 u c) hy1, hy2⟩
+        | One =>
+          have hz1 : T.ValidArg1 a1 Z := (ValidArg1_One_iff a1 Z hd).mpr rfl
+          exact match ih1 Z has1 T.isNF1.z hz1 with
+          | ⟨hc, hSDc⟩ => by
+            have hvz : T.IsN z := (ValidArg1_ω_iff (P a0 a1 Z) z (dom1_P_of_One a0 a1 hd)).mp hv
+            exact match IsN_exists_ofNat hvz with
+            | ⟨m, hm⟩ => by
+              have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 Z), x < T.fund1 a1 Z := by
+                apply Decidable.byCases (p := T.fund1 a1 Z = Z)
+                · intro hcZ
+                  rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
+                · intro hcZ
+                  apply lemma_3_4 Z (T.fund1 a1 Z) a1 a0 hSDc h1
+                  intro x hx
+                  unfold T.GZ at hx
+                  rw [T.G1.eq_1, List.nil_append, List.mem_singleton] at hx
+                  rw [hx]
+                  exact match T.Z_le (T.fund1 a1 Z) with
+                  | Or.inl hh => by
+                    exact hh
+                  | Or.inr hh => by
+                    exact absurd hh.symm hcZ
+              rw [hm, fund1_P_of_One a0 a1 (T.ofNat m) hd]
+              exact ⟨(mul_isNF1_and_head a0 (T.fund1 a1 Z) hc hcbound m).1, mul_SDom a0 (T.fund1 a1 Z) a1 hSDc m⟩
+        | ω =>
+          have hvz : T.IsN z := (ValidArg1_ω_iff (P a0 a1 Z) z (dom1_P_of_ω a0 a1 hd)).mp hv
+          have hz1 : T.ValidArg1 a1 z := (ValidArg1_ω_iff a1 z hd).mpr hvz
+          exact match ih1 z has1 hz hz1 with
+          | ⟨hc, hSDc⟩ => by
+            rw [fund1_P_of_ω a0 a1 z hd]
+            have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 z), x < T.fund1 a1 z := by
+              apply Decidable.byCases (p := T.fund1 a1 z = Z)
+              · intro hcZ
+                rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
+              · intro hcZ
+                apply lemma_3_4 z (T.fund1 a1 z) a1 a0 hSDc h1
+                intro x hx
+                unfold T.GZ at hx
+                rw [List.mem_append] at hx
+                exact match hx with
+                | Or.inl hx => by
+                  have hxZ : x = Z := IsN_G1_eq_Z z hvz a0 x hx
+                  rw [hxZ]
+                  exact match T.Z_le (T.fund1 a1 z) with
+                  | Or.inl hh => by
+                    exact hh
+                  | Or.inr hh => by
+                    exact absurd hh.symm hcZ
+                | Or.inr hx => by
+                  rw [List.mem_singleton] at hx
+                  rw [hx]
+                  exact match T.Z_le (T.fund1 a1 z) with
+                  | Or.inl hh => by
+                    exact hh
+                  | Or.inr hh => by
+                    exact absurd hh.symm hcZ
+            exact ⟨T.isNF1.p a0 (T.fund1 a1 z) Z hc T.isNF1.z hcbound (T.Z_le (P a0 (T.fund1 a1 z) Z)),
+              SDom_wrap z (T.fund1 a1 z) a1 a0 hSDc⟩
+        | Ω l =>
+          apply Decidable.byCases (p := a0 ≤ l)
+          · intro hle
+            have hdom : T.dom1 (P a0 a1 Z) = Dom1.ω := by
+              rw [dom1_P_of_Ω a0 a1 l hd, ite_eq_left hle]
+            exact match IsN_exists_ofNat ((ValidArg1_ω_iff _ z hdom).mp hv) with
+            | ⟨n, hn⟩ => by
+              rw [hn, fund1_P_of_Ω_le a0 a1 (T.ofNat n) l hd hle]
+              have hi := iteration_master a1 a0 l hle hd h1
+                (fun t ht hvt => ih1 t has1 ht hvt) n
+              exact ⟨T.isNF1.p a0 _ Z hi.2.1 T.isNF1.z hi.2.2.1 (T.Z_le _), hi.2.2.2⟩
+          · intro hle
+            have hdomeq : T.dom1 (P a0 a1 Z) = Dom1.Ω l := by
+              rw [dom1_P_of_Ω a0 a1 l hd, ite_eq_right hle]
+            have hvz : T.index_Prop1 l z := (ValidArg1_Ω_iff (P a0 a1 Z) z l hdomeq).mp hv
+            have hz1 : T.ValidArg1 a1 z := (ValidArg1_Ω_iff a1 z l hd).mpr hvz
+            exact match ih1 z has1 hz hz1 with
+            | ⟨hc, hSDc⟩ => by
+              rw [fund1_P_of_Ω_gt a0 a1 z l hd hle]
+              have hcbound : ∀ x ∈ T.G1 a0 (T.fund1 a1 z), x < T.fund1 a1 z := by
+                apply Decidable.byCases (p := T.fund1 a1 z = Z)
+                · intro hcZ
+                  rw [hcZ]; intro x hx; rw [T.G1.eq_1] at hx; cases hx
+                · intro hcZ
+                  apply lemma_3_4 z (T.fund1 a1 z) a1 a0 hSDc h1
+                  intro x hx
+                  unfold T.GZ at hx
+                  rw [index_Prop1_G1_empty l z hvz a0 (Nat.lt_of_not_le hle), List.nil_append,
+                      List.mem_singleton] at hx
+                  rw [hx]
+                  exact match T.Z_le (T.fund1 a1 z) with
+                  | Or.inl hh => by
+                    exact hh
+                  | Or.inr hh => by
+                    exact absurd hh.symm hcZ
+              exact ⟨T.isNF1.p a0 (T.fund1 a1 z) Z hc T.isNF1.z hcbound (T.Z_le (P a0 (T.fund1 a1 z) Z)),
+                SDom_wrap z (T.fund1 a1 z) a1 a0 hSDc⟩
     | P a20 a21 a22 =>
-      obtain ⟨has1, has2, h1, h2⟩ := T.isNF1_P_inv a0 a1 (P a20 a21 a22) ha
-      have hv' : T.ValidArg1 (P a20 a21 a22) z := (T.ValidArg1_tail_iff a0 a1 a20 a21 a22 z).mp hv
-      obtain ⟨hc, hSDc⟩ := ih2 z has2 hz hv'
-      rw [fund1_P_tail a0 a1 z a20 a21 a22]
-      have hfall : T.fund1 (P a20 a21 a22) z < P a20 a21 a22 :=
-        T.fund1_fall (P a20 a21 a22) z hv'
-      have hheadle : T.head (T.fund1 (P a20 a21 a22) z) ≤ P a0 a1 Z :=
-        partial_order.trans (T.head (T.fund1 (P a20 a21 a22) z)) (T.head (P a20 a21 a22)) (P a0 a1 Z)
-          (T.head_mono hfall) h2
-      exact ⟨T.isNF1.p a0 a1 (T.fund1 (P a20 a21 a22) z) has1 hc h1 hheadle,
-        SDom_tail z (T.fund1 (P a20 a21 a22) z) (P a20 a21 a22) a0 a1 hSDc⟩
+      exact match T.isNF1_P_inv a0 a1 (P a20 a21 a22) ha with
+      | ⟨has1, has2, h1, h2⟩ => by
+        have hv' : T.ValidArg1 (P a20 a21 a22) z := (T.ValidArg1_tail_iff a0 a1 a20 a21 a22 z).mp hv
+        exact match ih2 z has2 hz hv' with
+        | ⟨hc, hSDc⟩ => by
+          rw [fund1_P_tail a0 a1 z a20 a21 a22]
+          have hfall : T.fund1 (P a20 a21 a22) z < P a20 a21 a22 :=
+            T.fund1_fall (P a20 a21 a22) z hv'
+          have hheadle : T.head (T.fund1 (P a20 a21 a22) z) ≤ P a0 a1 Z :=
+            partial_order.trans (T.head (T.fund1 (P a20 a21 a22) z)) (T.head (P a20 a21 a22)) (P a0 a1 Z)
+              (T.head_mono hfall) h2
+          exact ⟨T.isNF1.p a0 a1 (T.fund1 (P a20 a21 a22) z) has1 hc h1 hheadle,
+            SDom_tail z (T.fund1 (P a20 a21 a22) z) (P a20 a21 a22) a0 a1 hSDc⟩
 
 theorem T.fund1_NF1_closed (s t : T) (hs : T.isNF1 s) (ht : T.isNF1 t) (hv : T.ValidArg1 s t) :
     T.isNF1 (T.fund1 s t) :=
@@ -1272,10 +1458,13 @@ theorem W_ind (u : Nat) (X : T → Prop) (h : ∀ a, A u X a → X a)
 theorem A_mono (u : Nat) (X Y : T → Prop) (h : ∀ a, X a → Y a)
     (a : T) (ha : A u X a) : A u Y a := by
   refine ⟨ha.1, ?_⟩
-  rcases ha.2 with he | ⟨hd, hf⟩ | ⟨m, hm, hd, hf⟩
-  · exact Or.inl he
-  · exact Or.inr (Or.inl ⟨hd, fun z hz => h _ (hf z hz)⟩)
-  · exact Or.inr (Or.inr ⟨m, hm, hd, fun z hz hw => h _ (hf z hz hw)⟩)
+  exact match ha.2 with
+  | Or.inl he => by
+    exact Or.inl he
+  | Or.inr (Or.inl ⟨hd, hf⟩) => by
+    exact Or.inr (Or.inl ⟨hd, fun z hz => h _ (hf z hz)⟩)
+  | Or.inr (Or.inr ⟨m, hm, hd, hf⟩) => by
+    exact Or.inr (Or.inr ⟨m, hm, hd, fun z hz hw => h _ (hf z hz hw)⟩)
 
 theorem W_intro (u : Nat) (a : T) (ha : A u (W u) a) : W u a := by
   unfold W
@@ -1298,10 +1487,13 @@ theorem index_mono {u v : Nat} (huv : u ≤ v) (a : T)
 theorem A_level {u v : Nat} (huv : u ≤ v) (X : T → Prop) (a : T)
     (ha : A u X a) : A v X a := by
   refine ⟨index_mono huv a ha.1, ?_⟩
-  rcases ha.2 with he | hn | ⟨m, hm, hd, hf⟩
-  · exact Or.inl he
-  · exact Or.inr (Or.inl hn)
-  · exact Or.inr (Or.inr ⟨m, Nat.lt_of_lt_of_le hm huv, hd, hf⟩)
+  exact match ha.2 with
+  | Or.inl he => by
+    exact Or.inl he
+  | Or.inr (Or.inl hn) => by
+    exact Or.inr (Or.inl hn)
+  | Or.inr (Or.inr ⟨m, hm, hd, hf⟩) => by
+    exact Or.inr (Or.inr ⟨m, Nat.lt_of_lt_of_le hm huv, hd, hf⟩)
 
 theorem W_mono {u v : Nat} (huv : u ≤ v) (a : T) (ha : W u a) : W v a :=
   W_ind u (W v) (fun b hb => W_intro v b (A_level huv (W v) b hb)) a ha
@@ -1330,9 +1522,10 @@ theorem dom_add (a : T) (b0 : Nat) (b1 b2 : T) :
   | Z => rfl
   | P a0 a1 a2 _ ih =>
     rw [T.P_add_eq]
-    obtain ⟨c0, c1, c2, hc⟩ := T.exists_add_eq_P a2 b0 b1 b2
-    rw [hc, dom1_P_tail, ← hc]
-    exact ih
+    exact match T.exists_add_eq_P a2 b0 b1 b2 with
+    | ⟨c0, c1, c2, hc⟩ => by
+      rw [hc, dom1_P_tail, ← hc]
+      exact ih
 
 theorem fund_add (a : T) (b0 : Nat) (b1 b2 z : T) :
     T.fund1 (T.add a (P b0 b1 b2)) z = T.add a (T.fund1 (P b0 b1 b2) z) := by
@@ -1340,8 +1533,9 @@ theorem fund_add (a : T) (b0 : Nat) (b1 b2 z : T) :
   | Z => rfl
   | P a0 a1 a2 _ ih =>
     rw [T.P_add_eq, T.P_add_eq]
-    obtain ⟨c0, c1, c2, hc⟩ := T.exists_add_eq_P a2 b0 b1 b2
-    rw [hc, fund1_P_tail, ← hc, ih]
+    exact match T.exists_add_eq_P a2 b0 b1 b2 with
+    | ⟨c0, c1, c2, hc⟩ => by
+      rw [hc, fund1_P_tail, ← hc, ih]
 
 theorem A_add (u : Nat) (X : T → Prop) (a : T) (b0 : Nat) (b1 b2 : T)
     (ha : T.index_Prop1 u a) (hb : A u (fun b => X (T.add a b)) (P b0 b1 b2)) :
@@ -1352,12 +1546,15 @@ theorem A_add (u : Nat) (X : T → Prop) (a : T) (b0 : Nat) (b1 b2 : T)
     unfold T.ValidArg1 at hz ⊢
     rw [dom_add] at hz
     exact hz
-  rcases hb.2 with he | ⟨hd, hf⟩ | ⟨m, hm, hd, hf⟩
-  · cases he
-  · refine Or.inr (Or.inl ⟨?_, ?_⟩)
+  exact match hb.2 with
+  | Or.inl he => by
+    cases he
+  | Or.inr (Or.inl ⟨hd, hf⟩) => by
+    refine Or.inr (Or.inl ⟨?_, ?_⟩)
     · rw [dom_add]; exact hd
     · intro z hz; rw [fund_add]; exact hf z (hv z hz)
-  · refine Or.inr (Or.inr ⟨m, hm, ?_, ?_⟩)
+  | Or.inr (Or.inr ⟨m, hm, hd, hf⟩) => by
+    refine Or.inr (Or.inr ⟨m, hm, ?_, ?_⟩)
     · rw [dom_add]; exact hd
     · intro z hz hw; rw [fund_add]; exact hf z (hv z hz) hw
 
@@ -1392,22 +1589,28 @@ theorem collapse_closed (v : Nat) :
     ∀ b, A v (fun b => ∀ q, q < v → W q (P q b Z)) b →
       ∀ q, q < v → W q (P q b Z) := by
   intro b hb q hq
-  rcases hb.2 with he | ⟨hd, hf⟩ | ⟨m, hm, hd, hf⟩
-  · rw [he]; exact W_base q
-  · rcases hd with hd | hd
-    · have hp := dom1_P_of_One q b hd
+  exact match hb.2 with
+  | Or.inl he => by
+    rw [he]; exact W_base q
+  | Or.inr (Or.inl ⟨hd, hf⟩) => by
+    exact match hd with
+    | Or.inl hd => by
+      have hp := dom1_P_of_One q b hd
       apply W_nat q _ (.p _ _ _ (Nat.le_refl q) .z) (Or.inr hp)
       intro z hz
       rw [fund1_P_of_One q b z hd]
       exact W_mul q _ (hf Z ((ValidArg1_One_iff b Z hd).mpr rfl) q hq)
         z ((ValidArg1_ω_iff _ z hp).mp hz)
-    · have hp := dom1_P_of_ω q b hd
+    | Or.inr hd => by
+      have hp := dom1_P_of_ω q b hd
       apply W_nat q _ (.p _ _ _ (Nat.le_refl q) .z) (Or.inr hp)
       intro z hz
       rw [fund1_P_of_ω q b z hd]
       exact hf z ((ValidArg1_ω_iff b z hd).mpr ((ValidArg1_ω_iff _ z hp).mp hz)) q hq
-  · rcases constructive_cases (p := q ≤ m) with hqm | hqm
-    · have hp : T.dom1 (P q b Z) = .ω := by
+  | Or.inr (Or.inr ⟨m, hm, hd, hf⟩) => by
+    apply Decidable.byCases (p := q ≤ m)
+    · intro hqm
+      have hp : T.dom1 (P q b Z) = .ω := by
         rw [dom1_P_of_Ω q b m hd, ite_eq_left hqm]
       apply W_nat q _ (.p _ _ _ (Nat.le_refl q) .z) (Or.inr hp)
       intro z hz
@@ -1420,7 +1623,8 @@ theorem collapse_closed (v : Nat) :
           exact hf _ ((ValidArg1_Ω_iff b _ m hd).mpr (W_index m _ ih)) ih m hm
       rw [fund1_P_of_Ω_le q b z m hd hqm]
       exact hf _ ((ValidArg1_Ω_iff b _ m hd).mpr (W_index m _ hw)) hw q hq
-    · have hp : T.dom1 (P q b Z) = .Ω m := by
+    · intro hqm
+      have hp : T.dom1 (P q b Z) = .Ω m := by
         rw [dom1_P_of_Ω q b m hd, ite_eq_right hqm]
       apply W_omega q m (Nat.lt_of_not_le hqm) _ (.p _ _ _ (Nat.le_refl q) .z) hp
       intro z hz hw
@@ -1440,8 +1644,9 @@ theorem append_collapse_closed (v : Nat) (X : T → Prop)
   have hp : ∀ h : A v (fun b => X (T.add a b)) (P v b Z), X (T.add a (P v b Z)) :=
     fun h => hX _ (A_add v X a v b Z (hi a ha) h)
   have idx : T.index_Prop1 v (P v b Z) := .p _ _ _ (Nat.le_refl v) .z
-  rcases hb.2 with he | ⟨hd, hf⟩ | ⟨m, hm, hd, hf⟩
-  · subst b
+  exact match hb.2 with
+  | Or.inl he => by
+    cases he
     cases v with
     | zero =>
       apply hp
@@ -1454,8 +1659,10 @@ theorem append_collapse_closed (v : Nat) (X : T → Prop)
       intro z _ hz
       exact W_ind (v+1) (fun z => X (T.add a z))
         (add_closed (v+1) X hX a (hi a ha) ha) z (W_mono (Nat.le_succ v) z hz)
-  · rcases hd with hd | hd
-    · have hdom := dom1_P_of_One v b hd
+  | Or.inr (Or.inl ⟨hd, hf⟩) => by
+    exact match hd with
+    | Or.inl hd => by
+      have hdom := dom1_P_of_One v b hd
       apply hp
       refine ⟨idx, Or.inr (Or.inl ⟨Or.inr hdom, ?_⟩)⟩
       intro z hz
@@ -1469,13 +1676,15 @@ theorem append_collapse_closed (v : Nat) (X : T → Prop)
         change X (T.add a (T.add (T.mul (P v (T.fund1 b Z) Z) z) (P v (T.fund1 b Z) Z)))
         rw [← add_assoc]
         exact hstep _ ih
-    · have hdom := dom1_P_of_ω v b hd
+    | Or.inr hd => by
+      have hdom := dom1_P_of_ω v b hd
       apply hp
       refine ⟨idx, Or.inr (Or.inl ⟨Or.inr hdom, ?_⟩)⟩
       intro z hz
       rw [fund1_P_of_ω v b z hd]
       exact hf z ((ValidArg1_ω_iff b z hd).mpr ((ValidArg1_ω_iff _ z hdom).mp hz)) a ha
-  · have hn : ¬ v ≤ m := Nat.not_le_of_gt hm
+  | Or.inr (Or.inr ⟨m, hm, hd, hf⟩) => by
+    have hn : ¬ v ≤ m := Nat.not_le_of_gt hm
     have hdom : T.dom1 (P v b Z) = .Ω m := by
       rw [dom1_P_of_Ω v b m hd, ite_eq_right hn]
     apply hp
@@ -1488,43 +1697,48 @@ theorem exists_level (a : T) : ∃ v, ∀ u, v ≤ u → W u a := by
   induction a with
   | Z => exact ⟨0, fun u _ => W_zero u⟩
   | P a0 a1 a2 ih1 ih2 =>
-    obtain ⟨v1, hv1⟩ := ih1
-    obtain ⟨v2, hv2⟩ := ih2
-    refine ⟨a0 + v1 + v2, ?_⟩
-    intro u hu
-    have ha0 : a0 ≤ u := Nat.le_trans
-      (Nat.le_trans (Nat.le_add_right a0 v1) (Nat.le_add_right (a0+v1) v2)) hu
-    have hv1u : v1 ≤ u := Nat.le_trans
-      (Nat.le_trans (Nat.le_add_left v1 a0) (Nat.le_add_right (a0+v1) v2)) hu
-    have hv2u : v2 ≤ u := Nat.le_trans (Nat.le_add_left v2 (a0+v1)) hu
-    have hp : W u (P a0 a1 Z) := by
-      rcases Nat.lt_or_eq_of_le ha0 with hlt | heq
-      · have hs := W_ind u (fun b => ∀ q, q < u → W q (P q b Z))
-          (collapse_closed u) a1 (hv1 u hv1u)
-        exact W_mono ha0 _ (hs a0 hlt)
-      · rw [heq]
-        let X := fun b => W u b ∧ T.index_Prop1 u b
-        have hX : ∀ b, A u X b → X b :=
-          fun b hb => ⟨W_intro u b (A_mono u X (W u) (fun _ h => h.1) b hb), hb.1⟩
-        have hm := W_ind u (fun b => ∀ c, X c → X (T.add c (P u b Z)))
-          (append_collapse_closed u X (fun _ h => h.2) hX) a1 (hv1 u hv1u)
-        exact (hm Z ⟨W_zero u, .z⟩).1
-    have hsum := W_add u _ a2 hp (hv2 u hv2u)
-    rw [T.P_add_eq] at hsum
-    exact hsum
+    exact match ih1 with
+    | ⟨v1, hv1⟩ => by
+      exact match ih2 with
+      | ⟨v2, hv2⟩ => by
+        refine ⟨a0 + v1 + v2, ?_⟩
+        intro u hu
+        have ha0 : a0 ≤ u := Nat.le_trans
+          (Nat.le_trans (Nat.le_add_right a0 v1) (Nat.le_add_right (a0+v1) v2)) hu
+        have hv1u : v1 ≤ u := Nat.le_trans
+          (Nat.le_trans (Nat.le_add_left v1 a0) (Nat.le_add_right (a0+v1) v2)) hu
+        have hv2u : v2 ≤ u := Nat.le_trans (Nat.le_add_left v2 (a0+v1)) hu
+        have hp : W u (P a0 a1 Z) := by
+          exact match Nat.lt_or_eq_of_le ha0 with
+          | Or.inl hlt => by
+            have hs := W_ind u (fun b => ∀ q, q < u → W q (P q b Z))
+              (collapse_closed u) a1 (hv1 u hv1u)
+            exact W_mono ha0 _ (hs a0 hlt)
+          | Or.inr heq => by
+            rw [heq]
+            let X := fun b => W u b ∧ T.index_Prop1 u b
+            have hX : ∀ b, A u X b → X b :=
+              fun b hb => ⟨W_intro u b (A_mono u X (W u) (fun _ h => h.1) b hb), hb.1⟩
+            have hm := W_ind u (fun b => ∀ c, X c → X (T.add c (P u b Z)))
+              (append_collapse_closed u X (fun _ h => h.2) hX) a1 (hv1 u hv1u)
+            exact (hm Z ⟨W_zero u, .z⟩).1
+        have hsum := W_add u _ a2 hp (hv2 u hv2u)
+        rw [T.P_add_eq] at hsum
+        exact hsum
 
 theorem W_all (u : Nat) (a : T) (hi : T.index_Prop1 u a) : W u a := by
   induction hi with
   | z => exact W_zero u
   | p a0 a1 a2 h0 _ ih =>
-    obtain ⟨v, hv⟩ := exists_level a1
-    have hs := W_ind (v+a0+1) (fun b => ∀ q, q < v+a0+1 → W q (P q b Z))
-      (collapse_closed (v+a0+1)) a1
-      (hv (v+a0+1) (Nat.le_trans (Nat.le_add_right v a0) (Nat.le_succ (v+a0))))
-    have hlt : a0 < v+a0+1 := Nat.lt_succ_of_le (Nat.le_add_left a0 v)
-    have hsum := W_add u _ a2 (W_mono h0 _ (hs a0 hlt)) ih
-    rw [T.P_add_eq] at hsum
-    exact hsum
+    exact match exists_level a1 with
+    | ⟨v, hv⟩ => by
+      have hs := W_ind (v+a0+1) (fun b => ∀ q, q < v+a0+1 → W q (P q b Z))
+        (collapse_closed (v+a0+1)) a1
+        (hv (v+a0+1) (Nat.le_trans (Nat.le_add_right v a0) (Nat.le_succ (v+a0))))
+      have hlt : a0 < v+a0+1 := Nat.lt_succ_of_le (Nat.le_add_left a0 v)
+      have hsum := W_add u _ a2 (W_mono h0 _ (hs a0 hlt)) ih
+      rw [T.P_add_eq] at hsum
+      exact hsum
 
 end Rank1Termination
 
@@ -1533,63 +1747,75 @@ theorem dom1_Ω_head (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l) 
   induction a with
   | Z => cases hd
   | P i s t ihs iht =>
-    obtain ⟨hs, ht, _, hh⟩ := T.isNF1_P_inv i s t ha
-    refine ⟨i, s, t, rfl, ?_⟩
-    cases t with
-    | Z =>
-      cases he : T.dom1 s with
-      | Zero =>
-        cases i with
-        | zero => rw [dom1_P0_of_Zero s he] at hd; cases hd
-        | succ i =>
-          rw [dom1_Psucc_of_Zero i s he] at hd
-          cases hd
-          exact Nat.lt_succ_self l
-      | One => rw [dom1_P_of_One i s he] at hd; cases hd
-      | ω => rw [dom1_P_of_ω i s he] at hd; cases hd
-      | Ω m =>
-        rw [dom1_P_of_Ω i s m he] at hd
-        rcases constructive_cases (p := i ≤ m) with him | him
-        · rw [ite_eq_left him] at hd; cases hd
-        · rw [ite_eq_right him] at hd
-          cases hd
-          exact Nat.lt_of_not_le him
-    | P j b c =>
-      rw [dom1_P_tail] at hd
-      obtain ⟨j', b', c', he, hj⟩ := iht ht hd
-      cases he
-      change P j b Z ≤ P i s Z at hh
-      rcases hh with hh | hh
-      · rcases lt_inv j b Z i s Z hh with hij | ⟨hij, _⟩ | ⟨hij, _, _⟩
-        · exact Nat.lt_trans hj hij
-        · rw [← hij]; exact hj
-        · rw [← hij]; exact hj
-      · cases hh
-        exact hj
+    exact match T.isNF1_P_inv i s t ha with
+    | ⟨hs, ht, _, hh⟩ => by
+      refine ⟨i, s, t, rfl, ?_⟩
+      cases t with
+      | Z =>
+        cases he : T.dom1 s with
+        | Zero =>
+          cases i with
+          | zero => rw [dom1_P0_of_Zero s he] at hd; cases hd
+          | succ i =>
+            rw [dom1_Psucc_of_Zero i s he] at hd
+            cases hd
+            exact Nat.lt_succ_self l
+        | One => rw [dom1_P_of_One i s he] at hd; cases hd
+        | ω => rw [dom1_P_of_ω i s he] at hd; cases hd
+        | Ω m =>
+          rw [dom1_P_of_Ω i s m he] at hd
+          apply Decidable.byCases (p := i ≤ m)
+          · intro him
+            rw [ite_eq_left him] at hd; cases hd
+          · intro him
+            rw [ite_eq_right him] at hd
+            cases hd
+            exact Nat.lt_of_not_le him
+      | P j b c =>
+        rw [dom1_P_tail] at hd
+        exact match iht ht hd with
+        | ⟨j', b', c', he, hj⟩ => by
+          cases he
+          change P j b Z ≤ P i s Z at hh
+          exact match hh with
+          | Or.inl hh => by
+            exact match lt_inv j b Z i s Z hh with
+            | Or.inl hij => by
+              exact Nat.lt_trans hj hij
+            | Or.inr (Or.inl ⟨hij, _⟩) => by
+              rw [← hij]; exact hj
+            | Or.inr (Or.inr ⟨hij, _, _⟩) => by
+              rw [← hij]; exact hj
+          | Or.inr hh => by
+            cases hh
+            exact hj
 
 theorem fund1_Ω_arg_le (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l)
     (z : T) (hz : T.index_Prop1 l z) : z ≤ T.fund1 a z := by
-  obtain ⟨i, s, t, he, hi⟩ := dom1_Ω_head a ha l hd
-  subst a
-  have hsmall : ∀ b c, z < P i b c := by
-    intro b c
-    cases hz with
-    | z => exact .Z_lt_P i b c
-    | p j x y hj _ => exact .p_head j i x b y c (Nat.lt_of_le_of_lt hj hi)
-  cases t with
-  | P j b c => rw [fund1_P_tail]; exact Or.inl (hsmall _ _)
-  | Z =>
-    cases hs : T.dom1 s with
-    | Zero =>
-      cases i with
-      | zero => exact False.elim (Nat.not_lt_zero l hi)
-      | succ i => rw [fund1_Psucc_of_Zero i s z hs]; exact Or.inr rfl
-    | One => rw [dom1_P_of_One i s hs] at hd; cases hd
-    | ω => rw [dom1_P_of_ω i s hs] at hd; cases hd
-    | Ω m =>
-      rcases constructive_cases (p := i ≤ m) with him | him
-      · rw [dom1_P_of_Ω i s m hs, ite_eq_left him] at hd; cases hd
-      · rw [fund1_P_of_Ω_gt i s z m hs him]; exact Or.inl (hsmall _ _)
+  exact match dom1_Ω_head a ha l hd with
+  | ⟨i, s, t, he, hi⟩ => by
+    cases he
+    have hsmall : ∀ b c, z < P i b c := by
+      intro b c
+      cases hz with
+      | z => exact .Z_lt_P i b c
+      | p j x y hj _ => exact .p_head j i x b y c (Nat.lt_of_le_of_lt hj hi)
+    cases t with
+    | P j b c => rw [fund1_P_tail]; exact Or.inl (hsmall _ _)
+    | Z =>
+      cases hs : T.dom1 s with
+      | Zero =>
+        cases i with
+        | zero => exact False.elim (Nat.not_lt_zero l hi)
+        | succ i => rw [fund1_Psucc_of_Zero i s z hs]; exact Or.inr rfl
+      | One => rw [dom1_P_of_One i s hs] at hd; cases hd
+      | ω => rw [dom1_P_of_ω i s hs] at hd; cases hd
+      | Ω m =>
+        apply Decidable.byCases (p := i ≤ m)
+        · intro him
+          rw [dom1_P_of_Ω i s m hs, ite_eq_left him] at hd; cases hd
+        · intro him
+          rw [fund1_P_of_Ω_gt i s z m hs him]; exact Or.inl (hsmall _ _)
 
 def cutBound (l : Nat) (z : T) : T → Prop
 | Z => Z < z
@@ -1601,10 +1827,12 @@ theorem cutBound_mono (l : Nat) (z w b : T) (hzw : z ≤ w) (hb : cutBound l z b
   | Z => exact lt_of_lt_of_le_thm T Z z w hb hzw
   | P i s t ihs iht =>
     unfold cutBound at hb ⊢
-    rcases constructive_cases (p := i ≤ l) with hi | hi
-    · rw [ite_eq_left hi] at hb ⊢
+    apply Decidable.byCases (p := i ≤ l)
+    · intro hi
+      rw [ite_eq_left hi] at hb ⊢
       exact lt_of_lt_of_le_thm T _ z w hb hzw
-    · rw [ite_eq_right hi] at hb ⊢
+    · intro hi
+      rw [ite_eq_right hi] at hb ⊢
       exact ⟨ihs hb.1, iht hb.2⟩
 
 theorem fund1_Ω_above (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l)
@@ -1614,53 +1842,68 @@ theorem fund1_Ω_above (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l
   | Z => cases hd
   | P i s t ihs iht =>
     intro b hb hba hcut
-    obtain ⟨hs, ht, _, _⟩ := T.isNF1_P_inv i s t ha
-    cases b with
-    | Z => exact lt_of_lt_of_le_thm T Z z _ hcut (fund1_Ω_arg_le _ ha l hd z hz)
-    | P j x y =>
-      rcases constructive_cases (p := j ≤ l) with hj | hj
-      · change (if j ≤ l then P j x y < z else _) at hcut
-        rw [ite_eq_left hj] at hcut
-        exact lt_of_lt_of_le_thm T _ z _ hcut (fund1_Ω_arg_le _ ha l hd z hz)
-      · change (if j ≤ l then _ else cutBound l z x ∧ cutBound l z y) at hcut
-        rw [ite_eq_right hj] at hcut
-        obtain ⟨hx, hy, _, _⟩ := T.isNF1_P_inv j x y hb
-        cases t with
-        | P t0 t1 t2 =>
-          rw [fund1_P_tail]
-          rw [dom1_P_tail] at hd
-          rcases lt_inv j x y i s (P t0 t1 t2) hba with h | ⟨h, hxs⟩ | ⟨h, hxs, hyt⟩
-          · exact .p_head j i x s y _ h
-          · subst j; exact .p_mid i x s y _ hxs
-          · subst j; subst x
-            exact .p_tail i s y _ (iht ht hd y hy hyt hcut.2)
-        | Z =>
-          cases he : T.dom1 s with
-          | Zero =>
-            cases i with
-            | zero => rw [dom1_P0_of_Zero s he] at hd; cases hd
-            | succ i =>
-              rw [dom1_Psucc_of_Zero i s he] at hd
-              cases hd
-              have hsz := dom1_Zero_imp_eq_Z s he
-              subst s
-              rcases lt_inv j x y (l+1) Z Z hba with h | ⟨_, h⟩ | ⟨_, _, h⟩
-              · exact False.elim (hj (Nat.le_of_lt_succ h))
-              · exact False.elim (lt_Z_inv h)
-              · exact False.elim (lt_Z_inv h)
-          | One => rw [dom1_P_of_One i s he] at hd; cases hd
-          | ω => rw [dom1_P_of_ω i s he] at hd; cases hd
-          | Ω m =>
-            rcases constructive_cases (p := i ≤ m) with him | him
-            · rw [dom1_P_of_Ω i s m he, ite_eq_left him] at hd; cases hd
-            · rw [dom1_P_of_Ω i s m he, ite_eq_right him] at hd
-              cases hd
-              rw [fund1_P_of_Ω_gt i s z l he him]
-              rcases lt_inv j x y i s Z hba with h | ⟨h, hxs⟩ | ⟨_, _, h⟩
-              · exact .p_head j i x _ y Z h
-              · subst j
-                exact .p_mid i x _ y Z (ihs hs he x hx hxs hcut.1)
-              · exact False.elim (lt_Z_inv h)
+    exact match T.isNF1_P_inv i s t ha with
+    | ⟨hs, ht, _, _⟩ => by
+      cases b with
+      | Z => exact lt_of_lt_of_le_thm T Z z _ hcut (fund1_Ω_arg_le _ ha l hd z hz)
+      | P j x y =>
+        apply Decidable.byCases (p := j ≤ l)
+        · intro hj
+          change (if j ≤ l then P j x y < z else _) at hcut
+          rw [ite_eq_left hj] at hcut
+          exact lt_of_lt_of_le_thm T _ z _ hcut (fund1_Ω_arg_le _ ha l hd z hz)
+        · intro hj
+          change (if j ≤ l then _ else cutBound l z x ∧ cutBound l z y) at hcut
+          rw [ite_eq_right hj] at hcut
+          exact match T.isNF1_P_inv j x y hb with
+          | ⟨hx, hy, _, _⟩ => by
+            cases t with
+            | P t0 t1 t2 =>
+              rw [fund1_P_tail]
+              rw [dom1_P_tail] at hd
+              exact match lt_inv j x y i s (P t0 t1 t2) hba with
+              | Or.inl h => by
+                exact .p_head j i x s y _ h
+              | Or.inr (Or.inl ⟨h, hxs⟩) => by
+                cases h; exact .p_mid i x s y _ hxs
+              | Or.inr (Or.inr ⟨h, hxs, hyt⟩) => by
+                cases h; cases hxs
+                exact .p_tail i s y _ (iht ht hd y hy hyt hcut.2)
+            | Z =>
+              cases he : T.dom1 s with
+              | Zero =>
+                cases i with
+                | zero => rw [dom1_P0_of_Zero s he] at hd; cases hd
+                | succ i =>
+                  rw [dom1_Psucc_of_Zero i s he] at hd
+                  cases hd
+                  have hsz := dom1_Zero_imp_eq_Z s he
+                  cases hsz
+                  exact match lt_inv j x y (l+1) Z Z hba with
+                  | Or.inl h => by
+                    exact False.elim (hj (Nat.le_of_lt_succ h))
+                  | Or.inr (Or.inl ⟨_, h⟩) => by
+                    exact False.elim (lt_Z_inv h)
+                  | Or.inr (Or.inr ⟨_, _, h⟩) => by
+                    exact False.elim (lt_Z_inv h)
+              | One => rw [dom1_P_of_One i s he] at hd; cases hd
+              | ω => rw [dom1_P_of_ω i s he] at hd; cases hd
+              | Ω m =>
+                apply Decidable.byCases (p := i ≤ m)
+                · intro him
+                  rw [dom1_P_of_Ω i s m he, ite_eq_left him] at hd; cases hd
+                · intro him
+                  rw [dom1_P_of_Ω i s m he, ite_eq_right him] at hd
+                  cases hd
+                  rw [fund1_P_of_Ω_gt i s z l he him]
+                  exact match lt_inv j x y i s Z hba with
+                  | Or.inl h => by
+                    exact .p_head j i x _ y Z h
+                  | Or.inr (Or.inl ⟨h, hxs⟩) => by
+                    cases h
+                    exact .p_mid i x _ y Z (ihs hs he x hx hxs hcut.1)
+                  | Or.inr (Or.inr ⟨_, _, h⟩) => by
+                    exact False.elim (lt_Z_inv h)
 
 theorem G1_size_lt (l : Nat) (b : T) : ∀ x ∈ T.G1 l b, x.size < b.size := by
   induction b with
@@ -1671,13 +1914,18 @@ theorem G1_size_lt (l : Nat) (b : T) : ∀ x ∈ T.G1 l b, x.size < b.size := by
       Nat.lt_succ_of_le (Nat.le_add_right s.size t.size)
     have ht : t.size < (P i s t).size :=
       Nat.lt_succ_of_le (Nat.le_add_left t.size s.size)
-    rcases constructive_cases (p := l ≤ i) with hi | hi
-    · rw [T.G1.eq_2, ite_eq_left hi, List.mem_append, List.mem_append] at hx
-      rcases hx with (hx | hx) | hx
-      · rw [List.mem_singleton] at hx; rw [hx]; exact hs
-      · exact Nat.lt_trans (ihs x hx) hs
-      · exact Nat.lt_trans (iht x hx) ht
-    · rw [T.G1.eq_2, ite_eq_right hi] at hx
+    apply Decidable.byCases (p := l ≤ i)
+    · intro hi
+      rw [T.G1.eq_2, ite_eq_left hi, List.mem_append, List.mem_append] at hx
+      exact match hx with
+      | Or.inl (Or.inl hx) => by
+        rw [List.mem_singleton] at hx; rw [hx]; exact hs
+      | Or.inl (Or.inr hx) => by
+        exact Nat.lt_trans (ihs x hx) hs
+      | Or.inr hx => by
+        exact Nat.lt_trans (iht x hx) ht
+    · intro hi
+      rw [T.G1.eq_2, ite_eq_right hi] at hx
       exact Nat.lt_trans (iht x hx) ht
 
 theorem iter_cutBound (a : T) (l : Nat) (hd : T.dom1 a = .Ω l)
@@ -1693,41 +1941,49 @@ theorem iter_cutBound (a : T) (l : Nat) (hd : T.dom1 a = .Ω l)
   induction b with
   | Z => exact ⟨1, T.Lt.Z_lt_P l _ Z⟩
   | P i s t ihs iht =>
-    obtain ⟨hs, ht, hgs, _⟩ := T.isNF1_P_inv i s t hb
-    rcases constructive_cases (p := i < l) with hil | hil
-    · refine ⟨1, ?_⟩
-      unfold cutBound
-      rw [ite_eq_left (Nat.le_of_lt hil)]
-      exact .p_head i l s _ t Z hil
-    · have hli := Nat.le_of_not_lt hil
-      have hmem : ∀ x, x ∈ T.G1 l s → x ∈ T.G1 l (P i s t) := by
-        intro x hx
-        rw [T.G1.eq_2, ite_eq_left hli]
-        exact List.mem_append_left _ (List.mem_append_right _ hx)
-      rcases constructive_cases (p := i = l) with hei | hei
-      · subst i
-        have hsmem : s ∈ T.G1 l (P l s t) := by
-          rw [T.G1.eq_2, ite_eq_left (Nat.le_refl l)]
-          exact List.mem_append_left _ (List.mem_append_left _ (List.mem_singleton_self s))
-        obtain ⟨n, hn⟩ := happrox s hsmem hs hgs
-        refine ⟨n+1, ?_⟩
+    exact match T.isNF1_P_inv i s t hb with
+    | ⟨hs, ht, hgs, _⟩ => by
+      apply Decidable.byCases (p := i < l)
+      · intro hil
+        refine ⟨1, ?_⟩
         unfold cutBound
-        rw [ite_eq_left (Nat.le_refl l)]
-        exact .p_mid l s _ t Z hn
-      · have hin : ¬ i ≤ l := fun h => hei (Nat.le_antisymm h hli)
-        obtain ⟨n, hn⟩ := ihs hs (fun x hx => happrox x (hmem x hx))
-        have hmemt : ∀ x, x ∈ T.G1 l t → x ∈ T.G1 l (P i s t) := by
+        rw [ite_eq_left (Nat.le_of_lt hil)]
+        exact .p_head i l s _ t Z hil
+      · intro hil
+        have hli := Nat.le_of_not_lt hil
+        have hmem : ∀ x, x ∈ T.G1 l s → x ∈ T.G1 l (P i s t) := by
           intro x hx
           rw [T.G1.eq_2, ite_eq_left hli]
-          exact List.mem_append_right _ hx
-        obtain ⟨m, hm⟩ := iht ht (fun x hx => happrox x (hmemt x hx))
-        refine ⟨n+m+1, ?_⟩
-        unfold cutBound
-        rw [ite_eq_right hin]
-        exact ⟨cutBound_mono l _ _ s (Or.inl (hmono n _
-          (Nat.lt_succ_of_le (Nat.le_add_right n m)))) hn,
-          cutBound_mono l _ _ t (Or.inl (hmono m _
-          (Nat.lt_succ_of_le (Nat.le_add_left m n)))) hm⟩
+          exact List.mem_append_left _ (List.mem_append_right _ hx)
+        apply Decidable.byCases (p := i = l)
+        · intro hei
+          cases hei
+          have hsmem : s ∈ T.G1 l (P l s t) := by
+            rw [T.G1.eq_2, ite_eq_left (Nat.le_refl l)]
+            exact List.mem_append_left _ (List.mem_append_left _ (List.mem_singleton_self s))
+          exact match happrox s hsmem hs hgs with
+          | ⟨n, hn⟩ => by
+            refine ⟨n+1, ?_⟩
+            unfold cutBound
+            rw [ite_eq_left (Nat.le_refl l)]
+            exact .p_mid l s _ t Z hn
+        · intro hei
+          have hin : ¬ i ≤ l := fun h => hei (Nat.le_antisymm h hli)
+          exact match ihs hs (fun x hx => happrox x (hmem x hx)) with
+          | ⟨n, hn⟩ => by
+            have hmemt : ∀ x, x ∈ T.G1 l t → x ∈ T.G1 l (P i s t) := by
+              intro x hx
+              rw [T.G1.eq_2, ite_eq_left hli]
+              exact List.mem_append_right _ hx
+            exact match iht ht (fun x hx => happrox x (hmemt x hx)) with
+            | ⟨m, hm⟩ => by
+              refine ⟨n+m+1, ?_⟩
+              unfold cutBound
+              rw [ite_eq_right hin]
+              exact ⟨cutBound_mono l _ _ s (Or.inl (hmono n _
+                (Nat.lt_succ_of_le (Nat.le_add_right n m)))) hn,
+                cutBound_mono l _ _ t (Or.inl (hmono m _
+                (Nat.lt_succ_of_le (Nat.le_add_left m n)))) hm⟩
 
 theorem iteration_cofinal (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .Ω l) :
     ∀ b, T.isNF1 b → b < a → (∀ x ∈ T.G1 l b, x < b) →
@@ -1740,13 +1996,14 @@ theorem iteration_cofinal (a : T) (ha : T.isNF1 a) (l : Nat) (hd : T.dom1 a = .�
     induction n using Nat.strongRecOn with
     | ind n ih =>
       intro b he hb hba hgb
-      obtain ⟨m, hm⟩ := iter_cutBound a l hd b hb (by
+      exact match iter_cutBound a l hd b hb (by
         intro x hx hnx hgx
         have hsize := G1_size_lt l b x hx
         rw [he] at hsize
-        exact ih x.size hsize x rfl hnx (lt_trans_thm x b a (hgb x hx) hba) hgx)
-      exact ⟨m, fund1_Ω_above a ha l hd _
-        (iter_index_Prop1 l _ (fun z => ⟨T.fund1 a z, rfl⟩) (T.ofNat m)) b hb hba hm⟩
+        exact ih x.size hsize x rfl hnx (lt_trans_thm x b a (hgb x hx) hba) hgx) with
+      | ⟨m, hm⟩ => by
+        exact ⟨m, fund1_Ω_above a ha l hd _
+          (iter_index_Prop1 l _ (fun z => ⟨T.fund1 a z, rfl⟩) (T.ofNat m)) b hb hba hm⟩
   exact main b.size b rfl
 
 theorem dom1_One_PZ (i : Nat) (s : T) (hd : T.dom1 (P i s Z) = .One) :
@@ -1761,9 +2018,11 @@ theorem dom1_One_PZ (i : Nat) (s : T) (hd : T.dom1 (P i s Z) = .One) :
   | ω => rw [dom1_P_of_ω i s hs] at hd; cases hd
   | Ω l =>
     rw [dom1_P_of_Ω i s l hs] at hd
-    rcases constructive_cases (p := i ≤ l) with hi | hi
-    · rw [ite_eq_left hi] at hd; cases hd
-    · rw [ite_eq_right hi] at hd; cases hd
+    apply Decidable.byCases (p := i ≤ l)
+    · intro hi
+      rw [ite_eq_left hi] at hd; cases hd
+    · intro hi
+      rw [ite_eq_right hi] at hd; cases hd
 
 theorem fund1_One_const (a : T) (hd : T.dom1 a = .One) (z : T) :
     T.fund1 a z = T.fund1 a Z := by
@@ -1772,9 +2031,10 @@ theorem fund1_One_const (a : T) (hd : T.dom1 a = .One) (z : T) :
   | P i s t _ iht =>
     cases t with
     | Z =>
-      obtain ⟨hi, hs⟩ := dom1_One_PZ i s hd
-      rw [hi, hs]
-      rfl
+      exact match dom1_One_PZ i s hd with
+      | ⟨hi, hs⟩ => by
+        rw [hi, hs]
+        rfl
     | P j b c =>
       rw [dom1_P_tail] at hd
       rw [fund1_P_tail, fund1_P_tail, iht hd]
@@ -1787,45 +2047,60 @@ theorem fund1_One_upper (a : T) (hd : T.dom1 a = .One) :
     intro b hba
     cases t with
     | Z =>
-      obtain ⟨hi, hs⟩ := dom1_One_PZ i s hd
-      subst i; subst s
-      cases b with
-      | Z => exact Or.inr rfl
-      | P j x y =>
-        rcases lt_inv j x y 0 Z Z hba with h | ⟨_, h⟩ | ⟨_, _, h⟩
-        · exact False.elim (Nat.not_lt_zero j h)
-        · exact False.elim (lt_Z_inv h)
-        · exact False.elim (lt_Z_inv h)
+      exact match dom1_One_PZ i s hd with
+      | ⟨hi, hs⟩ => by
+        cases hi; cases hs
+        cases b with
+        | Z => exact Or.inr rfl
+        | P j x y =>
+          exact match lt_inv j x y 0 Z Z hba with
+          | Or.inl h => by
+            exact False.elim (Nat.not_lt_zero j h)
+          | Or.inr (Or.inl ⟨_, h⟩) => by
+            exact False.elim (lt_Z_inv h)
+          | Or.inr (Or.inr ⟨_, _, h⟩) => by
+            exact False.elim (lt_Z_inv h)
     | P j x y =>
       rw [dom1_P_tail] at hd
       rw [fund1_P_tail]
       cases b with
       | Z => exact T.Z_le _
       | P k c d =>
-        rcases lt_inv k c d i s (P j x y) hba with h | ⟨h, hcs⟩ | ⟨h, hcs, hdt⟩
-        · exact Or.inl (.p_head k i c s d _ h)
-        · subst k; exact Or.inl (.p_mid i c s d _ hcs)
-        · subst k; subst c
-          rcases iht hd d hdt with h | h
-          · exact Or.inl (.p_tail i s d _ h)
-          · rw [h]; exact Or.inr rfl
+        exact match lt_inv k c d i s (P j x y) hba with
+        | Or.inl h => by
+          exact Or.inl (.p_head k i c s d _ h)
+        | Or.inr (Or.inl ⟨h, hcs⟩) => by
+          cases h; exact Or.inl (.p_mid i c s d _ hcs)
+        | Or.inr (Or.inr ⟨h, hcs, hdt⟩) => by
+          cases h; cases hcs
+          exact match iht hd d hdt with
+          | Or.inl h => by
+            exact Or.inl (.p_tail i s d _ h)
+          | Or.inr h => by
+            rw [h]; exact Or.inr rfl
 
 theorem head_le_index (i j : Nat) (s t : T) (h : P i s Z ≤ P j t Z) : i ≤ j := by
-  rcases h with h | h
-  · rcases lt_inv i s Z j t Z h with h | ⟨h, _⟩ | ⟨h, _, _⟩
-    · exact Nat.le_of_lt h
-    · rw [h]; exact Nat.le_refl j
-    · rw [h]; exact Nat.le_refl j
-  · cases h; exact Nat.le_refl i
+  exact match h with
+  | Or.inl h => by
+    exact match lt_inv i s Z j t Z h with
+    | Or.inl h => by
+      exact Nat.le_of_lt h
+    | Or.inr (Or.inl ⟨h, _⟩) => by
+      rw [h]; exact Nat.le_refl j
+    | Or.inr (Or.inr ⟨h, _, _⟩) => by
+      rw [h]; exact Nat.le_refl j
+  | Or.inr h => by
+    cases h; exact Nat.le_refl i
 
 theorem isNF1_index (l i : Nat) (s t : T) (ha : T.isNF1 (P i s t)) (hi : i ≤ l) :
     T.index_Prop1 l (P i s t) := by
   induction t generalizing i s with
   | Z => exact .p i s Z hi .z
   | P j b c _ ih =>
-    obtain ⟨_, ht, _, hh⟩ := T.isNF1_P_inv i s (P j b c) ha
-    have hj := Nat.le_trans (head_le_index j i b s hh) hi
-    exact .p i s _ hi (ih j b ht hj)
+    exact match T.isNF1_P_inv i s (P j b c) ha with
+    | ⟨_, ht, _, hh⟩ => by
+      have hj := Nat.le_trans (head_le_index j i b s hh) hi
+      exact .p i s _ hi (ih j b ht hj)
 
 theorem one_le_P (i : Nat) (s : T) : P 0 Z Z ≤ P i s Z := by
   cases i with
@@ -1839,12 +2114,13 @@ theorem isNF1_succ (a : T) (ha : T.isNF1 a) : T.isNF1 (T.add a (P 0 Z Z)) := by
   induction a with
   | Z => exact .p 0 Z Z .z .z (fun _ h => by cases h) (T.Z_le _)
   | P i s t _ iht =>
-    obtain ⟨hs, ht, hg, hh⟩ := T.isNF1_P_inv i s t ha
-    rw [T.P_add_eq]
-    refine .p i s _ hs (iht ht) hg ?_
-    cases t with
-    | Z => exact one_le_P i s
-    | P j x y => rw [T.P_add_eq]; exact hh
+    exact match T.isNF1_P_inv i s t ha with
+    | ⟨hs, ht, hg, hh⟩ => by
+      rw [T.P_add_eq]
+      refine .p i s _ hs (iht ht) hg ?_
+      cases t with
+      | Z => exact one_le_P i s
+      | P j x y => rw [T.P_add_eq]; exact hh
 
 theorem cutBound_exists (l : Nat) (b : T) (hb : T.isNF1 b) :
     ∃ z, T.isNF1 z ∧ T.index_Prop1 l z ∧ cutBound l z b := by
@@ -1852,43 +2128,57 @@ theorem cutBound_exists (l : Nat) (b : T) (hb : T.isNF1 b) :
   | Z => exact ⟨P 0 Z Z, isNF1_succ Z .z,
       .p 0 Z Z (Nat.zero_le l) .z, .Z_lt_P 0 Z Z⟩
   | P i s t ihs iht =>
-    obtain ⟨hs, ht, _, _⟩ := T.isNF1_P_inv i s t hb
-    rcases constructive_cases (p := i ≤ l) with hi | hi
-    · refine ⟨T.add (P i s t) (P 0 Z Z), isNF1_succ _ hb,
-        Rank1Termination.index_add l _ _ (isNF1_index l i s t hb hi)
-          (.p 0 Z Z (Nat.zero_le l) .z), ?_⟩
-      unfold cutBound
-      rw [ite_eq_left hi]
-      exact add_lt_add_of_ne_Z _ _ (fun h => by cases h)
-    · obtain ⟨z, hz, hiz, hsz⟩ := ihs hs
-      obtain ⟨w, hw, hiw, htw⟩ := iht ht
-      rcases linear_order.total z w with hzw | hwz
-      · refine ⟨w, hw, hiw, ?_⟩
+    exact match T.isNF1_P_inv i s t hb with
+    | ⟨hs, ht, _, _⟩ => by
+      apply Decidable.byCases (p := i ≤ l)
+      · intro hi
+        refine ⟨T.add (P i s t) (P 0 Z Z), isNF1_succ _ hb,
+          Rank1Termination.index_add l _ _ (isNF1_index l i s t hb hi)
+            (.p 0 Z Z (Nat.zero_le l) .z), ?_⟩
         unfold cutBound
-        rw [ite_eq_right hi]
-        exact ⟨cutBound_mono l z w s hzw hsz, htw⟩
-      · refine ⟨z, hz, hiz, ?_⟩
-        unfold cutBound
-        rw [ite_eq_right hi]
-        exact ⟨hsz, cutBound_mono l w z t hwz htw⟩
+        rw [ite_eq_left hi]
+        exact add_lt_add_of_ne_Z _ _ (fun h => by cases h)
+      · intro hi
+        exact match ihs hs with
+        | ⟨z, hz, hiz, hsz⟩ => by
+          exact match iht ht with
+          | ⟨w, hw, hiw, htw⟩ => by
+            exact match linear_order.total z w with
+            | Or.inl hzw => by
+              refine ⟨w, hw, hiw, ?_⟩
+              unfold cutBound
+              rw [ite_eq_right hi]
+              exact ⟨cutBound_mono l z w s hzw hsz, htw⟩
+            | Or.inr hwz => by
+              refine ⟨z, hz, hiz, ?_⟩
+              unfold cutBound
+              rw [ite_eq_right hi]
+              exact ⟨hsz, cutBound_mono l w z t hwz htw⟩
 
 theorem mul_cofinal (i : Nat) (s : T) (b : T) (hb : T.isNF1 b)
     (hh : T.head b ≤ P i s Z) : ∃ n, b < T.mul (P i s Z) (T.ofNat n) := by
   induction b with
   | Z => exact ⟨1, T.Lt.Z_lt_P i s Z⟩
   | P j x y _ ih =>
-    obtain ⟨_, hy, _, hhy⟩ := T.isNF1_P_inv j x y hb
-    change P j x Z ≤ P i s Z at hh
-    rcases hh with hh | hh
-    · rcases lt_inv j x Z i s Z hh with h | ⟨h, hxs⟩ | ⟨_, _, h⟩
-      · exact ⟨1, .p_head j i x s y Z h⟩
-      · subst j; exact ⟨1, .p_mid i x s y Z hxs⟩
-      · exact False.elim (lt_Z_inv h)
-    · cases hh
-      obtain ⟨n, hn⟩ := ih hy hhy
-      refine ⟨n+1, ?_⟩
-      rw [mul_succ_shape]
-      exact .p_tail i s y _ hn
+    exact match T.isNF1_P_inv j x y hb with
+    | ⟨_, hy, _, hhy⟩ => by
+      change P j x Z ≤ P i s Z at hh
+      exact match hh with
+      | Or.inl hh => by
+        exact match lt_inv j x Z i s Z hh with
+        | Or.inl h => by
+          exact ⟨1, .p_head j i x s y Z h⟩
+        | Or.inr (Or.inl ⟨h, hxs⟩) => by
+          cases h; exact ⟨1, .p_mid i x s y Z hxs⟩
+        | Or.inr (Or.inr ⟨_, _, h⟩) => by
+          exact False.elim (lt_Z_inv h)
+      | Or.inr hh => by
+        cases hh
+        exact match ih hy hhy with
+        | ⟨n, hn⟩ => by
+          refine ⟨n+1, ?_⟩
+          rw [mul_succ_shape]
+          exact .p_tail i s y _ hn
 
 theorem fund1_ω_cofinal (a : T) (ha : T.isNF1 a) (hd : T.dom1 a = .ω) :
     ∀ b, T.isNF1 b → b < a → ∃ n, b < T.fund1 a (T.ofNat n) := by
@@ -1896,71 +2186,93 @@ theorem fund1_ω_cofinal (a : T) (ha : T.isNF1 a) (hd : T.dom1 a = .ω) :
   | Z => cases hd
   | P i s t ihs iht =>
     intro b hb hba
-    obtain ⟨hs, ht, _, _⟩ := T.isNF1_P_inv i s t ha
-    cases b with
-    | Z =>
-      refine ⟨1, lt_of_le_of_lt_thm T Z (T.fund1 (P i s t) Z) _ (T.Z_le _) ?_⟩
-      exact T.fund1_strict_mono_dec _ Z (T.ofNat 1) (.Z_lt_P 0 Z Z)
-        ((ValidArg1_ω_iff _ Z hd).mpr .zero)
-        ((ValidArg1_ω_iff _ (T.ofNat 1) hd).mpr (ofNat_IsN 1))
-    | P j x y =>
-      obtain ⟨hx, hy, hgx, _⟩ := T.isNF1_P_inv j x y hb
-      cases t with
-      | P k c d =>
-        rw [dom1_P_tail] at hd
-        rcases lt_inv j x y i s (P k c d) hba with h | ⟨h, hxs⟩ | ⟨h, hxs, hyt⟩
-        · refine ⟨0, ?_⟩; rw [fund1_P_tail]; exact .p_head j i x s y _ h
-        · subst j
-          refine ⟨0, ?_⟩; rw [fund1_P_tail]; exact .p_mid i x s y _ hxs
-        · subst j; subst x
-          obtain ⟨n, hn⟩ := iht ht hd y hy hyt
-          refine ⟨n, ?_⟩; rw [fund1_P_tail]; exact .p_tail i s y _ hn
+    exact match T.isNF1_P_inv i s t ha with
+    | ⟨hs, ht, _, _⟩ => by
+      cases b with
       | Z =>
-        cases he : T.dom1 s with
-        | Zero =>
-          cases i with
-          | zero => rw [dom1_P0_of_Zero s he] at hd; cases hd
-          | succ i => rw [dom1_Psucc_of_Zero i s he] at hd; cases hd
-        | One =>
-          rcases lt_inv j x y i s Z hba with h | ⟨h, hxs⟩ | ⟨_, _, h⟩
-          · refine ⟨1, ?_⟩
-            rw [fund1_P_of_One i s (T.ofNat 1) he]
-            exact .p_head j i x _ y Z h
-          · subst j
-            rcases fund1_One_upper s he x hxs with hxp | hxp
-            · refine ⟨1, ?_⟩
-              rw [fund1_P_of_One i s (T.ofNat 1) he]
-              exact .p_mid i x _ y Z hxp
-            · have hh : T.head (P i x y) ≤ P i (T.fund1 s Z) Z := by
-                rw [hxp]; exact Or.inr rfl
-              obtain ⟨n, hn⟩ := mul_cofinal i (T.fund1 s Z) (P i x y) hb hh
-              refine ⟨n, ?_⟩
-              rw [fund1_P_of_One i s (T.ofNat n) he]; exact hn
-          · exact False.elim (lt_Z_inv h)
-        | ω =>
-          rcases lt_inv j x y i s Z hba with h | ⟨h, hxs⟩ | ⟨_, _, h⟩
-          · refine ⟨0, ?_⟩
-            rw [fund1_P_of_ω i s (T.ofNat 0) he]; exact .p_head j i x _ y Z h
-          · subst j
-            obtain ⟨n, hn⟩ := ihs hs he x hx hxs
-            refine ⟨n, ?_⟩
-            rw [fund1_P_of_ω i s (T.ofNat n) he]; exact .p_mid i x _ y Z hn
-          · exact False.elim (lt_Z_inv h)
-        | Ω l =>
-          have hil : i ≤ l := by
-            rcases constructive_cases (p := i ≤ l) with h | h
-            · exact h
-            · rw [dom1_P_of_Ω i s l he, ite_eq_right h] at hd; cases hd
-          rcases lt_inv j x y i s Z hba with h | ⟨h, hxs⟩ | ⟨_, _, h⟩
-          · refine ⟨0, ?_⟩
-            rw [fund1_P_of_Ω_le i s (T.ofNat 0) l he hil]; exact .p_head j i x _ y Z h
-          · subst j
-            have hgl : ∀ z ∈ T.G1 l x, z < x :=
-              fun z hz => hgx z (G1_antitone i l hil x z hz)
-            obtain ⟨n, hn⟩ := iteration_cofinal s hs l he x hx hxs hgl
-            refine ⟨n, ?_⟩
-            rw [fund1_P_of_Ω_le i s (T.ofNat n) l he hil]; exact .p_mid i x _ y Z hn
-          · exact False.elim (lt_Z_inv h)
+        refine ⟨1, lt_of_le_of_lt_thm T Z (T.fund1 (P i s t) Z) _ (T.Z_le _) ?_⟩
+        exact T.fund1_strict_mono_dec _ Z (T.ofNat 1) (.Z_lt_P 0 Z Z)
+          ((ValidArg1_ω_iff _ Z hd).mpr .zero)
+          ((ValidArg1_ω_iff _ (T.ofNat 1) hd).mpr (ofNat_IsN 1))
+      | P j x y =>
+        exact match T.isNF1_P_inv j x y hb with
+        | ⟨hx, hy, hgx, _⟩ => by
+          cases t with
+          | P k c d =>
+            rw [dom1_P_tail] at hd
+            exact match lt_inv j x y i s (P k c d) hba with
+            | Or.inl h => by
+              refine ⟨0, ?_⟩; rw [fund1_P_tail]; exact .p_head j i x s y _ h
+            | Or.inr (Or.inl ⟨h, hxs⟩) => by
+              cases h
+              refine ⟨0, ?_⟩; rw [fund1_P_tail]; exact .p_mid i x s y _ hxs
+            | Or.inr (Or.inr ⟨h, hxs, hyt⟩) => by
+              cases h; cases hxs
+              exact match iht ht hd y hy hyt with
+              | ⟨n, hn⟩ => by
+                refine ⟨n, ?_⟩; rw [fund1_P_tail]; exact .p_tail i s y _ hn
+          | Z =>
+            cases he : T.dom1 s with
+            | Zero =>
+              cases i with
+              | zero => rw [dom1_P0_of_Zero s he] at hd; cases hd
+              | succ i => rw [dom1_Psucc_of_Zero i s he] at hd; cases hd
+            | One =>
+              exact match lt_inv j x y i s Z hba with
+              | Or.inl h => by
+                refine ⟨1, ?_⟩
+                rw [fund1_P_of_One i s (T.ofNat 1) he]
+                exact .p_head j i x _ y Z h
+              | Or.inr (Or.inl ⟨h, hxs⟩) => by
+                cases h
+                exact match fund1_One_upper s he x hxs with
+                | Or.inl hxp => by
+                  refine ⟨1, ?_⟩
+                  rw [fund1_P_of_One i s (T.ofNat 1) he]
+                  exact .p_mid i x _ y Z hxp
+                | Or.inr hxp => by
+                  have hh : T.head (P i x y) ≤ P i (T.fund1 s Z) Z := by
+                    rw [hxp]; exact Or.inr rfl
+                  exact match mul_cofinal i (T.fund1 s Z) (P i x y) hb hh with
+                  | ⟨n, hn⟩ => by
+                    refine ⟨n, ?_⟩
+                    rw [fund1_P_of_One i s (T.ofNat n) he]; exact hn
+              | Or.inr (Or.inr ⟨_, _, h⟩) => by
+                exact False.elim (lt_Z_inv h)
+            | ω =>
+              exact match lt_inv j x y i s Z hba with
+              | Or.inl h => by
+                refine ⟨0, ?_⟩
+                rw [fund1_P_of_ω i s (T.ofNat 0) he]; exact .p_head j i x _ y Z h
+              | Or.inr (Or.inl ⟨h, hxs⟩) => by
+                cases h
+                exact match ihs hs he x hx hxs with
+                | ⟨n, hn⟩ => by
+                  refine ⟨n, ?_⟩
+                  rw [fund1_P_of_ω i s (T.ofNat n) he]; exact .p_mid i x _ y Z hn
+              | Or.inr (Or.inr ⟨_, _, h⟩) => by
+                exact False.elim (lt_Z_inv h)
+            | Ω l =>
+              have hil : i ≤ l := by
+                apply Decidable.byCases (p := i ≤ l)
+                · intro h
+                  exact h
+                · intro h
+                  rw [dom1_P_of_Ω i s l he, ite_eq_right h] at hd; cases hd
+              exact match lt_inv j x y i s Z hba with
+              | Or.inl h => by
+                refine ⟨0, ?_⟩
+                rw [fund1_P_of_Ω_le i s (T.ofNat 0) l he hil]; exact .p_head j i x _ y Z h
+              | Or.inr (Or.inl ⟨h, hxs⟩) => by
+                cases h
+                have hgl : ∀ z ∈ T.G1 l x, z < x :=
+                  fun z hz => hgx z (G1_antitone i l hil x z hz)
+                exact match iteration_cofinal s hs l he x hx hxs hgl with
+                | ⟨n, hn⟩ => by
+                  refine ⟨n, ?_⟩
+                  rw [fund1_P_of_Ω_le i s (T.ofNat n) l he hil]; exact .p_mid i x _ y Z hn
+              | Or.inr (Or.inr ⟨_, _, h⟩) => by
+                exact False.elim (lt_Z_inv h)
 
 theorem IsN_isNF1 (a : T) (ha : T.IsN a) : T.isNF1 a := by
   induction ha with
@@ -1980,44 +2292,53 @@ theorem fund1_cofinal (a b : T) (ha : T.isNF1 a) (hb : T.isNF1 b) (hba : b < a) 
     exact False.elim (lt_Z_inv hba)
   | One => exact ⟨Z, .z, (ValidArg1_One_iff a Z hd).mpr rfl, fund1_One_upper a hd b hba⟩
   | ω =>
-    obtain ⟨n, hn⟩ := fund1_ω_cofinal a ha hd b hb hba
-    exact ⟨T.ofNat n, IsN_isNF1 _ (ofNat_IsN n),
-      (ValidArg1_ω_iff a _ hd).mpr (ofNat_IsN n), Or.inl hn⟩
+    exact match fund1_ω_cofinal a ha hd b hb hba with
+    | ⟨n, hn⟩ => by
+      exact ⟨T.ofNat n, IsN_isNF1 _ (ofNat_IsN n),
+        (ValidArg1_ω_iff a _ hd).mpr (ofNat_IsN n), Or.inl hn⟩
   | Ω l =>
-    obtain ⟨z, hz, hi, hc⟩ := cutBound_exists l b hb
-    exact ⟨z, hz, (ValidArg1_Ω_iff a z l hd).mpr hi,
-      Or.inl (fund1_Ω_above a ha l hd z hi b hb hba hc)⟩
+    exact match cutBound_exists l b hb with
+    | ⟨z, hz, hi, hc⟩ => by
+      exact ⟨z, hz, (ValidArg1_Ω_iff a z l hd).mpr hi,
+        Or.inl (fund1_Ω_above a ha l hd z hi b hb hba hc)⟩
 
 theorem NF1_acc_of_le (a b : T.NF1)
     (ha : Acc (fun x y : T.NF1 => x.1 < y.1) a) (hba : b.1 ≤ a.1) :
     Acc (fun x y : T.NF1 => x.1 < y.1) b := by
-  rcases hba with h | h
-  · exact ha.inv h
-  · have he : b = a := Subtype.ext h
+  exact match hba with
+  | Or.inl h => by
+    exact ha.inv h
+  | Or.inr h => by
+    have he : b = a := Subtype.ext h
     rw [he]
     exact ha
 
 theorem T.well_founded_NF1 : WellFounded (fun s t : T.NF1 => s.1 < t.1) := by
   constructor
   intro a
-  obtain ⟨u, hu⟩ := Rank1Termination.exists_level a.1
-  have hw := hu u (Nat.le_refl u)
-  apply Rank1Termination.W_ind u
-    (fun b => ∀ hb : T.isNF1 b, Acc (fun s t : T.NF1 => s.1 < t.1) ⟨b, hb⟩)
-    ?_ a.1 hw a.2
-  intro b hg hb
-  constructor
-  intro c hcb
-  change c.1 < b at hcb
-  obtain ⟨z, hz, hv, hle⟩ := fund1_cofinal b c.1 hb c.2 hcb
-  have hnf := T.fund1_NF1_closed b z hb hz hv
-  have hacc : Acc (fun s t : T.NF1 => s.1 < t.1) ⟨T.fund1 b z, hnf⟩ := by
-    rcases hg.2 with he | ⟨_, hf⟩ | ⟨m, _, hd, hf⟩
-    · rw [he] at hcb
-      exact False.elim (lt_Z_inv hcb)
-    · exact hf z hv hnf
-    · exact hf z hv (Rank1Termination.W_all m z ((ValidArg1_Ω_iff b z m hd).mp hv)) hnf
-  exact NF1_acc_of_le _ c hacc hle
+  exact match Rank1Termination.exists_level a.1 with
+  | ⟨u, hu⟩ => by
+    have hw := hu u (Nat.le_refl u)
+    apply Rank1Termination.W_ind u
+      (fun b => ∀ hb : T.isNF1 b, Acc (fun s t : T.NF1 => s.1 < t.1) ⟨b, hb⟩)
+      ?_ a.1 hw a.2
+    intro b hg hb
+    constructor
+    intro c hcb
+    change c.1 < b at hcb
+    exact match fund1_cofinal b c.1 hb c.2 hcb with
+    | ⟨z, hz, hv, hle⟩ => by
+      have hnf := T.fund1_NF1_closed b z hb hz hv
+      have hacc : Acc (fun s t : T.NF1 => s.1 < t.1) ⟨T.fund1 b z, hnf⟩ := by
+        exact match hg.2 with
+        | Or.inl he => by
+          rw [he] at hcb
+          exact False.elim (lt_Z_inv hcb)
+        | Or.inr (Or.inl ⟨_, hf⟩) => by
+          exact hf z hv hnf
+        | Or.inr (Or.inr ⟨m, _, hd, hf⟩) => by
+          exact hf z hv (Rank1Termination.W_all m z ((ValidArg1_Ω_iff b z m hd).mp hv)) hnf
+      exact NF1_acc_of_le _ c hacc hle
 
 def T.LF1 (n : Nat) := P 0 (P n Z Z) Z
 
@@ -2028,14 +2349,18 @@ inductive T.isOT1 : T → Prop where
 theorem dom1_Ω_not_countable (a : T) (ha : T.isNF1 a) (hc : a < P 1 Z Z)
     (l : Nat) : T.dom1 a ≠ .Ω l := by
   intro hd
-  obtain ⟨i, s, t, he, hi⟩ := dom1_Ω_head a ha l hd
-  rw [he] at hc
-  rcases lt_inv i s t 1 Z Z hc with h | ⟨_, h⟩ | ⟨_, _, h⟩
-  · have hz : i = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ h)
-    rw [hz] at hi
-    exact Nat.not_lt_zero l hi
-  · exact lt_Z_inv h
-  · exact lt_Z_inv h
+  exact match dom1_Ω_head a ha l hd with
+  | ⟨i, s, t, he, hi⟩ => by
+    rw [he] at hc
+    exact match lt_inv i s t 1 Z Z hc with
+    | Or.inl h => by
+      have hz : i = 0 := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ h)
+      rw [hz] at hi
+      exact Nat.not_lt_zero l hi
+    | Or.inr (Or.inl ⟨_, h⟩) => by
+      exact lt_Z_inv h
+    | Or.inr (Or.inr ⟨_, _, h⟩) => by
+      exact lt_Z_inv h
 
 theorem LF1_isNF1 (n : Nat) : T.isNF1 (T.LF1 n) := by
   have hn : T.isNF1 (P n Z Z) :=
@@ -2078,8 +2403,9 @@ theorem fund1_countable_cofinal (a b : T) (ha : T.isNF1 a) (hb : T.isNF1 b)
     exact ⟨0, T.fund1_fall a Z ((ValidArg1_One_iff a Z hd).mpr rfl),
       fund1_One_upper a hd b hba⟩
   | ω =>
-    obtain ⟨n, hn⟩ := fund1_ω_cofinal a ha hd b hb hba
-    exact ⟨n, T.fund1_fall a _ ((ValidArg1_ω_iff a _ hd).mpr (ofNat_IsN n)), Or.inl hn⟩
+    exact match fund1_ω_cofinal a ha hd b hb hba with
+    | ⟨n, hn⟩ => by
+      exact ⟨n, T.fund1_fall a _ ((ValidArg1_ω_iff a _ hd).mpr (ofNat_IsN n)), Or.inl hn⟩
   | Ω l => exact False.elim (dom1_Ω_not_countable a ha hc l hd)
 
 theorem isOT1_downward (a b : T) (ha : T.isOT1 a) (hb : T.isNF1 b) (hba : b ≤ a) :
@@ -2089,12 +2415,14 @@ theorem isOT1_downward (a b : T) (ha : T.isOT1 a) (hb : T.isNF1 b) (hba : b ≤ 
     induction a using T.well_founded_NF1.induction with
     | h a ih =>
       intro ha b hb hba
-      rcases hba with hba | hba
-      · obtain ⟨n, hfall, hbound⟩ := fund1_countable_cofinal a.1 b a.2 hb
-          (isOT1_sound a.1 ha).2 hba
-        have hn := T.isOT1.step a.1 ha n
-        exact ih ⟨T.fund1 a.1 (T.ofNat n), (isOT1_sound _ hn).1⟩ hfall hn b hb hbound
-      · rw [hba]; exact ha
+      exact match hba with
+      | Or.inl hba => by
+        exact match fund1_countable_cofinal a.1 b a.2 hb (isOT1_sound a.1 ha).2 hba with
+        | ⟨n, hfall, hbound⟩ => by
+          have hn := T.isOT1.step a.1 ha n
+          exact ih ⟨T.fund1 a.1 (T.ofNat n), (isOT1_sound _ hn).1⟩ hfall hn b hb hbound
+      | Or.inr hba => by
+        rw [hba]; exact ha
   exact main ⟨a, (isOT1_sound a ha).1⟩ ha b hb hba
 
 theorem LF1_cofinal (a : T) (hc : a < P 1 Z Z) : ∃ n, a < T.LF1 n := by
@@ -2102,11 +2430,14 @@ theorem LF1_cofinal (a : T) (hc : a < P 1 Z Z) : ∃ n, a < T.LF1 n := by
   | Z => exact ⟨0, .Z_lt_P 0 _ Z⟩
   | P i s t =>
     have hi : i = 0 := by
-      rcases lt_inv i s t 1 Z Z hc with h | ⟨_, h⟩ | ⟨_, _, h⟩
-      · exact Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ h)
-      · exact False.elim (lt_Z_inv h)
-      · exact False.elim (lt_Z_inv h)
-    subst i
+      exact match lt_inv i s t 1 Z Z hc with
+      | Or.inl h => by
+        exact Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ h)
+      | Or.inr (Or.inl ⟨_, h⟩) => by
+        exact False.elim (lt_Z_inv h)
+      | Or.inr (Or.inr ⟨_, _, h⟩) => by
+        exact False.elim (lt_Z_inv h)
+    cases hi
     cases s with
     | Z => exact ⟨0, .p_mid 0 Z _ t Z (.Z_lt_P 0 Z Z)⟩
     | P j x y =>
@@ -2116,8 +2447,9 @@ theorem T.isOT1_iff_isNF1 (s : T) : T.isOT1 s ↔ (T.isNF1 s ∧ s < P 1 Z Z) :=
   constructor
   · exact isOT1_sound s
   · intro hs
-    obtain ⟨n, hn⟩ := LF1_cofinal s hs.2
-    exact isOT1_downward (T.LF1 n) s (.base n) hs.1 (Or.inl hn)
+    exact match LF1_cofinal s hs.2 with
+    | ⟨n, hn⟩ => by
+      exact isOT1_downward (T.LF1 n) s (.base n) hs.1 (Or.inl hn)
 
 def T.OT1 := { s : T // T.isOT1 s }
 
