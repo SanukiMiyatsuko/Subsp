@@ -960,7 +960,7 @@ theorem pn_principal_NF {lam : Nat} (v : new.Vec (new.T lam) lam)
                     (T.early_collapse a0)) T.Z
               else if a0 = T.Z then T.P 0 T.Z T.Z
               else T.P 0 a0 T.Z)
-          by_cases_dec hf : found = true
+          rcases constructive_cases (p := found = true) with hf | hf
           · rw [ite_eq_left hf]
             have hm := pn_aux_found_middle_closed v hcoord found sum a0 haux hf
             exact T.isNF1.p 1
@@ -968,7 +968,7 @@ theorem pn_principal_NF {lam : Nat} (v : new.Vec (new.T lam) lam)
               T.Z hm.1 T.isNF1.z hm.2.2 (T.Z_le _)
           · rw [ite_eq_right hf]
             have hi := tc_transAux_inv v hcoord found sum a0 haux
-            by_cases_dec ha0 : a0 = T.Z
+            rcases constructive_cases (p := a0 = T.Z) with ha0 | ha0
             · rw [ite_eq_left ha0]
               exact T.isNF1.p 0 T.Z T.Z T.isNF1.z T.isNF1.z
                 (fun y hy => by rw [T.G1.eq_1] at hy; cases hy)
@@ -1069,10 +1069,10 @@ theorem oc_principal_lt_false_false {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z T.Z else T.P 0 av T.Z) <
       (if aw = T.Z then T.P 0 T.Z T.Z else T.P 0 aw T.Z)
-  by_cases_dec havz : av = T.Z
+  rcases constructive_cases (p := av = T.Z) with havz | havz
   · subst av
     rw [ite_eq_left rfl]
-    by_cases_dec hawz : aw = T.Z
+    rcases constructive_cases (p := aw = T.Z) with hawz | hawz
     · subst aw
       exact False.elim (lt_irrefl_thm T.Z ha0lt)
     · rw [ite_eq_right hawz]
@@ -1098,7 +1098,7 @@ theorem oc_principal_lt_false_true {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z T.Z else T.P 0 av T.Z) <
       T.P 1 (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw)) T.Z
-  by_cases_dec havz : av = T.Z
+  rcases constructive_cases (p := av = T.Z) with havz | havz
   · rw [ite_eq_left havz]
     exact T.Lt.p_head 0 1 T.Z
       (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw))
@@ -1113,7 +1113,7 @@ theorem oc_principal_lt_false_true {k : Nat}
 
 theorem oc_one_del_P0 (a b : T) :
     T.one_del (T.P 0 a b) = if a = T.Z then b else T.P 0 a b := by
-  by_cases_dec ha : a = T.Z
+  rcases constructive_cases (p := a = T.Z) with ha | ha
   · subst a
     rw [ite_eq_left rfl]
     exact T.one_del.eq_1 b
@@ -1141,7 +1141,7 @@ theorem oc_one_del_NF_index0 (s : T)
         have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
         subst p
         rw [oc_one_del_P0]
-        by_cases_dec ha : a = T.Z
+        rcases constructive_cases (p := a = T.Z) with ha | ha
         · rw [ite_eq_left ha]
           have hbNF := (T.isNF1_P_inv 0 a b hs).2.1
           exact ⟨hbNF, hbidx⟩
@@ -1195,9 +1195,9 @@ theorem oc_one_del_lt_index0 (a b : T)
           have hpb0 : pb = 0 := Nat.eq_zero_of_le_zero hpb
           subst pb
           rw [oc_one_del_P0, oc_one_del_P0]
-          by_cases_dec haaZ : aa = T.Z
+          rcases constructive_cases (p := aa = T.Z) with haaZ | haaZ
           · rw [ite_eq_left haaZ]
-            by_cases_dec hbaZ : ba = T.Z
+            rcases constructive_cases (p := ba = T.Z) with hbaZ | hbaZ
             · rw [ite_eq_left hbaZ]
               subst aa
               subst ba
@@ -1220,7 +1220,7 @@ theorem oc_one_del_lt_index0 (a b : T)
                 rw [hd]
                 exact T.Lt.p_mid 0 T.Z ba d bb (tc_Z_lt_of_ne ba hbaZ)
           · rw [ite_eq_right haaZ]
-            by_cases_dec hbaZ : ba = T.Z
+            rcases constructive_cases (p := ba = T.Z) with hbaZ | hbaZ
             · rw [ite_eq_left hbaZ]
               subst ba
               cases lt_inv 0 aa ab 0 T.Z bb hab with
@@ -1749,10 +1749,10 @@ theorem oc_full_lt_false_false {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z (trans a) else T.P 0 av (trans a)) <
       (if aw = T.Z then T.P 0 T.Z (trans b) else T.P 0 aw (trans b))
-  by_cases_dec havz : av = T.Z
+  rcases constructive_cases (p := av = T.Z) with havz | havz
   · subst av
     rw [ite_eq_left rfl]
-    by_cases_dec hawz : aw = T.Z
+    rcases constructive_cases (p := aw = T.Z) with hawz | hawz
     · subst aw
       exact False.elim (lt_irrefl_thm T.Z ha0lt)
     · rw [ite_eq_right hawz]
@@ -1779,7 +1779,7 @@ theorem oc_full_lt_false_true {k : Nat}
   change
     (if av = T.Z then T.P 0 T.Z (trans a) else T.P 0 av (trans a)) <
       T.P 1 (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw)) (trans b)
-  by_cases_dec havz : av = T.Z
+  rcases constructive_cases (p := av = T.Z) with havz | havz
   · rw [ite_eq_left havz]
     exact T.Lt.p_head 0 1 T.Z
       (T.add (T.card_times 1 (T.one_del sw)) (T.early_collapse aw))
@@ -2192,13 +2192,13 @@ theorem nfcore_trans_PZ_shape {lam : Nat}
                     (T.early_collapse a0)) T.Z
               else if a0 = T.Z then T.P 0 T.Z T.Z
               else T.P 0 a0 T.Z) = T.P i m T.Z
-          by_cases_dec hf : found = true
+          rcases constructive_cases (p := found = true) with hf | hf
           · rw [ite_eq_left hf]
             exact ⟨1,
               T.add (T.card_times 1 (T.one_del sum))
                 (T.early_collapse a0), rfl⟩
           · rw [ite_eq_right hf]
-            by_cases_dec ha0 : a0 = T.Z
+            rcases constructive_cases (p := a0 = T.Z) with ha0 | ha0
             · rw [ite_eq_left ha0]
               exact ⟨0, T.Z, rfl⟩
             · rw [ite_eq_right ha0]
