@@ -869,11 +869,12 @@ def T.fund {lam : Nat} (s t : T lam) : T lam :=
     else P ls (fund add t)
 termination_by (T.size s, T.size t)
 decreasing_by
-  all_goals
-    first
-    | exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
-    | exact Prod.Lex.right _ (T.add_size_lt_P _ _)
-    | exact Prod.Lex.left _ _ (T.add_size_lt_P ls add)
+  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
+  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
+  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
+  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
+  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
+  · exact Prod.Lex.left _ _ (T.add_size_lt_P ls add)
 
 theorem T.fund_PZ_none {lam : Nat}
     (ls : Vec (T lam) lam) (t : T lam)
@@ -1804,9 +1805,8 @@ theorem T.P_same_le_iff {lam : Nat} (ls : Vec (T lam) lam)
       apply Or.inr
       have hpEq : T.P ls a = T.P ls b :=
         T_eq_sound (T.P ls a) (T.P ls b) heq
-      injection hpEq with _ hadd
-      rw [hadd]
-      exact T_refl b
+      cases hpEq
+      exact T_refl a
   · intro h
     exact T.P_le_P_same ls a b h
 
@@ -1831,8 +1831,7 @@ theorem T.sandwich_same_vector {lam : Nat}
     cases hheadEq
   | P cs d =>
     change T.P cs T.Z = T.P ls T.Z at hheadEq
-    injection hheadEq with hcs
-    subst cs
+    cases hheadEq
     refine ⟨d, rfl, ?_, ?_⟩
     · exact (T.P_same_le_iff ls a d).mp hl
     · exact (T.P_same_le_iff ls d b).mp hu
@@ -1858,8 +1857,8 @@ theorem T.vector_rel_of_P_le_P {lam : Nat}
   | inr heq =>
     have hpEq : T.P v a = T.P w b :=
       T_eq_sound (T.P v a) (T.P w b) heq
-    injection hpEq with hv
-    exact Or.inr hv
+    cases hpEq
+    exact Or.inr rfl
 
 theorem T.lt_of_le_of_lt {lam : Nat} (a b c : T lam)
     (hab : a ≤ b) (hbc : b < c) : a < c := by

@@ -109,9 +109,13 @@ theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.
       | Ω l =>
         rw [T.dom1.eq_2, hd]
         show (if (0:Nat) ≤ l then Dom1.ω else Dom1.Ω l) ≠ Dom1.Zero
-        split
-        · intro h; cases h
-        · intro h; cases h
+        apply Decidable.byCases (p := (0 : Nat) ≤ l)
+        · intro hle
+          rw [ite_eq_left hle]
+          intro h; cases h
+        · intro hle
+          rw [ite_eq_right hle]
+          intro h; cases h
     | succ l =>
       cases hd : T.dom1 s1 with
       | Zero => rw [T.dom1.eq_3, hd]; intro h; cases h
@@ -120,9 +124,13 @@ theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.
       | Ω l' =>
         rw [T.dom1.eq_3, hd]
         show (if l+1 ≤ l' then Dom1.ω else Dom1.Ω l') ≠ Dom1.Zero
-        split
-        · intro h; cases h
-        · intro h; cases h
+        apply Decidable.byCases (p := l + 1 ≤ l')
+        · intro hle
+          rw [ite_eq_left hle]
+          intro h; cases h
+        · intro hle
+          rw [ite_eq_right hle]
+          intro h; cases h
   | P s20 s21 s22 ih1 ih2 =>
     intro h
     rw [dom1_P_tail s0 s1 s20 s21 s22] at h
@@ -861,8 +869,7 @@ theorem T.isNF1_tail_le : ∀ x : T, T.isNF1 x → ∀ x0 x1 x2, x = P x0 x1 x2 
   | Z => intro _ x0 x1 x2 he; cases he
   | P a0 a1 a2 ih1 ih2 =>
     intro ha x0 x1 x2 he
-    injection he with he0 he1 he2
-    cases he0; cases he1; cases he2
+    cases he
     exact match T.isNF1_P_inv a0 a1 a2 ha with
     | ⟨_hs1, hs2, _h1, h2⟩ => by
       cases a2 with
@@ -888,9 +895,7 @@ theorem T.isNF1_tail_le : ∀ x : T, T.isNF1 x → ∀ x0 x1 x2, x = P x0 x1 x2 
               | ⟨_heq0, _heq1, hZZ⟩ => by
                 exact absurd hZZ (lt_irrefl_thm Z)
         | inr heq =>
-          injection heq with heq0 heq1
-          cases heq0
-          cases heq1
+          cases heq
           have hrec : b2 ≤ P a0 a1 b2 := ih2 hs2 a0 a1 b2 rfl
           cases hrec with
           | inl hlt2 =>

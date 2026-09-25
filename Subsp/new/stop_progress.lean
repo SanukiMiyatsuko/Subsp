@@ -151,33 +151,30 @@ theorem bridge_part_second_shape (s a b : T) (hp : T.part s = (a, b)) :
   induction s generalizing a b with
   | Z =>
     rw [T.part] at hp
-    injection hp with ha hb
-    exact Or.inl hb.symm
+    cases hp
+    exact Or.inl rfl
   | P s0 s1 s2 ih1 ih2 =>
     rw [T.part] at hp
     apply Decidable.byCases (p := s0 = 0)
     · intro h0
       rw [ite_eq_left h0] at hp
-      injection hp with ha hb
+      cases hp
       subst s0
-      exact Or.inr ⟨s1, s2, hb.symm⟩
+      exact Or.inr ⟨s1, s2, rfl⟩
     · intro h0
       rw [ite_eq_right h0] at hp
       cases htail : T.part s2 with
       | mk p q =>
         rw [htail] at hp
-        injection hp with ha hb
+        cases hp
         have hq := ih2 p q htail
         cases hq with
         | inl hz =>
-          apply Or.inl
-          rw [← hb]
-          exact hz
+          exact Or.inl hz
         | inr hP =>
           exact match hP with
           | ⟨c, d, heq⟩ => by
-            apply Or.inr
-            exact ⟨c, d, by rw [← hb]; exact heq⟩
+            exact Or.inr ⟨c, d, heq⟩
 
 theorem bridge_part_second_index0 (s a b : T)
     (hs : T.isNF1 s) (hp : T.part s = (a, b)) :

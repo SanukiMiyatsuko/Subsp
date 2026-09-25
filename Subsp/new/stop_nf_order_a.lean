@@ -602,8 +602,8 @@ theorem bridge_insert_lt (a b d : T)
                       | inl hm => exact Or.inl hm.2
                       | inr ht => exact Or.inr ht.2.1
                   | inr heq =>
-                    injection heq with _ hmid
-                    exact Or.inr hmid
+                    cases heq
+                    exact Or.inr rfl
                 have hcla : c ≤ a := partial_order.trans c f a hclef hflea
                 have hheadca : T.P 0 c T.Z ≤ T.P 0 a T.Z := by
                   cases hcla with
@@ -623,8 +623,8 @@ theorem bridge_insert_lt (a b d : T)
                       | inl hm => exact Or.inl hm.2
                       | inr ht => exact Or.inr ht.2.1
                   | inr heqca =>
-                    injection heqca with _ hmid
-                    exact Or.inr hmid
+                    cases heqca
+                    exact Or.inr rfl
                 have hheadca : T.P 0 c T.Z ≤ T.P 0 a T.Z := by
                   cases hclea with
                   | inl hlt => exact Or.inl (T.Lt.p_mid 0 c a T.Z T.Z hlt)
@@ -1112,8 +1112,8 @@ theorem bridge_P0_head_mid_le (a e f : T)
       | inl hm => exact Or.inl hm.2
       | inr ht => exact Or.inr ht.2.1
   | inr heq =>
-    injection heq with _ hmid
-    exact Or.inr hmid
+    cases heq
+    exact Or.inr rfl
 
 theorem bridge_lift_P1_le (a b : T) (h : a ≤ b) :
     T.P 1 a T.Z ≤ T.P 1 b T.Z := by
@@ -2683,11 +2683,8 @@ theorem ec_add_index0_lt_pos_of_lt : ∀ a c b : T,
       cases hpy : T.part y with
       | mk r s =>
         rw [hpy] at ha
-        injection ha with hr hs
-        have hr' : r = y := by
-          injection hr
-        have hs' : s = T.Z := hs
-        rw [← hr', ← hs']
+        cases ha
+        rfl
     cases c with
     | Z => cases hlt
     | P q u v =>
@@ -2701,11 +2698,8 @@ theorem ec_add_index0_lt_pos_of_lt : ∀ a c b : T,
         cases hpv : T.part v with
         | mk r s =>
           rw [hpv] at hc
-          injection hc with hr hs
-          have hr' : r = v := by
-            injection hr
-          have hs' : s = T.Z := hs
-          rw [← hr', ← hs']
+          cases hc
+          rfl
       cases lt_inv p x y q u v hlt with
       | inl hpq =>
           exact T.Lt.p_head p q x u (T.add y b) v hpq
@@ -3096,7 +3090,8 @@ theorem ec_one_del_mono_nonzero (s t : T)
                               | inl hm => exact False.elim (lt_Z_inv hm.2)
                               | inr htcase => exact False.elim (lt_Z_Z_inv htcase.2.2)
                       | inr heq =>
-                          injection heq
+                          cases heq
+                          rfl
                     rw [hez]
                     exact T.Lt.p_mid 0 T.Z (T.P r u v) f d
                       (T.Lt.Z_lt_P r u v)

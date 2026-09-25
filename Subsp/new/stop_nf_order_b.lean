@@ -142,7 +142,9 @@ theorem cb_P0_mid_le (a c : T)
           | inl hm => exact Or.inl hm.2
           | inr ht => exact False.elim (lt_Z_Z_inv ht.2.2)
   | inr heq =>
-      have hca : c = a := by injection heq
+      have hca : c = a := by
+        cases heq
+        rfl
       exact Or.inr hca
 
 theorem cb_shift_le_of_le (k : Nat) (a c : T)
@@ -1130,8 +1132,8 @@ theorem oc_one_del_P0 (a b : T) :
     rw [ite_eq_right ha]
     exact T.one_del.eq_2 (T.P 0 a b) (by
       intro s2 h
-      injection h with hidx hmid htail
-      exact ha hmid)
+      cases h
+      exact ha rfl)
 
 #print axioms oc_one_del_P0
 
@@ -1181,7 +1183,8 @@ theorem oc_P0Z_tail_shape (b : T)
             | inl hm => exact False.elim (lt_Z_inv hm.2)
             | inr ht => exact ht.2.1
         | inr heq =>
-          injection heq
+          cases heq
+          rfl
       subst c
       exact Or.inr ⟨d, rfl⟩
 

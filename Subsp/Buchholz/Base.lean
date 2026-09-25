@@ -696,9 +696,13 @@ theorem T.drop_size_le : ∀ (t s : T), (T.drop t s).size ≤ s.size := by
     exact Nat.le_of_ble_eq_true rfl
   | P s0 s1 s2 ih1 ih2 =>
     unfold T.drop
-    split
-    · exact Nat.le_refl (P s0 s1 s2).size
-    · cases s2 with
+    apply Decidable.byCases (p := T.index_Prop t (P s0 s1 s2))
+    · intro hidx
+      rw [ite_eq_left hidx]
+      exact Nat.le_refl (P s0 s1 s2).size
+    · intro hidx
+      rw [ite_eq_right hidx]
+      cases s2 with
       | Z =>
         exact Nat.le_succ_of_le (ih1 t)
       | P s20 s21 s22 =>

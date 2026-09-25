@@ -136,16 +136,14 @@ theorem sg_tail_le_principal_add (i : Nat) (m b : T)
               | inr htail =>
                   exact False.elim (lt_Z_inv htail.2.2)
       | inr heq =>
-          injection heq with hqi hem
-          subst i
-          subst m
-          have hfle : f ≤ T.P q e f :=
-            T.isNF1_tail_le (T.P q e f) hb q e f rfl
+          cases heq
+          have hfle : f ≤ T.P i m f :=
+            T.isNF1_tail_le (T.P i m f) hb i m f rfl
           cases hfle with
           | inl hflt =>
-              exact Or.inl (T.Lt.p_tail q e f (T.P q e f) hflt)
+              exact Or.inl (T.Lt.p_tail i m f (T.P i m f) hflt)
           | inr hfeq =>
-              exact Or.inr (congrArg (fun z => T.P q e z) hfeq)
+              exact Or.inr (congrArg (fun z => T.P i m z) hfeq)
 
 #print axioms sg_tail_le_principal_add
 
