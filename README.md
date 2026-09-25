@@ -1,1 +1,2 @@
-# Subsp
+Subspがメインのフォルダで、
+SubspRepoが作業フォルダです。
