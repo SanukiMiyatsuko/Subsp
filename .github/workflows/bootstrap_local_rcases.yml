@@ -22,10 +22,14 @@ jobs:
           set -euo pipefail
           LEAN_BIN="$(elan which lean)"
           TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
-          tar --zstd -cf lean-core.tar.zst -C "$TOOLCHAIN" bin/lean bin/lake lib/lean
-          split -b 180M -d -a 2 lean-core.tar.zst lean-core.part.
-          tar -czf subsp-src.tar.gz --exclude=.git --exclude=lean-core.tar.zst --exclude='lean-core.part.*' --exclude=subsp-src.tar.gz .
-          ls -lh lean-core.part.* subsp-src.tar.gz
+          OUT="$RUNNER_TEMP/lean-bootstrap"
+          mkdir -p "$OUT"
+          tar --zstd -cf "$OUT/lean-core.tar.zst" -C "$TOOLCHAIN" bin/lean bin/lake lib/lean
+          split -b 180M -d -a 2 "$OUT/lean-core.tar.zst" "$OUT/lean-core.part."
+          tar -czf "$OUT/subsp-src.tar.gz" --exclude=.git .
+          ls -lh "$OUT"/lean-core.part.* "$OUT/subsp-src.tar.gz"
+          cp "$OUT"/lean-core.part.* "$GITHUB_WORKSPACE"/
+          cp "$OUT/subsp-src.tar.gz" "$GITHUB_WORKSPACE"/
       - uses: actions/upload-artifact@v4
         with:
           name: lean-core-part-00
