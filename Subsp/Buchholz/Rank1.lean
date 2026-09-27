@@ -109,13 +109,9 @@ theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.
       | Ω l =>
         rw [T.dom1.eq_2, hd]
         show (if (0:Nat) ≤ l then Dom1.ω else Dom1.Ω l) ≠ Dom1.Zero
-        apply Decidable.byCases (p := (0 : Nat) ≤ l)
-        · intro hle
-          rw [ite_eq_left hle]
-          intro h; cases h
-        · intro hle
-          rw [ite_eq_right hle]
-          intro h; cases h
+        split
+        · intro h; cases h
+        · intro h; cases h
     | succ l =>
       cases hd : T.dom1 s1 with
       | Zero => rw [T.dom1.eq_3, hd]; intro h; cases h
@@ -124,13 +120,9 @@ theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.
       | Ω l' =>
         rw [T.dom1.eq_3, hd]
         show (if l+1 ≤ l' then Dom1.ω else Dom1.Ω l') ≠ Dom1.Zero
-        apply Decidable.byCases (p := l + 1 ≤ l')
-        · intro hle
-          rw [ite_eq_left hle]
-          intro h; cases h
-        · intro hle
-          rw [ite_eq_right hle]
-          intro h; cases h
+        split
+        · intro h; cases h
+        · intro h; cases h
   | P s20 s21 s22 ih1 ih2 =>
     intro h
     rw [dom1_P_tail s0 s1 s20 s21 s22] at h
