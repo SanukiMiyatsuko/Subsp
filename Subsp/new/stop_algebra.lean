@@ -1542,18 +1542,9 @@ theorem tc_trans_ne_Z_of_ne_Z {lam : Nat} (s : new.T lam)
           T.P 1 (T.card_times 1 (T.one_del sum) + T.early_collapse a0) (trans add)
         else if a0 = T.Z then T.P 0 T.Z (trans add)
         else T.P 0 a0 (trans add)) ≠ T.Z
-      by_cases hf : found = true
-      · rw [ite_eq_left hf]
-        intro h
-        cases h
-      · rw [ite_eq_right hf]
-        by_cases ha0 : a0 = T.Z
-        · rw [ite_eq_left ha0]
-          intro h
-          cases h
-        · rw [ite_eq_right ha0]
-          intro h
-          cases h
+      split
+      · intro h; cases h
+      · split <;> intro h <;> cases h
 
 theorem tc_Z_lt_of_ne (x : T) (hx : x ≠ T.Z) : T.Z < x := by
   rcases T.Z_le x with h | h
@@ -1564,18 +1555,9 @@ theorem tc_add_ne_Z_left (a b : T) (ha : a ≠ T.Z) : a + b ≠ T.Z := by
   cases a with
   | Z => exact False.elim (ha rfl)
   | P p c d =>
-    cases b with
-    | Z =>
-      intro h
-      cases h
-    | P q e f =>
-      intro h
-      cases h
+    cases b <;> intro h <;> cases h
 
-theorem tc_card_times_zero (c : T) : T.card_times 0 c = c := by
-  cases c with
-  | Z => rfl
-  | P p a b => rfl
+theorem tc_card_times_zero (c : T) : T.card_times 0 c = c := rfl
 
 theorem tc_transAux_inv {lam : Nat} :
     ∀ {k : Nat} (v : new.Vec (new.T lam) (k + 1)),
