@@ -1557,7 +1557,10 @@ theorem tc_add_ne_Z_left (a b : T) (ha : a ≠ T.Z) : a + b ≠ T.Z := by
   | P p c d =>
     cases b <;> intro h <;> cases h
 
-theorem tc_card_times_zero (c : T) : T.card_times 0 c = c := rfl
+theorem tc_card_times_zero (c : T) : T.card_times 0 c = c := by
+  cases c with
+  | Z => rfl
+  | P p a b => rfl
 
 theorem tc_transAux_inv {lam : Nat} :
     ∀ {k : Nat} (v : new.Vec (new.T lam) (k + 1)),
