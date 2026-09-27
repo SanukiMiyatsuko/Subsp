@@ -224,23 +224,7 @@ theorem bridge_card_times_ne_Z (n : Nat) (s : T) (hs : s ≠ T.Z) :
       cases h
     | succ n =>
       rw [T.card_times]
-      by_cases hp : p = 0
-      · rw [ite_eq_left hp]
-        cases hc : T.card_times (n + 1) b with
-        | Z =>
-          intro h
-          cases h
-        | P q c d =>
-          intro h
-          cases h
-      · rw [ite_eq_right hp]
-        cases hc : T.card_times (n + 1) b with
-        | Z =>
-          intro h
-          cases h
-        | P q c d =>
-          intro h
-          cases h
+      split <;> cases hc : T.card_times (n + 1) b <;> intro h <;> cases h
 
 end BasicOperations
 
