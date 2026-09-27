@@ -558,12 +558,10 @@ theorem oc_false_false_a0_lt {lam k : Nat}
 
 theorem oc_one_del_P0 (a b : T) :
     T.one_del (T.P 0 a b) = if a = T.Z then b else T.P 0 a b := by
-  by_cases ha : a = T.Z
+  split <;> rename_i ha
   · cases ha
-    rw [ite_eq_left rfl]
     exact T.one_del.eq_1 b
-  · rw [ite_eq_right ha]
-    exact T.one_del.eq_2 (T.P 0 a b) (by
+  · exact T.one_del.eq_2 (T.P 0 a b) (by
       intro s2 h
       cases h
       exact ha rfl)
