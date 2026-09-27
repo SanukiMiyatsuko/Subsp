@@ -153,15 +153,11 @@ theorem fund1_P_tail (s0 : Nat) (s1 : T) (t : T) (s20 : Nat) (s21 s22 : T) :
 
 theorem fund1_P_of_One (s0 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.One) :
     T.fund1 (P s0 s1 Z) t = T.mul (P s0 (T.fund1 s1 Z) Z) t := by
-  cases s0 with
-  | zero => exact fund1_P0_of_One s1 t h
-  | succ l0 => exact fund1_Psucc_of_One l0 s1 t h
+  cases s0 <;> simp [fund1_P0_of_One, fund1_Psucc_of_One, h]
 
 theorem fund1_P_of_ω (s0 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.ω) :
     T.fund1 (P s0 s1 Z) t = P s0 (T.fund1 s1 t) Z := by
-  cases s0 with
-  | zero => exact fund1_P0_of_ω s1 t h
-  | succ l0 => exact fund1_Psucc_of_ω l0 s1 t h
+  cases s0 <;> simp [fund1_P0_of_ω, fund1_Psucc_of_ω, h]
 
 theorem fund1_P_of_Ω_le (s0 : Nat) (s1 t : T) (l : Nat) (h : T.dom1 s1 = Dom1.Ω l) (hle : s0 ≤ l) :
     T.fund1 (P s0 s1 Z) t = P s0 (T.fund1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t)) Z := by

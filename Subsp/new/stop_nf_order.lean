@@ -565,10 +565,6 @@ theorem oc_one_del_NF_index0 (s : T)
     T.isNF1 (T.one_del s) ∧ T.index_Prop1 0 (T.one_del s) := by
   cases s with
   | Z =>
-      have hz : T.one_del T.Z = T.Z := T.one_del.eq_2 T.Z (by
-        intro s2 h
-        cases h)
-      rw [hz]
       exact ⟨T.isNF1.z, T.index_Prop1.z⟩
   | P p a b =>
       cases hi with
@@ -576,12 +572,9 @@ theorem oc_one_del_NF_index0 (s : T)
         have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
         cases hp0
         rw [oc_one_del_P0]
-        by_cases ha : a = T.Z
-        · rw [ite_eq_left ha]
-          have hbNF := (T.isNF1_P_inv 0 a b hs).2.1
-          exact ⟨hbNF, hbidx⟩
-        · rw [ite_eq_right ha]
-          exact ⟨hs, T.index_Prop1.p 0 a b (Nat.le_refl 0) hbidx⟩
+        split
+        · exact ⟨(T.isNF1_P_inv 0 a b hs).2.1, hbidx⟩
+        · exact ⟨hs, T.index_Prop1.p 0 a b (Nat.le_refl 0) hbidx⟩
 
 theorem oc_P0Z_tail_shape (b : T)
     (hbNF : T.isNF1 b) (hhead : T.head b ≤ T.P 0 T.Z T.Z) :

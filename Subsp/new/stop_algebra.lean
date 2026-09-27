@@ -251,8 +251,7 @@ theorem bridge_early_collapse_closed (s : T)
   | P s0 s1 s2 =>
     by_cases hs0 : s0 = 0
     · have hec : T.early_collapse (T.P s0 s1 s2) = T.P s0 s1 s2 := by
-        rw [T.early_collapse, T.part, ite_eq_left hs0]
-        rfl
+        simp [T.early_collapse, T.part, hs0]
       rw [hec]
       cases hs0
       have hindex : T.index_Prop1 0 (T.P 0 s1 s2) :=
@@ -1185,13 +1184,7 @@ theorem bridge_card_times_closed (n : Nat) :
           Rank1Termination.index_mono (Nat.zero_le 1) (T.P 0 a b) hidx0
         have hempty := index_Prop1_G1_empty 0 (T.P 0 a b) hidx0 1
           (Nat.zero_lt_succ 0)
-        constructor
-        · exact hcNF
-        · constructor
-          · exact hidx1
-          · intro x hx
-            rw [hempty] at hx
-            cases hx
+        exact ⟨hcNF, hidx1, by simp [hempty]⟩
       | succ k =>
         rw [T.card_times, ite_eq_left rfl]
         rw [← add_eq_hAdd
