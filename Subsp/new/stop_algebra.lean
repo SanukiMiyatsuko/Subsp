@@ -258,6 +258,8 @@ theorem bridge_early_collapse_closed (s : T)
       (∀ x : T, x ∈ T.G1 1 (T.early_collapse s) → x < T.early_collapse s) := by
   cases s with
   | Z =>
+    change T.isNF1 T.Z ∧ T.index_Prop1 0 T.Z ∧
+      (∀ x : T, x ∈ T.G1 1 T.Z → x < T.Z)
     exact ⟨T.isNF1.z, T.index_Prop1.z, by
       intro x hx
       rw [T.G1.eq_1] at hx
