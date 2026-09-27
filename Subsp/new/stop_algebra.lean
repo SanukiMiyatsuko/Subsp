@@ -273,14 +273,11 @@ theorem bridge_early_collapse_closed (s : T)
       cases hs0
       have hindex : T.index_Prop1 0 (T.P 0 s1 s2) :=
         isNF1_index 0 0 s1 s2 hs (Nat.le_refl 0)
-      constructor
-      · exact hs
-      · constructor
-        · exact hindex
-        · intro x hx
-          have hempty := index_Prop1_G1_empty 0 (T.P 0 s1 s2) hindex 1 (Nat.zero_lt_succ 0)
-          rw [hempty] at hx
-          cases hx
+      exact ⟨hs, hindex, by
+        intro x hx
+        have hempty := index_Prop1_G1_empty 0 (T.P 0 s1 s2) hindex 1 (Nat.zero_lt_succ 0)
+        rw [hempty] at hx
+        cases hx⟩
     · cases hp : T.part s2 with
       | mk a b =>
         have hpne : T.P s0 s1 a ≠ T.Z := by
@@ -329,23 +326,17 @@ theorem bridge_early_collapse_closed (s : T)
             T.isNF1.p 0 p b hpStrong.1 hbNF hpStrong.2 hhead
           have hindex : T.index_Prop1 0 (T.P 0 p b) :=
             isNF1_index 0 0 p b hkeep (Nat.le_refl 0)
-          constructor
-          · exact hkeep
-          · constructor
-            · exact hindex
-            · intro x hx
-              have hempty := index_Prop1_G1_empty 0 (T.P 0 p b) hindex 1 (Nat.zero_lt_succ 0)
-              rw [hempty] at hx
-              cases hx
+          exact ⟨hkeep, hindex, by
+            intro x hx
+            have hempty := index_Prop1_G1_empty 0 (T.P 0 p b) hindex 1 (Nat.zero_lt_succ 0)
+            rw [hempty] at hx
+            cases hx⟩
         · rw [ite_eq_right hhead]
-          constructor
-          · exact hbNF
-          · constructor
-            · exact hbIndex
-            · intro x hx
-              have hempty := index_Prop1_G1_empty 0 b hbIndex 1 (Nat.zero_lt_succ 0)
-              rw [hempty] at hx
-              cases hx
+          exact ⟨hbNF, hbIndex, by
+            intro x hx
+            have hempty := index_Prop1_G1_empty 0 b hbIndex 1 (Nat.zero_lt_succ 0)
+            rw [hempty] at hx
+            cases hx⟩
 
 theorem bridge_add_left_lt (p a b : T) (h : a < b) :
     T.add p a < T.add p b := by
@@ -1190,13 +1181,10 @@ theorem bridge_card_times_closed (n : Nat) :
   | Z =>
     intro _ _
     rw [T.card_times]
-    constructor
-    · exact T.isNF1.z
-    · constructor
-      · exact T.index_Prop1.z
-      · intro x hx
-        rw [T.G1.eq_1] at hx
-        cases hx
+    exact ⟨T.isNF1.z, T.index_Prop1.z, by
+      intro x hx
+      rw [T.G1.eq_1] at hx
+      cases hx⟩
   | P p a b iha ihb =>
     intro hcNF hcIdx
     cases hcIdx with
