@@ -691,9 +691,7 @@ theorem T.size_lt_size_P_right (s0 : Nat) (s1 s2 : T) : s2.size < (P s0 s1 s2).s
 theorem T.drop_size_le : ∀ (t s : T), (T.drop t s).size ≤ s.size := by
   intro t s
   induction s generalizing t with
-  | Z =>
-    unfold T.drop
-    exact Nat.le_of_ble_eq_true rfl
+  | Z => simp [T.drop, T.size]
   | P s0 s1 s2 ih1 ih2 =>
     unfold T.drop
     split

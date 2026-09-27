@@ -27,99 +27,57 @@ def T.dom1 : T → Dom1
   else T.dom1 s2
 
 theorem dom1_P0_of_Zero (s1 : T) (h : T.dom1 s1 = Dom1.Zero) : T.dom1 (P 0 s1 Z) = Dom1.One := by
-  rw [T.dom1.eq_2, h]
-  rfl
+  simp [T.dom1, h]
 
 theorem dom1_P0_of_One (s1 : T) (h : T.dom1 s1 = Dom1.One) : T.dom1 (P 0 s1 Z) = Dom1.ω := by
-  rw [T.dom1.eq_2, h]
-  rfl
+  simp [T.dom1, h]
 
 theorem dom1_P0_of_ω (s1 : T) (h : T.dom1 s1 = Dom1.ω) : T.dom1 (P 0 s1 Z) = Dom1.ω := by
-  rw [T.dom1.eq_2, h]
-  rfl
+  simp [T.dom1, h]
 
 theorem dom1_P0_of_Ω (s1 : T) (l : Nat) (h : T.dom1 s1 = Dom1.Ω l) : T.dom1 (P 0 s1 Z) = Dom1.ω := by
-  rw [T.dom1.eq_2, h]
-  show (if (0:Nat) ≤ l then Dom1.ω else Dom1.Ω l) = Dom1.ω
-  rw [ite_eq_left (Nat.zero_le l)]
+  simp [T.dom1, h]
 
 theorem dom1_Psucc_of_Zero (l0 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.Zero) :
     T.dom1 (P (l0+1) s1 Z) = Dom1.Ω l0 := by
-  rw [T.dom1.eq_3, h]
-  rfl
+  simp [T.dom1, h]
 
 theorem dom1_Psucc_of_One (l0 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.One) :
     T.dom1 (P (l0+1) s1 Z) = Dom1.ω := by
-  rw [T.dom1.eq_3, h]
-  rfl
+  simp [T.dom1, h]
 
 theorem dom1_Psucc_of_ω (l0 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.ω) :
     T.dom1 (P (l0+1) s1 Z) = Dom1.ω := by
-  rw [T.dom1.eq_3, h]
-  rfl
+  simp [T.dom1, h]
 
 theorem dom1_Psucc_of_Ω_le (l0 l1 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.Ω l1) (hle : l0+1 ≤ l1) :
     T.dom1 (P (l0+1) s1 Z) = Dom1.ω := by
-  rw [T.dom1.eq_3, h]
-  show (if l0+1 ≤ l1 then Dom1.ω else Dom1.Ω l1) = Dom1.ω
-  rw [ite_eq_left hle]
+  simp [T.dom1, h, hle]
 
 theorem dom1_Psucc_of_Ω_gt (l0 l1 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.Ω l1) (hgt : ¬ (l0+1 ≤ l1)) :
     T.dom1 (P (l0+1) s1 Z) = Dom1.Ω l1 := by
-  rw [T.dom1.eq_3, h]
-  show (if l0+1 ≤ l1 then Dom1.ω else Dom1.Ω l1) = Dom1.Ω l1
-  rw [ite_eq_right hgt]
+  simp [T.dom1, h, hgt]
 
 theorem dom1_P_tail (s0 : Nat) (s1 : T) (s20 : Nat) (s21 s22 : T) :
     T.dom1 (P s0 s1 (P s20 s21 s22)) = T.dom1 (P s20 s21 s22) := rfl
 
 theorem dom1_P_of_One (s0 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.One) : T.dom1 (P s0 s1 Z) = Dom1.ω := by
-  cases s0 with
-  | zero => exact dom1_P0_of_One s1 h
-  | succ l0 => exact dom1_Psucc_of_One l0 s1 h
+  simp [T.dom1, h]
 
 theorem dom1_P_of_ω (s0 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.ω) : T.dom1 (P s0 s1 Z) = Dom1.ω := by
-  cases s0 with
-  | zero => exact dom1_P0_of_ω s1 h
-  | succ l0 => exact dom1_Psucc_of_ω l0 s1 h
+  simp [T.dom1, h]
 
 theorem dom1_P_of_Ω (s0 : Nat) (s1 : T) (l : Nat) (h : T.dom1 s1 = Dom1.Ω l) :
     T.dom1 (P s0 s1 Z) = if s0 ≤ l then Dom1.ω else Dom1.Ω l := by
-  cases s0 with
-  | zero =>
-    rw [dom1_P0_of_Ω s1 l h]
-    rw [ite_eq_left (Nat.zero_le l)]
-  | succ l0 =>
-    split <;> rename_i hle
-    · exact dom1_Psucc_of_Ω_le l0 l s1 h hle
-    · exact dom1_Psucc_of_Ω_gt l0 l s1 h hle
+  simp [T.dom1, h]
 
 theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.Zero := by
   induction s2 generalizing s0 s1 with
   | Z =>
-    cases s0 with
-    | zero =>
-      cases hd : T.dom1 s1 with
-      | Zero => rw [T.dom1.eq_2, hd]; intro h; cases h
-      | One => rw [T.dom1.eq_2, hd]; intro h; cases h
-      | ω => rw [T.dom1.eq_2, hd]; intro h; cases h
-      | Ω l =>
-        rw [T.dom1.eq_2, hd]
-        show (if (0:Nat) ≤ l then Dom1.ω else Dom1.Ω l) ≠ Dom1.Zero
-        split <;> intro h <;> cases h
-    | succ l =>
-      cases hd : T.dom1 s1 with
-      | Zero => rw [T.dom1.eq_3, hd]; intro h; cases h
-      | One => rw [T.dom1.eq_3, hd]; intro h; cases h
-      | ω => rw [T.dom1.eq_3, hd]; intro h; cases h
-      | Ω l' =>
-        rw [T.dom1.eq_3, hd]
-        show (if l+1 ≤ l' then Dom1.ω else Dom1.Ω l') ≠ Dom1.Zero
-        split <;> intro h <;> cases h
-  | P s20 s21 s22 ih1 ih2 =>
-    intro h
-    rw [dom1_P_tail s0 s1 s20 s21 s22] at h
-    exact ih2 s20 s21 h
+    cases s0 <;> cases h : T.dom1 s1 <;> simp [T.dom1, h] <;>
+      split <;> simp
+  | P s20 s21 s22 _ ih =>
+    simpa [T.dom1] using ih s20 s21
 
 theorem dom1_Zero_imp_eq_Z (x : T) (h : T.dom1 x = Dom1.Zero) : x = Z := by
   cases x with
@@ -163,10 +121,7 @@ theorem fund1_P0_of_ω (s1 t : T) (h : T.dom1 s1 = Dom1.ω) :
 theorem fund1_P0_of_Ω (s1 t : T) (l : Nat) (h : T.dom1 s1 = Dom1.Ω l) :
     T.fund1 (P 0 s1 Z) t = P 0 (T.fund1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t)) Z := by
   rw [T.fund1.eq_2, h]
-  show (if (0:Nat) ≤ l then
-          (let F := fun x => P l (T.fund1 s1 x) Z; P 0 (T.fund1 s1 (T.iter F t)) Z)
-        else P 0 (T.fund1 s1 t) Z) = P 0 (T.fund1 s1 (T.iter (fun x => P l (T.fund1 s1 x) Z) t)) Z
-  rw [ite_eq_left (Nat.zero_le l)]
+  simp
 
 theorem fund1_Psucc_of_Zero (l0 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.Zero) :
     T.fund1 (P (l0+1) s1 Z) t = t := by
@@ -186,18 +141,12 @@ theorem fund1_Psucc_of_ω (l0 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.ω) :
 theorem fund1_Psucc_of_Ω_le (l0 l1 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.Ω l1) (hle : l0+1 ≤ l1) :
     T.fund1 (P (l0+1) s1 Z) t = P (l0+1) (T.fund1 s1 (T.iter (fun x => P l1 (T.fund1 s1 x) Z) t)) Z := by
   rw [T.fund1.eq_3, h]
-  show (if l0+1 ≤ l1 then
-          (let F := fun x => P l1 (T.fund1 s1 x) Z; P (l0+1) (T.fund1 s1 (T.iter F t)) Z)
-        else P (l0+1) (T.fund1 s1 t) Z) = P (l0+1) (T.fund1 s1 (T.iter (fun x => P l1 (T.fund1 s1 x) Z) t)) Z
-  rw [ite_eq_left hle]
+  simp [hle]
 
 theorem fund1_Psucc_of_Ω_gt (l0 l1 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.Ω l1) (hgt : ¬ (l0+1 ≤ l1)) :
     T.fund1 (P (l0+1) s1 Z) t = P (l0+1) (T.fund1 s1 t) Z := by
   rw [T.fund1.eq_3, h]
-  show (if l0+1 ≤ l1 then
-          (let F := fun x => P l1 (T.fund1 s1 x) Z; P (l0+1) (T.fund1 s1 (T.iter F t)) Z)
-        else P (l0+1) (T.fund1 s1 t) Z) = P (l0+1) (T.fund1 s1 t) Z
-  rw [ite_eq_right hgt]
+  simp [hgt]
 
 theorem fund1_P_tail (s0 : Nat) (s1 : T) (t : T) (s20 : Nat) (s21 s22 : T) :
     T.fund1 (P s0 s1 (P s20 s21 s22)) t = P s0 s1 (T.fund1 (P s20 s21 s22) t) := rfl

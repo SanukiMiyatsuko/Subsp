@@ -558,13 +558,7 @@ theorem oc_false_false_a0_lt {lam k : Nat}
 
 theorem oc_one_del_P0 (a b : T) :
     T.one_del (T.P 0 a b) = if a = T.Z then b else T.P 0 a b := by
-  split <;> rename_i ha
-  · cases ha
-    exact T.one_del.eq_1 b
-  · exact T.one_del.eq_2 (T.P 0 a b) (by
-      intro s2 h
-      cases h
-      exact ha rfl)
+  cases a <;> rfl
 
 theorem oc_one_del_NF_index0 (s : T)
     (hs : T.isNF1 s) (hi : T.index_Prop1 0 s) :
