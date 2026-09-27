@@ -12,4 +12,4 @@ import Subsp.new.stop_nf_order
 #print axioms new.T.fund_NF_closed
 
 def main : IO Unit :=
-  IO.println s!"Hello, {hello}!"
+  IO.println "proof audit"
