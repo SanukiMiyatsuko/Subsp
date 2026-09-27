@@ -224,23 +224,7 @@ theorem bridge_card_times_ne_Z (n : Nat) (s : T) (hs : s ≠ T.Z) :
       cases h
     | succ n =>
       rw [T.card_times]
-      by_cases hp : p = 0
-      · rw [ite_eq_left hp]
-        cases hc : T.card_times (n + 1) b with
-        | Z =>
-          intro h
-          cases h
-        | P q c d =>
-          intro h
-          cases h
-      · rw [ite_eq_right hp]
-        cases hc : T.card_times (n + 1) b with
-        | Z =>
-          intro h
-          cases h
-        | P q c d =>
-          intro h
-          cases h
+      split <;> cases hc : T.card_times (n + 1) b <;> intro h <;> cases h
 
 end BasicOperations
 
@@ -258,15 +242,12 @@ theorem bridge_early_collapse_closed (s : T)
       (∀ x : T, x ∈ T.G1 1 (T.early_collapse s) → x < T.early_collapse s) := by
   cases s with
   | Z =>
-    have hec : T.early_collapse T.Z = T.Z := by rfl
-    rw [hec]
-    constructor
-    · exact T.isNF1.z
-    · constructor
-      · exact T.index_Prop1.z
-      · intro x hx
-        rw [T.G1.eq_1] at hx
-        cases hx
+    change T.isNF1 T.Z ∧ T.index_Prop1 0 T.Z ∧
+      (∀ x : T, x ∈ T.G1 1 T.Z → x < T.Z)
+    exact ⟨T.isNF1.z, T.index_Prop1.z, by
+      intro x hx
+      rw [T.G1.eq_1] at hx
+      cases hx⟩
   | P s0 s1 s2 =>
     by_cases hs0 : s0 = 0
     · have hec : T.early_collapse (T.P s0 s1 s2) = T.P s0 s1 s2 := by
@@ -276,14 +257,11 @@ theorem bridge_early_collapse_closed (s : T)
       cases hs0
       have hindex : T.index_Prop1 0 (T.P 0 s1 s2) :=
         isNF1_index 0 0 s1 s2 hs (Nat.le_refl 0)
-      constructor
-      · exact hs
-      · constructor
-        · exact hindex
-        · intro x hx
-          have hempty := index_Prop1_G1_empty 0 (T.P 0 s1 s2) hindex 1 (Nat.zero_lt_succ 0)
-          rw [hempty] at hx
-          cases hx
+      exact ⟨hs, hindex, by
+        intro x hx
+        have hempty := index_Prop1_G1_empty 0 (T.P 0 s1 s2) hindex 1 (Nat.zero_lt_succ 0)
+        rw [hempty] at hx
+        cases hx⟩
     · cases hp : T.part s2 with
       | mk a b =>
         have hpne : T.P s0 s1 a ≠ T.Z := by
@@ -332,23 +310,17 @@ theorem bridge_early_collapse_closed (s : T)
             T.isNF1.p 0 p b hpStrong.1 hbNF hpStrong.2 hhead
           have hindex : T.index_Prop1 0 (T.P 0 p b) :=
             isNF1_index 0 0 p b hkeep (Nat.le_refl 0)
-          constructor
-          · exact hkeep
-          · constructor
-            · exact hindex
-            · intro x hx
-              have hempty := index_Prop1_G1_empty 0 (T.P 0 p b) hindex 1 (Nat.zero_lt_succ 0)
-              rw [hempty] at hx
-              cases hx
+          exact ⟨hkeep, hindex, by
+            intro x hx
+            have hempty := index_Prop1_G1_empty 0 (T.P 0 p b) hindex 1 (Nat.zero_lt_succ 0)
+            rw [hempty] at hx
+            cases hx⟩
         · rw [ite_eq_right hhead]
-          constructor
-          · exact hbNF
-          · constructor
-            · exact hbIndex
-            · intro x hx
-              have hempty := index_Prop1_G1_empty 0 b hbIndex 1 (Nat.zero_lt_succ 0)
-              rw [hempty] at hx
-              cases hx
+          exact ⟨hbNF, hbIndex, by
+            intro x hx
+            have hempty := index_Prop1_G1_empty 0 b hbIndex 1 (Nat.zero_lt_succ 0)
+            rw [hempty] at hx
+            cases hx⟩
 
 theorem bridge_add_left_lt (p a b : T) (h : a < b) :
     T.add p a < T.add p b := by
@@ -1193,13 +1165,10 @@ theorem bridge_card_times_closed (n : Nat) :
   | Z =>
     intro _ _
     rw [T.card_times]
-    constructor
-    · exact T.isNF1.z
-    · constructor
-      · exact T.index_Prop1.z
-      · intro x hx
-        rw [T.G1.eq_1] at hx
-        cases hx
+    exact ⟨T.isNF1.z, T.index_Prop1.z, by
+      intro x hx
+      rw [T.G1.eq_1] at hx
+      cases hx⟩
   | P p a b iha ihb =>
     intro hcNF hcIdx
     cases hcIdx with
@@ -1557,18 +1526,9 @@ theorem tc_trans_ne_Z_of_ne_Z {lam : Nat} (s : new.T lam)
           T.P 1 (T.card_times 1 (T.one_del sum) + T.early_collapse a0) (trans add)
         else if a0 = T.Z then T.P 0 T.Z (trans add)
         else T.P 0 a0 (trans add)) ≠ T.Z
-      by_cases hf : found = true
-      · rw [ite_eq_left hf]
-        intro h
-        cases h
-      · rw [ite_eq_right hf]
-        by_cases ha0 : a0 = T.Z
-        · rw [ite_eq_left ha0]
-          intro h
-          cases h
-        · rw [ite_eq_right ha0]
-          intro h
-          cases h
+      split
+      · intro h; cases h
+      · split <;> intro h <;> cases h
 
 theorem tc_Z_lt_of_ne (x : T) (hx : x ≠ T.Z) : T.Z < x := by
   rcases T.Z_le x with h | h
@@ -1579,13 +1539,7 @@ theorem tc_add_ne_Z_left (a b : T) (ha : a ≠ T.Z) : a + b ≠ T.Z := by
   cases a with
   | Z => exact False.elim (ha rfl)
   | P p c d =>
-    cases b with
-    | Z =>
-      intro h
-      cases h
-    | P q e f =>
-      intro h
-      cases h
+    cases b <;> intro h <;> cases h
 
 theorem tc_card_times_zero (c : T) : T.card_times 0 c = c := by
   cases c with
