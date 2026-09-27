@@ -258,15 +258,10 @@ theorem bridge_early_collapse_closed (s : T)
       (∀ x : T, x ∈ T.G1 1 (T.early_collapse s) → x < T.early_collapse s) := by
   cases s with
   | Z =>
-    have hec : T.early_collapse T.Z = T.Z := by rfl
-    rw [hec]
-    constructor
-    · exact T.isNF1.z
-    · constructor
-      · exact T.index_Prop1.z
-      · intro x hx
-        rw [T.G1.eq_1] at hx
-        cases hx
+    exact ⟨T.isNF1.z, T.index_Prop1.z, by
+      intro x hx
+      rw [T.G1.eq_1] at hx
+      cases hx⟩
   | P s0 s1 s2 =>
     by_cases hs0 : s0 = 0
     · have hec : T.early_collapse (T.P s0 s1 s2) = T.P s0 s1 s2 := by
