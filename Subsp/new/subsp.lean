@@ -869,12 +869,10 @@ def T.fund {lam : Nat} (s t : T lam) : T lam :=
     else P ls (fund add t)
 termination_by (T.size s, T.size t)
 decreasing_by
-  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
-  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
-  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
-  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
-  · exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
-  · exact Prod.Lex.left _ _ (T.add_size_lt_P ls add)
+  all_goals
+    first
+    | exact Prod.Lex.left _ _ (T.idx_size_lt_P ls _ m)
+    | exact Prod.Lex.left _ _ (T.add_size_lt_P ls add)
 
 theorem T.fund_PZ_none {lam : Nat}
     (ls : Vec (T lam) lam) (t : T lam)
