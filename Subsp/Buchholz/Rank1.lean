@@ -71,8 +71,7 @@ theorem dom1_Psucc_of_Ω_gt (l0 l1 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.Ω l1) 
   rw [ite_eq_right hgt]
 
 theorem dom1_P_tail (s0 : Nat) (s1 : T) (s20 : Nat) (s21 s22 : T) :
-    T.dom1 (P s0 s1 (P s20 s21 s22)) = T.dom1 (P s20 s21 s22) :=
-  ((fun a => a) ∘ fun a => a) rfl
+    T.dom1 (P s0 s1 (P s20 s21 s22)) = T.dom1 (P s20 s21 s22) := rfl
 
 theorem dom1_P_of_One (s0 : Nat) (s1 : T) (h : T.dom1 s1 = Dom1.One) : T.dom1 (P s0 s1 Z) = Dom1.ω := by
   cases s0 with
@@ -91,11 +90,9 @@ theorem dom1_P_of_Ω (s0 : Nat) (s1 : T) (l : Nat) (h : T.dom1 s1 = Dom1.Ω l) :
     rw [dom1_P0_of_Ω s1 l h]
     rw [ite_eq_left (Nat.zero_le l)]
   | succ l0 =>
-    apply Decidable.byCases (p := l0+1 ≤ l)
-    · intro hle
-      rw [dom1_Psucc_of_Ω_le l0 l s1 h hle, ite_eq_left hle]
-    · intro hle
-      rw [dom1_Psucc_of_Ω_gt l0 l s1 h hle, ite_eq_right hle]
+    split <;> rename_i hle
+    · exact dom1_Psucc_of_Ω_le l0 l s1 h hle
+    · exact dom1_Psucc_of_Ω_gt l0 l s1 h hle
 
 theorem dom1_ne_Zero_of_P (s0 : Nat) (s1 s2 : T) : T.dom1 (P s0 s1 s2) ≠ Dom1.Zero := by
   induction s2 generalizing s0 s1 with
@@ -207,8 +204,7 @@ theorem fund1_Psucc_of_Ω_gt (l0 l1 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.Ω l
   rw [ite_eq_right hgt]
 
 theorem fund1_P_tail (s0 : Nat) (s1 : T) (t : T) (s20 : Nat) (s21 s22 : T) :
-    T.fund1 (P s0 s1 (P s20 s21 s22)) t = P s0 s1 (T.fund1 (P s20 s21 s22) t) :=
-  (congrArg (P s0 s1 (P s20 s21 s22)).fund1 ∘ fun a => a) rfl
+    T.fund1 (P s0 s1 (P s20 s21 s22)) t = P s0 s1 (T.fund1 (P s20 s21 s22) t) := rfl
 
 theorem fund1_P_of_One (s0 : Nat) (s1 t : T) (h : T.dom1 s1 = Dom1.One) :
     T.fund1 (P s0 s1 Z) t = T.mul (P s0 (T.fund1 s1 Z) Z) t := by
