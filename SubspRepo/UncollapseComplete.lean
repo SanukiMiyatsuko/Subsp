@@ -1,4 +1,4 @@
-import Subsp.new.stop_nf_order_c
+import Subsp.new.stop_nf_order
 
 open T
 

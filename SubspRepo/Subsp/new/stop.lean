@@ -4,7 +4,7 @@ import Subsp.Buchholz.Rank1
 import Subsp.new.Base
 import Subsp.new.subsp
 import Subsp.new.trans
-import Subsp.new.stop_nf_order_c
+import Subsp.new.stop_nf_order
 
 theorem new.T.OT_iff_NF (lam : Nat) (s : T lam) :
   isOT lam s ↔ isNF s ∧

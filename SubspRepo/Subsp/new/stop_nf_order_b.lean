@@ -1,4 +1,4 @@
-import Subsp.new.stop_nf_order_a
+import Subsp.new.stop_algebra
 
 open T
 

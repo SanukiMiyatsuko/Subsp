@@ -1,4 +1,4 @@
-import Subsp.new.stop_ot_char
+import Subsp.new.stop_ot
 
 open T
 

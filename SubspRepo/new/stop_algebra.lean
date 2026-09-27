@@ -1,10 +1,284 @@
-import Subsp.new.stop_progress
+import Subsp.Buchholz.Rank1
+import Subsp.new.subsp
+import Subsp.new.trans
+
+/-! Algebraic lemmas for collapse, cardinal operations, and translation vectors. -/
+
+/-! Basic normal-form and support properties. -/
+
+section BasicOperations
 
 open T
 
+/-- A term with index and support bounded at level `k` lies below its `k`-wrapper. -/
+theorem bridge_good_index_lt_wrap (k : Nat) (a b : T) (hi : T.index_Prop1 k a)
+    (hg : ∀ x : T, x ∈ T.G1 k a → x < a) : a < T.P k a b := by
+  cases a with
+  | Z => exact T.Lt.Z_lt_P k T.Z b
+  | P p c d =>
+      cases hi with
+      | p _ _ _ hp _ =>
+          cases Nat.eq_or_lt_of_le hp with
+          | inl hpk =>
+              cases hpk
+              apply T.Lt.p_mid k c (T.P k c d) d b
+              apply hg c
+              rw [T.G1.eq_2, ite_eq_left (Nat.le_refl k)]
+              exact List.mem_append_left _ (List.mem_append_left _ (List.mem_singleton_self c))
+          | inr hpk => exact T.Lt.p_head p k c (T.P p c d) d b hpk
 
+theorem bridge_stand_eq_self_of_NF1 (s : T) (hs : T.isNF1 s) : T.stand s = s := by
+  induction hs with
+  | z => rw [T.stand]
+  | p s0 s1 s2 hs1 hs2 hG hhead _ ih2 =>
+    rw [T.stand, ih2, ite_eq_left hhead]
 
--- extracted from Subsp/new/stop_progress_ec.lean
+theorem bridge_lt_add_left_of_size_lt (a b x : T)
+    (ha : a ≠ T.Z) (hsize : T.size x < T.size a)
+    (h : x < T.add a b) : x < a := by
+  induction a generalizing x with
+  | Z => exact False.elim (ha rfl)
+  | P a0 a1 a2 _ ih2 =>
+    rw [T.P_add_eq] at h
+    cases x with
+    | Z => exact T.Lt.Z_lt_P a0 a1 a2
+    | P x0 x1 x2 =>
+      cases lt_inv x0 x1 x2 a0 a1 (T.add a2 b) h with
+      | inl hh =>
+        exact T.Lt.p_head x0 a0 x1 a1 x2 a2 hh
+      | inr hr =>
+        cases hr with
+        | inl hh =>
+          cases hh.1
+          exact T.Lt.p_mid a0 x1 a1 x2 a2 hh.2
+        | inr hh =>
+          have hx0 : x0 = a0 := hh.1
+          have hx1 : x1 = a1 := hh.2.1
+          cases hx0
+          cases hx1
+          have htailSize : T.size x2 < T.size a2 := by
+            change T.size a1 + T.size x2 + 1 < T.size a1 + T.size a2 + 1 at hsize
+            have hcancel1 : T.size a1 + T.size x2 < T.size a1 + T.size a2 :=
+              Nat.lt_of_succ_lt_succ hsize
+            exact Nat.add_lt_add_iff_left.mp hcancel1
+          apply Decidable.byCases (p := a2 = T.Z)
+          · intro ha2
+            rw [ha2] at htailSize
+            exact False.elim (Nat.not_lt_zero _ htailSize)
+          · intro ha2
+            have htail : x2 < a2 := ih2 x2 ha2 htailSize hh.2.2
+            exact T.Lt.p_tail a0 a1 x2 a2 htail
+
+ theorem bridge_G1_add_left {u : Nat} (a b x : T) (hx : x ∈ T.G1 u a) :
+    x ∈ T.G1 u (T.add a b) := by
+  induction a with
+  | Z =>
+    rw [T.G1.eq_1] at hx
+    cases hx
+  | P a0 a1 a2 _ ih2 =>
+    rw [T.P_add_eq]
+    apply Decidable.byCases (p := u ≤ a0)
+    · intro hu
+      rw [T.G1.eq_2, ite_eq_left hu] at hx
+      rw [T.G1.eq_2, ite_eq_left hu]
+      cases List.mem_append.mp hx with
+      | inl hleft =>
+        exact List.mem_append_left _ hleft
+      | inr htail =>
+        exact List.mem_append_right _ (ih2 htail)
+    · intro hu
+      rw [T.G1.eq_2, ite_eq_right hu] at hx
+      rw [T.G1.eq_2, ite_eq_right hu]
+      exact ih2 hx
+
+ theorem bridge_isNF1_add_inv_right (a b : T) (h : T.isNF1 (T.add a b)) : T.isNF1 b := by
+  induction a with
+  | Z =>
+    rw [T.add] at h
+    exact h
+  | P a0 a1 a2 _ ih2 =>
+    rw [T.P_add_eq] at h
+    have ht := (T.isNF1_P_inv a0 a1 (T.add a2 b) h).2.1
+    exact ih2 ht
+
+ theorem bridge_isNF1_add_inv_left (a b : T) (h : T.isNF1 (T.add a b)) : T.isNF1 a := by
+  induction a with
+  | Z => exact T.isNF1.z
+  | P a0 a1 a2 _ ih2 =>
+    rw [T.P_add_eq] at h
+    exact match T.isNF1_P_inv a0 a1 (T.add a2 b) h with
+    | ⟨ha1, htail, hg, hhead⟩ => by
+      have ha2 : T.isNF1 a2 := ih2 htail
+      apply T.isNF1.p a0 a1 a2 ha1 ha2 hg
+      cases a2 with
+      | Z => exact T.Z_le (T.P a0 a1 T.Z)
+      | P c0 c1 c2 =>
+        have heq : T.head (T.add (T.P c0 c1 c2) b) = T.head (T.P c0 c1 c2) :=
+          T.head_add_ne_Z c0 c1 c2 b
+        rw [heq] at hhead
+        exact hhead
+
+ theorem bridge_strong_add_prefix (a b : T)
+    (ha : a ≠ T.Z)
+    (hnf : T.isNF1 (T.add a b))
+    (hg : ∀ x : T, x ∈ T.G1 0 (T.add a b) → x < T.add a b) :
+    T.isNF1 a ∧ ∀ x : T, x ∈ T.G1 0 a → x < a := by
+  constructor
+  · exact bridge_isNF1_add_inv_left a b hnf
+  · intro x hx
+    have hxfull : x ∈ T.G1 0 (T.add a b) := bridge_G1_add_left a b x hx
+    have hxlt : x < T.add a b := hg x hxfull
+    have hsz : T.size x < T.size a := G1_size_lt 0 a x hx
+    exact bridge_lt_add_left_of_size_lt a b x ha hsz hxlt
+
+ theorem bridge_part_add (s : T) : T.add (T.part s).1 (T.part s).2 = s := by
+  induction s with
+  | Z => rfl
+  | P s0 s1 s2 _ ih2 =>
+    rw [T.part]
+    apply Decidable.byCases (p := s0 = 0)
+    · intro h0
+      rw [ite_eq_left h0]
+      rfl
+    · intro h0
+      rw [ite_eq_right h0]
+      cases hp : T.part s2 with
+      | mk a b =>
+        change T.add (T.P s0 s1 a) b = T.P s0 s1 s2
+        rw [T.P_add_eq]
+        have hi := ih2
+        rw [hp] at hi
+        change T.add a b = s2 at hi
+        rw [hi]
+
+theorem bridge_part_second_shape (s a b : T) (hp : T.part s = (a, b)) :
+    b = T.Z ∨ ∃ c d : T, b = T.P 0 c d := by
+  induction s generalizing a b with
+  | Z =>
+    rw [T.part] at hp
+    cases hp
+    exact Or.inl rfl
+  | P s0 s1 s2 _ ih2 =>
+    rw [T.part] at hp
+    apply Decidable.byCases (p := s0 = 0)
+    · intro h0
+      rw [ite_eq_left h0] at hp
+      cases hp
+      cases h0
+      exact Or.inr ⟨s1, s2, rfl⟩
+    · intro h0
+      rw [ite_eq_right h0] at hp
+      cases htail : T.part s2 with
+      | mk p q =>
+        rw [htail] at hp
+        cases hp
+        have hq := ih2 p q htail
+        cases hq with
+        | inl hz =>
+          exact Or.inl hz
+        | inr hP =>
+          exact match hP with
+          | ⟨c, d, heq⟩ => by
+            exact Or.inr ⟨c, d, heq⟩
+
+theorem bridge_part_second_index0 (s a b : T)
+    (hs : T.isNF1 s) (hp : T.part s = (a, b)) :
+    T.index_Prop1 0 b := by
+  have hsum : T.add a b = s := by
+    have h := bridge_part_add s
+    rw [hp] at h
+    exact h
+  have hb : T.isNF1 b := by
+    rw [← hsum] at hs
+    exact bridge_isNF1_add_inv_right a b hs
+  cases bridge_part_second_shape s a b hp with
+  | inl hz =>
+    rw [hz]
+    exact T.index_Prop1.z
+  | inr hP =>
+    exact match hP with
+    | ⟨c, d, heq⟩ => by
+      rw [heq] at hb ⊢
+      exact isNF1_index 0 0 c d hb (Nat.le_refl 0)
+
+theorem bridge_stand_ne_Z (s : T) (hs : s ≠ T.Z) :
+    T.stand s ≠ T.Z := by
+  induction s with
+  | Z => exact False.elim (hs rfl)
+  | P p a b _ ihb =>
+    rw [T.stand]
+    apply Decidable.byCases (p := T.head (T.stand b) ≤ T.P p a T.Z)
+    · intro hle
+      rw [ite_eq_left hle]
+      intro h
+      cases h
+    · intro hle
+      rw [ite_eq_right hle]
+      have hb : b ≠ T.Z := by
+        intro heq
+        rw [heq, T.stand] at hle
+        exact hle (T.Z_le (T.P p a T.Z))
+      exact ihb hb
+
+theorem bridge_early_collapse_ne_Z (s : T) (hs : s ≠ T.Z) :
+    T.early_collapse s ≠ T.Z := by
+  cases s with
+  | Z => exact False.elim (hs rfl)
+  | P p a b =>
+    rw [T.early_collapse]
+    cases hp : T.part (T.P p a b) with
+    | mk x y =>
+      apply Decidable.byCases (p := x = T.Z)
+      · intro hx
+        rw [ite_eq_left hx]
+        intro h
+        cases h
+      · intro hx
+        rw [ite_eq_right hx]
+        exact bridge_stand_ne_Z (T.P 0 x y) (by
+          intro h
+          cases h)
+
+theorem bridge_card_times_ne_Z (n : Nat) (s : T) (hs : s ≠ T.Z) :
+    T.card_times n s ≠ T.Z := by
+  cases s with
+  | Z => exact False.elim (hs rfl)
+  | P p a b =>
+    cases n with
+    | zero =>
+      rw [T.card_times]
+      intro h
+      cases h
+    | succ n =>
+      rw [T.card_times]
+      apply Decidable.byCases (p := p = 0)
+      · intro hp
+        rw [ite_eq_left hp]
+        cases hc : T.card_times (n + 1) b with
+        | Z =>
+          intro h
+          cases h
+        | P q c d =>
+          intro h
+          cases h
+      · intro hp
+        rw [ite_eq_right hp]
+        cases hc : T.card_times (n + 1) b with
+        | Z =>
+          intro h
+          cases h
+        | P q c d =>
+          intro h
+          cases h
+
+end BasicOperations
+
+/-! Collapse, cardinal arithmetic, and lexicographic translation. -/
+
+section TranslationAlgebra
+
+open T
+
 theorem bridge_early_collapse_closed (s : T)
     (hs : T.isNF1 s)
     (hg : ∀ x : T, x ∈ T.G1 0 s → x < s) :
@@ -109,48 +383,15 @@ theorem bridge_early_collapse_closed (s : T)
               rw [hempty] at hx
               cases hx
 
-#print axioms bridge_early_collapse_closed
-
 theorem bridge_add_left_lt (p a b : T) (h : a < b) :
     T.add p a < T.add p b := by
   induction p with
   | Z =>
     rw [T.add, T.add]
     exact h
-  | P p0 p1 p2 ih1 ih2 =>
+  | P p0 p1 p2 _ ih2 =>
     rw [T.P_add_eq, T.P_add_eq]
     exact T.Lt.p_tail p0 p1 (T.add p2 a) (T.add p2 b) ih2
-
-#print axioms bridge_add_left_lt
-
-
-
--- extracted from Subsp/new/stop_progress_mid.lean
-theorem bridge_nat1_NF (k : Nat) :
-    T.isNF1 (T.mul (T.P 1 T.Z T.Z) (T.ofNat k)) := by
-  have h := mul_isNF1_and_head 1 T.Z T.isNF1.z
-    (fun x hx => by
-      rw [T.G1.eq_1] at hx
-      cases hx) k
-  exact h.1
-
-theorem bridge_nat1_index (k : Nat) :
-    T.index_Prop1 1 (T.mul (T.P 1 T.Z T.Z) (T.ofNat k)) := by
-  induction k with
-  | zero =>
-    rw [T.ofNat, T.mul]
-    exact T.index_Prop1.z
-  | succ k ih =>
-    rw [mul_succ_shape 1 T.Z k]
-    exact T.index_Prop1.p 1 T.Z _ (Nat.le_refl 1) ih
-
-theorem bridge_shift_index (k : Nat) (c : T)
-    (hc : T.index_Prop1 0 c) :
-    T.index_Prop1 1
-      (T.add (T.mul (T.P 1 T.Z T.Z) (T.ofNat k)) c) := by
-  apply Rank1Termination.index_add 1
-  · exact bridge_nat1_index k
-  · exact Rank1Termination.index_mono (Nat.zero_le 1) c hc
 
 theorem bridge_shift_head_le (k : Nat) (c : T)
     (hc : T.index_Prop1 0 c) :
@@ -187,8 +428,6 @@ theorem bridge_shift_NF (k : Nat) (c : T)
         rw [T.G1.eq_1] at hx
         cases hx)
       (bridge_shift_head_le k c hc)
-
-#print axioms bridge_shift_NF
 
 theorem bridge_shift_lt_wrap (k : Nat) (c : T)
     (hc : T.index_Prop1 0 c) :
@@ -244,8 +483,6 @@ theorem bridge_shift_strong1 (k : Nat) (c : T)
       have htailwrap := bridge_shift_lt_wrap k c hc
       exact lt_trans_thm x _ _ hxtail htailwrap
 
-#print axioms bridge_shift_strong1
-
 theorem bridge_part_fst_head_le (s : T) :
     T.head (T.part s).1 ≤ T.head s := by
   cases s with
@@ -269,7 +506,7 @@ theorem bridge_part_NF1 (s : T) (hs : T.isNF1 s) :
     T.isNF1 (T.part s).1 ∧ T.isNF1 (T.part s).2 := by
   induction hs with
   | z => exact ⟨T.isNF1.z, T.isNF1.z⟩
-  | p p a b ha hb hg hh iha ihb =>
+  | p p a b ha hb hg hh _ ihb =>
       rw [T.part]
       apply Decidable.byCases (p := p = 0)
       · intro hp
@@ -295,8 +532,6 @@ theorem bridge_part_NF1 (s : T) (hs : T.isNF1 s) :
               partial_order.trans (T.head c) (T.head b) (T.P p a T.Z) hcle hh
             exact ⟨T.isNF1.p p a c ha hcnf hg hhead, hdnf⟩
 
-#print axioms bridge_part_NF1
-
 theorem part_lt_cases : ∀ s t : T, s < t →
     (T.part s).1 < (T.part t).1 ∨
       ((T.part s).1 = (T.part t).1 ∧ (T.part s).2 < (T.part t).2) := by
@@ -318,7 +553,7 @@ theorem part_lt_cases : ∀ s t : T, s < t →
         cases hp : T.part v with
         | mk c d =>
           exact Or.inl (T.Lt.Z_lt_P q u c)
-  | P p x y ihx ihy =>
+  | P p x y _ ihy =>
     intro t h
     cases t with
     | Z => cases h
@@ -385,8 +620,6 @@ theorem part_lt_cases : ∀ s t : T, s < t →
                       rw [hac]
                     · exact heq.2
 
-#print axioms part_lt_cases
-
 theorem bridge_early_collapse_part (s a b : T)
     (hp : T.part s = (a, b)) (hb : T.isNF1 b) :
     T.early_collapse s =
@@ -406,13 +639,11 @@ theorem bridge_early_collapse_part (s a b : T)
     rw [T.stand, bridge_stand_eq_self_of_NF1 b hb]
     rw [ite_eq_right ha]
 
-#print axioms bridge_early_collapse_part
-
 theorem bridge_part_fst_fixed (s : T) :
     T.part (T.part s).1 = ((T.part s).1, T.Z) := by
   induction s with
   | Z => rfl
-  | P p a b iha ihb =>
+  | P p a b _ ihb =>
     rw [T.part]
     apply Decidable.byCases (p := p = 0)
     · intro hp
@@ -431,7 +662,7 @@ theorem bridge_part_snd_fixed (s : T) :
     T.part (T.part s).2 = (T.Z, (T.part s).2) := by
   induction s with
   | Z => rfl
-  | P p a b iha ihb =>
+  | P p a b _ ihb =>
     rw [T.part]
     apply Decidable.byCases (p := p = 0)
     · intro hp
@@ -444,9 +675,6 @@ theorem bridge_part_snd_fixed (s : T) :
         have ih := ihb
         rw [hpb] at ih
         exact ih
-
-#print axioms bridge_part_fst_fixed
-#print axioms bridge_part_snd_fixed
 
 theorem bridge_part_lt_of_cases (s t : T)
     (h : (T.part s).1 < (T.part t).1 ∨
@@ -482,8 +710,6 @@ theorem bridge_part_lt_of_cases (s t : T)
       | inr hsnd =>
         rw [hp] at hsnd
         exact False.elim (lt_irrefl_thm (T.part t).2 hsnd.2)
-
-#print axioms bridge_part_lt_of_cases
 
 theorem bridge_lt_of_not_le (a b : T) (h : ¬ a ≤ b) : b < a := by
   cases lt_total_thm a b with
@@ -634,11 +860,6 @@ theorem bridge_insert_lt (a b d : T)
               rw [ite_eq_right hfa]
               exact hbd
 
-#print axioms bridge_insert_lt
-
-
-
--- extracted from Subsp/new/stop_progress_order.lean
 theorem bridge_G1_add_eq (u : Nat) (a b : T) :
     T.G1 u (T.add a b) = T.G1 u a ++ T.G1 u b := by
   induction a with
@@ -691,8 +912,6 @@ theorem bridge_part_fst_le_self (s : T) : (T.part s).1 ≤ s := by
       | inr heq => exact False.elim (hb heq.symm)
     exact Or.inr ⟨rfl, hzb⟩
 
-#print axioms bridge_part_fst_le_self
-
 theorem bridge_mid_mem_G1_zero (a b : T) :
     a ∈ T.G1 0 (T.P 0 a b) := by
   rw [T.G1.eq_2, ite_eq_left (Nat.le_refl 0)]
@@ -730,9 +949,6 @@ theorem bridge_early_collapse_upper (s c : T)
     apply Decidable.byCases (p := a = T.Z)
     · intro ha
       rw [hec, ite_eq_left ha]
-      have hbEq : b = s := by
-        rw [ha, T.add] at hadd
-        exact hadd
       have hbshape := bridge_part_second_shape s a b hp
       cases hbshape with
       | inl hbz =>
@@ -775,8 +991,6 @@ theorem bridge_early_collapse_upper (s c : T)
             have hecLt : e < c := lt_trans_thm e s c hes hsc
             exact T.Lt.p_mid 0 e c f T.Z hecLt
 
-#print axioms bridge_early_collapse_upper
-
 theorem bridge_part_base_le_early_collapse (t : T)
     (ht : T.isNF1 t) (hc : (T.part t).1 ≠ T.Z) :
     T.P 0 (T.part t).1 T.Z ≤ T.early_collapse t := by
@@ -813,8 +1027,6 @@ theorem bridge_part_base_le_early_collapse (t : T)
       have hheadD : T.head d ≤ d := bridge_head_le_self d
       exact Or.inl (lt_of_lt_of_le_thm T (T.P 0 c T.Z) (T.head d) d
         hbaseHead hheadD)
-
-#print axioms bridge_part_base_le_early_collapse
 
 theorem bridge_early_collapse_lt (s t : T)
     (hs : T.isNF1 s)
@@ -883,8 +1095,6 @@ theorem bridge_early_collapse_lt (s t : T)
           rw [T.early_collapse, hpt, ite_eq_right ha]
           exact bridge_insert_lt a b d hbNF hdNF hbfix hdfix hbd
 
-#print axioms bridge_early_collapse_lt
-
 theorem bridge_card_times_lt_same (n : Nat) :
     ∀ c d : T,
       T.isNF1 c → T.index_Prop1 0 c →
@@ -893,7 +1103,7 @@ theorem bridge_card_times_lt_same (n : Nat) :
   intro c
   induction c with
   | Z =>
-    intro d hcNF hcIdx hdNF hdIdx hcd
+    intro d _ _ _ _ hcd
     have hdne : d ≠ T.Z := by
       intro heq
       rw [heq] at hcd
@@ -919,7 +1129,7 @@ theorem bridge_card_times_lt_same (n : Nat) :
           have hq : q = 0 := Nat.eq_zero_of_le_zero hq0
           cases hq
           exact match T.isNF1_P_inv 0 a b hcNF with
-          | ⟨haNF, hbNF, haG, hheadb⟩ => by
+          | ⟨haNF, hbNF, haG, _⟩ => by
             exact match T.isNF1_P_inv 0 e f hdNF with
             | ⟨heNF, hfNF, heG, hheadf⟩ => by
               cases n with
@@ -969,8 +1179,6 @@ theorem bridge_card_times_lt_same (n : Nat) :
                       (T.card_times (k + 1) b)
                       (T.card_times (k + 1) f) hrec
 
-#print axioms bridge_card_times_lt_same
-
 theorem bridge_shift_level_lt : ∀ k l : Nat, k < l →
     ∀ x y : T, T.index_Prop1 0 x → T.index_Prop1 0 y →
       T.add (T.mul (T.P 1 T.Z T.Z) (T.ofNat k)) x <
@@ -978,7 +1186,7 @@ theorem bridge_shift_level_lt : ∀ k l : Nat, k < l →
   intro k
   induction k with
   | zero =>
-    intro l hkl x y hx hy
+    intro l hkl x y hx _
     cases l with
     | zero => exact False.elim (Nat.lt_irrefl 0 hkl)
     | succ l =>
@@ -1002,8 +1210,6 @@ theorem bridge_shift_level_lt : ∀ k l : Nat, k < l →
       rw [mul_succ_shape 1 T.Z l, T.P_add_eq]
       exact T.Lt.p_tail 1 T.Z _ _ (ih l hkl' x y hx hy)
 
-#print axioms bridge_shift_level_lt
-
 theorem bridge_card_times_level_lt (m n : Nat) (c d : T)
     (hmn : m < n)
     (hcNF : T.isNF1 c) (hcIdx : T.index_Prop1 0 c) (hcne : c ≠ T.Z)
@@ -1024,9 +1230,9 @@ theorem bridge_card_times_level_lt (m n : Nat) (c d : T)
           have hq : q = 0 := Nat.eq_zero_of_le_zero hq0
           cases hq
           exact match T.isNF1_P_inv 0 a b hcNF with
-          | ⟨haNF, hbNF, haG, hheadb⟩ => by
+          | ⟨haNF, _, haG, _⟩ => by
             exact match T.isNF1_P_inv 0 e f hdNF with
-            | ⟨heNF, hfNF, heG, hheadf⟩ => by
+            | ⟨heNF, _, heG, _⟩ => by
               have haEC := bridge_early_collapse_closed a haNF haG
               have heEC := bridge_early_collapse_closed e heNF heG
               cases m with
@@ -1059,9 +1265,6 @@ theorem bridge_card_times_level_lt (m n : Nat) (c d : T)
                     (T.early_collapse a) (T.early_collapse e) haEC.2.1 heEC.2.1
                   exact T.Lt.p_mid 1 _ _ _ _ hshift
 
-#print axioms bridge_card_times_level_lt
-
-
 theorem bridge_add_left_le (p a b : T) (h : a ≤ b) :
     T.add p a ≤ T.add p b := by
   cases h with
@@ -1089,8 +1292,6 @@ theorem bridge_shift_lt_outer (k : Nat) (c tail : T)
       (T.P 1 T.Z (T.add (T.mul (T.P 1 T.Z T.Z) (T.ofNat k)) c))
       (T.add (T.mul (T.P 1 T.Z T.Z) (T.ofNat k)) c) tail
       (T.Lt.Z_lt_P 1 T.Z _)
-
-#print axioms bridge_shift_lt_outer
 
 theorem bridge_early_collapse_le (s t : T)
     (hs : T.isNF1 s) (hsg : ∀ x : T, x ∈ T.G1 0 s → x < s)
@@ -1131,7 +1332,7 @@ theorem bridge_card_times_closed (n : Nat) :
   intro c
   induction c with
   | Z =>
-    intro hcNF hcIdx
+    intro _ _
     rw [T.card_times]
     constructor
     · exact T.isNF1.z
@@ -1199,9 +1400,8 @@ theorem bridge_card_times_closed (n : Nat) :
                 have hq : q = 0 := Nat.eq_zero_of_le_zero hq0
                 cases hq
                 exact match T.isNF1_P_inv 0 e f hbNF with
-                | ⟨heNF, hfNF, heG, hheadf⟩ => by
+                | ⟨heNF, _, heG, _⟩ => by
                   have hea : e ≤ a := bridge_P0_head_mid_le a e f hheadb
-                  have hecE := bridge_early_collapse_closed e heNF heG
                   have hecLe : T.early_collapse e ≤ T.early_collapse a :=
                     bridge_early_collapse_le e a heNF heG haNF hea
                   have hshiftLe :
@@ -1251,8 +1451,6 @@ theorem bridge_card_times_closed (n : Nat) :
                   T.isNF1_tail_le (T.P 1 M R) hcurNF 1 M R rfl
                 exact lt_of_lt_of_le_thm T x R (T.P 1 M R) hxRt hRle
 
-#print axioms bridge_card_times_closed
-
 theorem bridge_head_add_ne_Z (a b : T) (ha : a ≠ T.Z) :
     T.head (T.add a b) = T.head a := by
   cases a with
@@ -1274,10 +1472,10 @@ theorem bridge_card_times_succ_append (k : Nat) :
   intro c
   induction c with
   | Z =>
-    intro y hcNF hcIdx hyNF hyIdx hyG hbound
+    intro y _ _ hyNF hyIdx hyG _
     rw [T.card_times.eq_1, T.add.eq_1]
     exact ⟨hyNF, hyIdx, hyG⟩
-  | P p a b iha ihb =>
+  | P p a b _ ihb =>
     intro y hcNF hcIdx hyNF hyIdx hyG hbound
     cases hcIdx with
     | p _ _ _ hp0 hbIdx =>
@@ -1381,8 +1579,6 @@ theorem bridge_card_times_succ_append (k : Nat) :
               (∀ x : T, x ∈ T.G1 1 (T.P 1 M R) → x < T.P 1 M R)
         exact ⟨hwholeNF, hwholeIdx, hwholeG⟩
 
-#print axioms bridge_card_times_succ_append
-
 theorem bridge_card_times_add_level_lt (m n : Nat) (c d y : T)
     (hmn : m < n)
     (hcNF : T.isNF1 c) (hcIdx : T.index_Prop1 0 c) (hcne : c ≠ T.Z)
@@ -1403,9 +1599,9 @@ theorem bridge_card_times_add_level_lt (m n : Nat) (c d y : T)
           have hq : q = 0 := Nat.eq_zero_of_le_zero hq0
           cases hq
           exact match T.isNF1_P_inv 0 a b hcNF with
-          | ⟨haNF, hbNF, haG, hheadb⟩ => by
+          | ⟨haNF, _, haG, _⟩ => by
             exact match T.isNF1_P_inv 0 e f hdNF with
-            | ⟨heNF, hfNF, heG, hheadf⟩ => by
+            | ⟨heNF, _, heG, _⟩ => by
               have haEC := bridge_early_collapse_closed a haNF haG
               have heEC := bridge_early_collapse_closed e heNF heG
               cases m with
@@ -1442,8 +1638,6 @@ theorem bridge_card_times_add_level_lt (m n : Nat) (c d y : T)
                     (T.early_collapse a) (T.early_collapse e) haEC.2.1 heEC.2.1
                   exact T.Lt.p_mid 1 _ _ _ _ hshift
 
-#print axioms bridge_card_times_add_level_lt
-
 theorem bridge_lt_P0ZZ_eq_Z (x : T) (h : x < T.P 0 T.Z T.Z) : x = T.Z := by
   cases x with
   | Z => rfl
@@ -1455,194 +1649,7 @@ theorem bridge_lt_P0ZZ_eq_Z (x : T) (h : x < T.P 0 T.Z T.Z) : x = T.Z := by
       | inl hm => exact False.elim (lt_Z_inv hm.2)
       | inr ht => exact False.elim (lt_Z_inv ht.2.2)
 
-#print axioms bridge_lt_P0ZZ_eq_Z
-
-
-
--- extracted from Subsp/new/stop_order_aux_base.lean
 -- From AuxBridge.lean
-
-theorem aux_card_times_zero (s : T) : T.card_times 0 s = s := by
-  cases s with
-  | Z => rfl
-  | P p a b => rfl
-
-theorem aux_index0_lt_card_times_one (c z : T)
-    (hc : T.index_Prop1 0 c)
-    (hz : T.index_Prop1 0 z) (hzne : z ≠ T.Z) :
-    c < T.card_times 1 z := by
-  cases c with
-  | Z =>
-    have hne : T.card_times 1 z ≠ T.Z :=
-      bridge_card_times_ne_Z 1 z hzne
-    cases T.Z_le (T.card_times 1 z) with
-    | inl hlt => exact hlt
-    | inr heq => exact False.elim (hne heq.symm)
-  | P p a b =>
-    cases hc with
-    | p _ _ _ hp hb =>
-      have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
-      cases hp0
-      cases z with
-      | Z => exact False.elim (hzne rfl)
-      | P q e f =>
-        cases hz with
-        | p _ _ _ hq hf =>
-          have hq0 : q = 0 := Nat.eq_zero_of_le_zero hq
-          cases hq0
-          rw [T.card_times.eq_3, ite_eq_left rfl]
-          rw [← add_eq_hAdd
-                (T.P 1
-                  ((T.P 1 T.Z T.Z).mul (T.ofNat 0) + T.early_collapse e)
-                  T.Z)
-                (T.card_times 1 f),
-              T.P_add_eq, T.add.eq_1]
-          exact T.Lt.p_head 0 1 a
-            (T.add (T.mul (T.P 1 T.Z T.Z) (T.ofNat 0))
-              (T.early_collapse e))
-            b (T.card_times 1 f) (Nat.zero_lt_succ 0)
-
-#print axioms aux_index0_lt_card_times_one
-
-theorem aux_sum_inv {lam : Nat} :
-    ∀ (k : Nat) (v : new.Vec (new.T lam) (k + 1)),
-      (∀ a ∈ new.Vec.toList v,
-        T.isNF1 (trans a) ∧
-          ∀ x : T, x ∈ T.G1 0 (trans a) → x < trans a) →
-      let r := transAux v
-      T.isNF1 r.2.1 ∧
-        T.index_Prop1 1 r.2.1 ∧
-        (∀ x : T, x ∈ T.G1 1 r.2.1 → x < r.2.1) ∧
-        (∀ z : T, T.isNF1 z → T.index_Prop1 0 z → z ≠ T.Z →
-          r.2.1 < T.card_times k z) := by
-  intro k
-  induction k with
-  | zero =>
-    intro v hcoord
-    cases v with
-    | snoc n xs a =>
-      cases xs with
-      | nil =>
-        rw [transAux.eq_2]
-        change
-          T.isNF1 T.Z ∧ T.index_Prop1 1 T.Z ∧
-            (∀ x : T, x ∈ T.G1 1 T.Z → x < T.Z) ∧
-            (∀ z : T, T.isNF1 z → T.index_Prop1 0 z → z ≠ T.Z →
-              T.Z < T.card_times 0 z)
-        constructor
-        · exact T.isNF1.z
-        · constructor
-          · exact T.index_Prop1.z
-          · constructor
-            · intro x hx
-              rw [T.G1.eq_1] at hx
-              cases hx
-            · intro z hzNF hzIdx hzne
-              cases z with
-              | Z => exact False.elim (hzne rfl)
-              | P p c d =>
-                rw [T.card_times.eq_2]
-                exact T.Lt.Z_lt_P p c d
-  | succ m ih =>
-    intro v hcoord
-    cases v with
-    | snoc n xs a =>
-        have hxsCoord :
-            ∀ b ∈ new.Vec.toList xs,
-              T.isNF1 (trans b) ∧
-                ∀ x : T, x ∈ T.G1 0 (trans b) → x < trans b := by
-          intro b hb
-          apply hcoord b
-          change b ∈ new.Vec.toList xs ++ [a]
-          exact List.mem_append_left [a] hb
-        have haCoord :
-            T.isNF1 (trans a) ∧
-              ∀ x : T, x ∈ T.G1 0 (trans a) → x < trans a := by
-          apply hcoord a
-          change a ∈ new.Vec.toList xs ++ [a]
-          exact List.mem_append_right _ (List.mem_singleton_self a)
-        have hrest := ih xs hxsCoord
-        rw [transAux.eq_3]
-        cases haux : transAux xs with
-        | mk found rest =>
-          cases rest with
-          | mk sum a0 =>
-            rw [haux] at hrest
-            change
-              T.isNF1
-                  (T.add (T.card_times m (T.early_collapse (trans a))) sum) ∧
-                T.index_Prop1 1
-                  (T.add (T.card_times m (T.early_collapse (trans a))) sum) ∧
-                (∀ x : T,
-                  x ∈ T.G1 1
-                    (T.add (T.card_times m (T.early_collapse (trans a))) sum) →
-                  x < T.add (T.card_times m (T.early_collapse (trans a))) sum) ∧
-                (∀ z : T, T.isNF1 z → T.index_Prop1 0 z → z ≠ T.Z →
-                  T.add (T.card_times m (T.early_collapse (trans a))) sum <
-                    T.card_times (m + 1) z)
-            have hec := bridge_early_collapse_closed
-              (trans a) haCoord.1 haCoord.2
-            apply Decidable.byCases (p := T.early_collapse (trans a) = T.Z)
-            · intro hecz
-              rw [hecz, T.card_times.eq_1, T.add.eq_1]
-              constructor
-              · exact hrest.1
-              · constructor
-                · exact hrest.2.1
-                · constructor
-                  · exact hrest.2.2.1
-                  · intro z hzNF hzIdx hzne
-                    have hlow := hrest.2.2.2 z hzNF hzIdx hzne
-                    have hlevel := bridge_card_times_level_lt m (m + 1) z z
-                      (Nat.lt_succ_self m) hzNF hzIdx hzne hzNF hzIdx hzne
-                    exact lt_trans_thm sum (T.card_times m z)
-                      (T.card_times (m + 1) z) hlow hlevel
-            · intro hecz
-              cases m with
-              | zero =>
-                rw [aux_card_times_zero]
-                have hsumZ : sum = T.Z := by
-                  have hbound := hrest.2.2.2 (T.P 0 T.Z T.Z)
-                    (T.isNF1.p 0 T.Z T.Z T.isNF1.z T.isNF1.z
-                      (fun x hx => by rw [T.G1.eq_1] at hx; cases hx)
-                      (T.Z_le _))
-                    (T.index_Prop1.p 0 T.Z T.Z (Nat.le_refl 0)
-                      T.index_Prop1.z)
-                    (by intro h; cases h)
-                  rw [T.card_times.eq_2] at hbound
-                  exact bridge_lt_P0ZZ_eq_Z sum hbound
-                rw [hsumZ, T.add_Z]
-                have hidx1 := Rank1Termination.index_mono (Nat.zero_le 1)
-                  (T.early_collapse (trans a)) hec.2.1
-                constructor
-                · exact hec.1
-                · constructor
-                  · exact hidx1
-                  · constructor
-                    · exact hec.2.2
-                    · intro z hzNF hzIdx hzne
-                      exact aux_index0_lt_card_times_one
-                        (T.early_collapse (trans a)) z hec.2.1 hzIdx hzne
-              | succ q =>
-                have happ := bridge_card_times_succ_append q
-                  (T.early_collapse (trans a)) sum
-                  hec.1 hec.2.1 hrest.1 hrest.2.1 hrest.2.2.1
-                  (fun z hzNF hzIdx hzne =>
-                    hrest.2.2.2 z hzNF hzIdx hzne)
-                constructor
-                · exact happ.1
-                · constructor
-                  · exact happ.2.1
-                  · constructor
-                    · exact happ.2.2
-                    · intro z hzNF hzIdx hzne
-                      exact bridge_card_times_add_level_lt (q + 1) (q + 2)
-                        (T.early_collapse (trans a)) z sum
-                        (Nat.lt_succ_self (q + 1))
-                        hec.1 hec.2.1 hecz hzNF hzIdx hzne
-
-#print axioms aux_sum_inv
-
 
 -- From TransCore.lean
 
@@ -1702,10 +1709,6 @@ theorem tc_trans_head {lam : Nat} (s : new.T lam) :
             rw [ite_eq_right ha0, ite_eq_right ha0]
             rfl
 
-#print axioms tc_trans_P_add
-#print axioms tc_trans_head
-
-
 -- From AuxCore.lean
 
 theorem tc_trans_ne_Z_of_ne_Z {lam : Nat} (s : new.T lam)
@@ -1740,14 +1743,10 @@ theorem tc_trans_ne_Z_of_ne_Z {lam : Nat} (s : new.T lam)
             intro h
             cases h
 
-#print axioms tc_trans_ne_Z_of_ne_Z
-
 theorem tc_Z_lt_of_ne (x : T) (hx : x ≠ T.Z) : T.Z < x := by
   cases T.Z_le x with
   | inl h => exact h
   | inr h => exact False.elim (hx h.symm)
-
-#print axioms tc_Z_lt_of_ne
 
 theorem tc_add_ne_Z_left (a b : T) (ha : a ≠ T.Z) : a + b ≠ T.Z := by
   cases a with
@@ -1761,13 +1760,10 @@ theorem tc_add_ne_Z_left (a b : T) (ha : a ≠ T.Z) : a + b ≠ T.Z := by
       intro h
       cases h
 
-
 theorem tc_card_times_zero (c : T) : T.card_times 0 c = c := by
   cases c with
   | Z => rfl
   | P p a b => rfl
-
-#print axioms tc_card_times_zero
 
 theorem tc_transAux_inv {lam : Nat} :
     ∀ {k : Nat} (v : new.Vec (new.T lam) (k + 1)),
@@ -1801,7 +1797,7 @@ theorem tc_transAux_inv {lam : Nat} :
           · intro y hy
             rw [T.G1.eq_1] at hy
             cases hy
-          · intro c hcNF hcIdx hcne
+          · intro c _ _ hcne
             rw [tc_card_times_zero]
             exact tc_Z_lt_of_ne c hcne
           · intro h
@@ -1937,47 +1933,25 @@ theorem tc_transAux_inv {lam : Nat} :
                 · intro h
                   cases h
 
-#print axioms tc_transAux_inv
-
-
 -- From CardAlg.lean
-
-
-
--- extracted from Subsp/new/stop_order_aux_card.lean
-theorem ca_card_times_zero (c : T) : T.card_times 0 c = c := by
-  cases c with
-  | Z => rfl
-  | P p a b => rfl
 
 theorem ca_card_times_add (n : Nat) (a b : T) :
     T.card_times n (T.add a b) =
       T.add (T.card_times n a) (T.card_times n b) := by
-  induction a with
-  | Z =>
-    rw [T.add, T.card_times.eq_1, T.add]
-  | P p x y ihx ihy =>
-    cases b with
-    | Z =>
-      rw [T.add_Z, T.card_times.eq_1, T.add_Z]
-    | P q c d =>
-      rw [T.P_add_eq]
-      cases n with
-      | zero =>
-        rw [ca_card_times_zero, ca_card_times_zero, ca_card_times_zero]
-        rw [T.P_add_eq]
-      | succ k =>
-        rw [T.card_times.eq_3, T.card_times.eq_3, T.card_times.eq_3]
-        rw [ihy]
-        apply Decidable.byCases (p := p = 0)
-        · intro hp
-          rw [← add_eq_hAdd]
-          exact (Rank1Termination.add_assoc _ _ _).symm
-        · intro hp
-          rw [← add_eq_hAdd]
-          exact (Rank1Termination.add_assoc _ _ _).symm
-
-#print axioms ca_card_times_add
+  cases n with
+  | zero => rw [tc_card_times_zero, tc_card_times_zero, tc_card_times_zero]
+  | succ k =>
+      induction a with
+      | Z => rfl
+      | P p x y _ ihy =>
+          rw [T.P_add_eq, T.card_times.eq_3, T.card_times.eq_3, ihy]
+          apply Decidable.byCases (p := p = 0)
+          · intro hp
+            rw [ite_eq_left hp]
+            exact (Rank1Termination.add_assoc _ _ _).symm
+          · intro hp
+            rw [ite_eq_right hp]
+            exact (Rank1Termination.add_assoc _ _ _).symm
 
 theorem ca_mul_P1_ofNat_succ (k : Nat) :
     T.add (T.P 1 T.Z T.Z)
@@ -1987,9 +1961,6 @@ theorem ca_mul_P1_ofNat_succ (k : Nat) :
   rw [← add_eq_hAdd]
   rw [T.P_add_eq, T.add]
   exact (mul_add_shape 1 T.Z k).symm
-
-#print axioms ca_mul_P1_ofNat_succ
-
 
 theorem ca_PZ_add (p : Nat) (a b : T) :
     T.P p a T.Z + b = T.P p a b := by
@@ -2008,7 +1979,7 @@ theorem ca_card_times_one_comp (m : Nat) (c : T) :
   | P p a b iha ihb =>
     cases m with
     | zero =>
-      rw [ca_card_times_zero]
+      rw [tc_card_times_zero]
     | succ k =>
       rw [T.card_times.eq_3]
       let H :=
@@ -2051,9 +2022,6 @@ theorem ca_card_times_one_comp (m : Nat) (c : T) :
         rw [← Rank1Termination.add_assoc]
         rw [ca_mul_P1_ofNat_succ]
 
-#print axioms ca_card_times_one_comp
-
-
 -- From Weighted.lean
 
 theorem wt_add_self_le (a z : T) : a ≤ T.add a z := by
@@ -2073,9 +2041,6 @@ theorem wt_add_self_le (a z : T) : a ≤ T.add a z := by
       | inr heq =>
         exact Or.inr (congrArg (fun t => T.P p x t) heq)
 
-#print axioms wt_add_self_le
-
-
 theorem wt_expand_card_succ_add (k : Nat) (a b y : T) :
     T.add (T.card_times (k + 1) (T.P 0 a b)) y =
       T.P 1
@@ -2086,8 +2051,6 @@ theorem wt_expand_card_succ_add (k : Nat) (a b y : T) :
   rw [Rank1Termination.add_assoc]
   rw [T.P_add_eq, T.add]
   rfl
-
-#print axioms wt_expand_card_succ_add
 
 theorem wt_card_append_lt (n : Nat) :
     ∀ c d y z : T,
@@ -2100,7 +2063,7 @@ theorem wt_card_append_lt (n : Nat) :
   intro c
   induction c with
   | Z =>
-    intro d y z hcNF hcIdx hdNF hdIdx hcd hy
+    intro d y z _ _ hdNF hdIdx hcd hy
     have hdNe : d ≠ T.Z := by
       intro heq
       rw [heq] at hcd
@@ -2125,7 +2088,7 @@ theorem wt_card_append_lt (n : Nat) :
           have hq0 : q = 0 := Nat.eq_zero_of_le_zero hq
           cases hq0
           exact match T.isNF1_P_inv 0 a b hcNF with
-          | ⟨haNF, hbNF, haG, hheadb⟩ => by
+          | ⟨haNF, hbNF, haG, _⟩ => by
             exact match T.isNF1_P_inv 0 e f hdNF with
             | ⟨heNF, hfNF, heG, hheadf⟩ => by
               cases lt_inv 0 a b 0 e f hcd with
@@ -2165,14 +2128,8 @@ theorem wt_card_append_lt (n : Nat) :
                       (T.add (T.mul (T.P 1 T.Z T.Z) (T.ofNat k))
                         (T.early_collapse a)) _ _ hrec
 
-#print axioms wt_card_append_lt
-
-
 -- From AuxOrder.lean
 
-
-
--- extracted from Subsp/new/stop_order_aux.lean
 theorem ao_transAux_lex {lam : Nat} :
     ∀ {k : Nat} (v w : new.Vec (new.T lam) (k + 1)),
       (∀ x : new.T lam, x ∈ new.Vec.toList v →
@@ -2316,9 +2273,6 @@ theorem ao_transAux_lex {lam : Nat} :
                       · rw [heqrest.1]
                       · exact heqrest.2
 
-#print axioms ao_transAux_lex
-
-
 -- From CardAux.lean
 
 theorem sc_transAux_card1_inv {lam : Nat} :
@@ -2355,7 +2309,7 @@ theorem sc_transAux_card1_inv {lam : Nat} :
           · intro y hy
             rw [T.G1.eq_1] at hy
             cases hy
-          · intro c hcNF hcIdx hcNe
+          · intro c _ _ hcNe
             exact tc_Z_lt_of_ne (T.card_times 1 c)
               (bridge_card_times_ne_Z 1 c hcNe)
   | succ m ih =>
@@ -2419,9 +2373,6 @@ theorem sc_transAux_card1_inv {lam : Nat} :
                 (Nat.lt_succ_self (m + 1)) hec.1 hec.2.1 hecNe
                 hcNF hcIdx hcNe
 
-#print axioms sc_transAux_card1_inv
-
-
 -- From CardOrder_fixed.lean
 
 theorem co_len1_sum_zero {lam : Nat}
@@ -2434,8 +2385,6 @@ theorem co_len1_sum_zero {lam : Nat}
       rw [transAux.eq_2] at h
       cases h
       rfl
-
-#print axioms co_len1_sum_zero
 
 theorem co_transAux_card1_lex {lam : Nat} :
     ∀ {k : Nat} (v w : new.Vec (new.T lam) (k + 1)),
@@ -2603,31 +2552,6 @@ theorem co_transAux_card1_lex {lam : Nat} :
                           · rw [hr.1]
                           · exact hr.2
 
-#print axioms co_transAux_card1_lex
-
-
-
--- extracted from Subsp/new/stop_ec.lean
-theorem ec_part_fst_fixed (s : T) :
-    T.part (T.part s).1 = ((T.part s).1, T.Z) := by
-  induction s with
-  | Z => rfl
-  | P p a b iha ihb =>
-    rw [T.part]
-    apply Decidable.byCases (p := p = 0)
-    · intro hp
-      rw [ite_eq_left hp]
-      rfl
-    · intro hp
-      rw [ite_eq_right hp]
-      cases hbpart : T.part b with
-      | mk c d =>
-        have ih := ihb
-        rw [hbpart] at ih
-        change T.part (T.P p a c) = (T.P p a c, T.Z)
-        rw [T.part, ite_eq_right hp]
-        rw [ih]
-
 theorem ec_part_snd_index0 (s : T) (hs : T.isNF1 s) :
     T.index_Prop1 0 (T.part s).2 := by
   cases hp : T.part s with
@@ -2669,10 +2593,10 @@ theorem ec_add_index0_lt_pos_of_lt : ∀ a c b : T,
   intro a
   induction a with
   | Z =>
-    intro c b ha hc hb hlt
+    intro c b _ hc hb hlt
     rw [T.add]
     exact ec_index0_lt_posfixed b c hb hc (fun h => by rw [h] at hlt; cases hlt)
-  | P p x y ihx ihy =>
+  | P p x y _ ihy =>
     intro c b ha hc hb hlt
     have hpne : p ≠ 0 := by
       intro hp
@@ -2715,8 +2639,6 @@ theorem ec_add_index0_lt_pos_of_lt : ∀ a c b : T,
                 ihy v b hyfixed hvfixed hb ht.2.2
               exact T.Lt.p_tail p x (T.add y b) v htail
 
-#print axioms ec_add_index0_lt_pos_of_lt
-
 theorem ec_pair_formula (s a b : T)
     (hs : T.isNF1 s) (hp : T.part s = (a, b)) :
     T.early_collapse s =
@@ -2733,8 +2655,6 @@ theorem ec_pair_formula (s a b : T)
       rw [hp] at hparts
       exact hparts.2
     rw [T.stand, bridge_stand_eq_self_of_NF1 b hbnf]
-
-#print axioms ec_pair_formula
 
 theorem ec_part_snd_middle_mem (s a e f : T)
     (hp : T.part s = (a, T.P 0 e f)) :
@@ -2760,238 +2680,6 @@ theorem ec_index0_lt_P0 (b c : T)
         have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
         cases hp0
         exact T.Lt.p_mid 0 e c f T.Z (hmid e f rfl)
-
-theorem ec_left_below_next_fst (s a b c : T)
-    (hs : T.isNF1 s)
-    (hg : ∀ x : T, x ∈ T.G1 0 s → x < s)
-    (hp : T.part s = (a, b))
-    (hcfix : T.part c = (c, T.Z))
-    (hac : a < c) :
-    T.early_collapse s < T.P 0 c T.Z := by
-  have hbidx : T.index_Prop1 0 b := by
-    exact bridge_part_second_index0 s a b hs hp
-  have hafix : T.part a = (a, T.Z) := by
-    have hh := ec_part_fst_fixed s
-    rw [hp] at hh
-    exact hh
-  have hcne : c ≠ T.Z := by
-    intro hc0
-    rw [hc0] at hac
-    exact False.elim (lt_Z_inv hac)
-  have hsltc : s < c := by
-    have hadd := bridge_part_add s
-    rw [hp] at hadd
-    rw [← hadd]
-    exact ec_add_index0_lt_pos_of_lt a c b hafix hcfix hbidx hac
-  rw [ec_pair_formula s a b hs hp]
-  apply Decidable.byCases (p := a = T.Z)
-  · intro ha0
-    rw [ite_eq_left ha0]
-    have hsb : s = b := by
-      have hadd := bridge_part_add s
-      rw [hp, ha0] at hadd
-      exact hadd.symm
-    rw [hsb]
-    apply ec_index0_lt_P0 b c hbidx
-    intro e f hbe
-    have hmem : e ∈ T.G1 0 s := by
-      rw [hbe] at hp
-      exact ec_part_snd_middle_mem s a e f hp
-    exact lt_trans_thm e s c (hg e hmem) hsltc
-  · intro ha0
-    rw [ite_eq_right ha0]
-    apply Decidable.byCases (p := T.head b ≤ T.P 0 a T.Z)
-    · intro hkeep
-      rw [ite_eq_left hkeep]
-      exact T.Lt.p_mid 0 a c b T.Z hac
-    · intro hkeep
-      rw [ite_eq_right hkeep]
-      apply ec_index0_lt_P0 b c hbidx
-      intro e f hbe
-      have hmem : e ∈ T.G1 0 s := by
-        rw [hbe] at hp
-        exact ec_part_snd_middle_mem s a e f hp
-      exact lt_trans_thm e s c (hg e hmem) hsltc
-
-#print axioms ec_left_below_next_fst
-
-theorem ec_wrap_fst_le (t c d : T)
-    (ht : T.isNF1 t)
-    (hp : T.part t = (c, d))
-    (hc : c ≠ T.Z) :
-    T.P 0 c T.Z ≤ T.early_collapse t := by
-  rw [ec_pair_formula t c d ht hp, ite_eq_right hc]
-  apply Decidable.byCases (p := T.head d ≤ T.P 0 c T.Z)
-  · intro hkeep
-    rw [ite_eq_left hkeep]
-    cases d with
-    | Z => exact Or.inr rfl
-    | P p e f =>
-        exact Or.inl (T.Lt.p_tail 0 c T.Z (T.P p e f) (T.Lt.Z_lt_P p e f))
-  · intro hkeep
-    rw [ite_eq_right hkeep]
-    have hdshape := bridge_part_second_shape t c d hp
-    cases hdshape with
-    | inl hd0 =>
-        rw [hd0] at hkeep
-        exact False.elim (hkeep (T.Z_le (T.P 0 c T.Z)))
-    | inr hP =>
-        exact match hP with
-        | ⟨e, f, heq⟩ => by
-          rw [heq]
-          have hce : c < e := by
-            cases lt_total_thm c e with
-            | inl hlt => exact hlt
-            | inr hor =>
-                cases hor with
-                | inl hec =>
-                    have hle : T.P 0 e T.Z ≤ T.P 0 c T.Z :=
-                      Or.inl (T.Lt.p_mid 0 e c T.Z T.Z hec)
-                    rw [heq] at hkeep
-                    exact False.elim (hkeep hle)
-                | inr hec =>
-                    have hle : T.P 0 e T.Z ≤ T.P 0 c T.Z := by
-                      rw [hec]
-                      exact Or.inr rfl
-                    rw [heq] at hkeep
-                    exact False.elim (hkeep hle)
-          exact Or.inl (T.Lt.p_mid 0 c e T.Z f hce)
-
-#print axioms ec_wrap_fst_le
-
-theorem ec_P0_lt_snd_of_not_head_le (t c d tail : T)
-    (hp : T.part t = (c, d))
-    (hnot : ¬ T.head d ≤ T.P 0 c T.Z) :
-    T.P 0 c tail < d := by
-  have hdshape := bridge_part_second_shape t c d hp
-  cases hdshape with
-  | inl hd0 =>
-      rw [hd0] at hnot
-      exact False.elim (hnot (T.Z_le (T.P 0 c T.Z)))
-  | inr hP =>
-      exact match hP with
-      | ⟨e, f, heq⟩ => by
-        rw [heq]
-        have hce : c < e := by
-          cases lt_total_thm c e with
-          | inl hlt => exact hlt
-          | inr hor =>
-              cases hor with
-              | inl hec =>
-                  have hle : T.P 0 e T.Z ≤ T.P 0 c T.Z :=
-                    Or.inl (T.Lt.p_mid 0 e c T.Z T.Z hec)
-                  rw [heq] at hnot
-                  exact False.elim (hnot hle)
-              | inr hec =>
-                  have hle : T.P 0 e T.Z ≤ T.P 0 c T.Z := by
-                    rw [hec]
-                    exact Or.inr rfl
-                  rw [heq] at hnot
-                  exact False.elim (hnot hle)
-        exact T.Lt.p_mid 0 c e tail f hce
-
-theorem ec_same_fst_mono (s t a b d : T)
-    (hs : T.isNF1 s) (ht : T.isNF1 t)
-    (hps : T.part s = (a, b))
-    (hpt : T.part t = (a, d))
-    (hbd : b < d) :
-    T.early_collapse s < T.early_collapse t := by
-  rw [ec_pair_formula s a b hs hps, ec_pair_formula t a d ht hpt]
-  apply Decidable.byCases (p := a = T.Z)
-  · intro ha
-    rw [ite_eq_left ha, ite_eq_left ha]
-    have hsb : s = b := by
-      have h := bridge_part_add s
-      rw [hps, ha] at h
-      exact h.symm
-    have htd : t = d := by
-      have h := bridge_part_add t
-      rw [hpt, ha] at h
-      exact h.symm
-    rw [hsb, htd]
-    exact hbd
-  · intro ha
-    rw [ite_eq_right ha, ite_eq_right ha]
-    apply Decidable.byCases (p := T.head b ≤ T.P 0 a T.Z)
-    · intro hbkeep
-      rw [ite_eq_left hbkeep]
-      apply Decidable.byCases (p := T.head d ≤ T.P 0 a T.Z)
-      · intro hdkeep
-        rw [ite_eq_left hdkeep]
-        exact T.Lt.p_tail 0 a b d hbd
-      · intro hdkeep
-        rw [ite_eq_right hdkeep]
-        exact ec_P0_lt_snd_of_not_head_le t a d b hpt hdkeep
-    · intro hbkeep
-      rw [ite_eq_right hbkeep]
-      apply Decidable.byCases (p := T.head d ≤ T.P 0 a T.Z)
-      · intro hdkeep
-        rw [ite_eq_left hdkeep]
-        have hhead : T.head b ≤ T.head d := T.head_mono hbd
-        have hcontra : T.head b ≤ T.P 0 a T.Z :=
-          partial_order.trans (T.head b) (T.head d) (T.P 0 a T.Z) hhead hdkeep
-        exact False.elim (hbkeep hcontra)
-      · intro hdkeep
-        rw [ite_eq_right hdkeep]
-        exact hbd
-
-#print axioms ec_same_fst_mono
-
-theorem ec_good0_mono (s t : T)
-    (hs : T.isNF1 s) (ht : T.isNF1 t)
-    (hgs : ∀ x : T, x ∈ T.G1 0 s → x < s)
-    (_hgt : ∀ x : T, x ∈ T.G1 0 t → x < t)
-    (hst : s < t) :
-    T.early_collapse s < T.early_collapse t := by
-  cases hps : T.part s with
-  | mk a b =>
-    cases hpt : T.part t with
-    | mk c d =>
-      have hparts := part_lt_cases s t hst
-      rw [hps, hpt] at hparts
-      cases hparts with
-      | inl hac =>
-          have hleft : T.early_collapse s < T.P 0 c T.Z :=
-            ec_left_below_next_fst s a b c hs hgs hps
-              (by
-                have hh := ec_part_fst_fixed t
-                rw [hpt] at hh
-                exact hh) hac
-          have hcne : c ≠ T.Z := by
-            intro hc
-            rw [hc] at hac
-            exact False.elim (lt_Z_inv hac)
-          have hright : T.P 0 c T.Z ≤ T.early_collapse t :=
-            ec_wrap_fst_le t c d ht hpt hcne
-          exact lt_of_lt_of_le_thm T
-            (T.early_collapse s) (T.P 0 c T.Z) (T.early_collapse t)
-            hleft hright
-      | inr heq =>
-          have hac : a = c := heq.1
-          have hbd : b < d := heq.2
-          rw [← hac] at hpt
-          exact ec_same_fst_mono s t a b d hs ht hps hpt hbd
-
-#print axioms ec_good0_mono
-
-theorem ec_good0_reflect (s t : T)
-    (hs : T.isNF1 s) (ht : T.isNF1 t)
-    (hgs : ∀ x : T, x ∈ T.G1 0 s → x < s)
-    (hgt : ∀ x : T, x ∈ T.G1 0 t → x < t)
-    (h : T.early_collapse s < T.early_collapse t) :
-    s < t := by
-  cases lt_total_thm s t with
-  | inl hst => exact hst
-  | inr hor =>
-      cases hor with
-      | inl hts =>
-          have hrev := ec_good0_mono t s ht hs hgt hgs hts
-          exact False.elim (lt_asymm_thm h hrev)
-      | inr heq =>
-          rw [heq] at h
-          exact False.elim (lt_irrefl_thm (T.early_collapse t) h)
-
-#print axioms ec_good0_reflect
 
 theorem ec_one_del_NF_index_good1 (s : T)
     (hs : T.isNF1 s)
@@ -3038,77 +2726,4 @@ theorem ec_one_del_NF_index_good1 (s : T)
             exact ⟨hs, T.index_Prop1.p 0 (T.P q c d) b
               (Nat.le_refl 0) hib, _hg⟩
 
-theorem ec_one_del_mono_nonzero (s t : T)
-    (hs : T.isNF1 s) (_ht : T.isNF1 t)
-    (his : T.index_Prop1 0 s) (hit : T.index_Prop1 0 t)
-    (hsz : s ≠ T.Z) (htz : t ≠ T.Z)
-    (hst : s < t) :
-    T.one_del s < T.one_del t := by
-  cases s with
-  | Z => exact False.elim (hsz rfl)
-  | P p a b =>
-    cases his with
-    | p _ _ _ hp hib =>
-      have hp0 : p = 0 := Nat.eq_zero_of_le_zero hp
-      cases hp0
-      cases t with
-      | Z => exact False.elim (htz rfl)
-      | P q c d =>
-        cases hit with
-        | p _ _ _ hq hid =>
-          have hq0 : q = 0 := Nat.eq_zero_of_le_zero hq
-          cases hq0
-          cases a with
-          | Z =>
-            cases c with
-            | Z =>
-                change b < d
-                cases lt_inv 0 T.Z b 0 T.Z d hst with
-                | inl hh => exact False.elim (Nat.lt_irrefl 0 hh)
-                | inr hor =>
-                    cases hor with
-                    | inl hm => exact False.elim (lt_Z_inv hm.2)
-                    | inr htcase => exact htcase.2.2
-            | P r u v =>
-                change b < T.P 0 (T.P r u v) d
-                have hheadb : T.head b ≤ T.P 0 T.Z T.Z :=
-                  (T.isNF1_P_inv 0 T.Z b hs).2.2.2
-                cases b with
-                | Z => exact T.Lt.Z_lt_P 0 (T.P r u v) d
-                | P k e f =>
-                    have hk0 : k = 0 := by
-                      exact Nat.eq_zero_of_le_zero
-                        (head_le_index k 0 e T.Z hheadb)
-                    cases hk0
-                    have hez : e = T.Z := by
-                      cases hheadb with
-                      | inl hlt =>
-                          cases lt_inv 0 e T.Z 0 T.Z T.Z hlt with
-                          | inl hh => exact False.elim (Nat.lt_irrefl 0 hh)
-                          | inr hor =>
-                              cases hor with
-                              | inl hm => exact False.elim (lt_Z_inv hm.2)
-                              | inr htcase => exact False.elim (lt_Z_Z_inv htcase.2.2)
-                      | inr heq =>
-                          cases heq
-                          rfl
-                    rw [hez]
-                    exact T.Lt.p_mid 0 T.Z (T.P r u v) f d
-                      (T.Lt.Z_lt_P r u v)
-          | P r u v =>
-            cases c with
-            | Z =>
-                have hinv := lt_inv 0 (T.P r u v) b 0 T.Z d hst
-                cases hinv with
-                | inl hh => exact False.elim (Nat.lt_irrefl 0 hh)
-                | inr hor =>
-                    cases hor with
-                    | inl hm => exact False.elim (lt_P_Z_inv r u v hm.2)
-                    | inr htcase =>
-                        have heq : T.P r u v = T.Z := htcase.2.1
-                        cases heq
-            | P k e f =>
-                change T.P 0 (T.P r u v) b < T.P 0 (T.P k e f) d
-                exact hst
-
-#print axioms ec_one_del_mono_nonzero
+end TranslationAlgebra

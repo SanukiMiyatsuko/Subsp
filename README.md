@@ -1,128 +1,51 @@
 Subspがメインのフォルダで、
 SubspRepoが作業フォルダです。
 
+## stopのファイル構成
+
+`stop` 関連の証明は、役割ごとに次の6ファイルへまとめています。
+公開定理は従来どおり `import Subsp.new.stop` で利用できます。
+
+| ファイル | 役割 |
+| --- | --- |
+| [stop_algebra.lean](Subsp/new/stop_algebra.lean) | collapse・cardinal演算・翻訳ベクトルの基礎補題 |
+| [stop_nf_order.lean](Subsp/new/stop_nf_order.lean) | 正規形の保存、順序埋め込み、翻訳の上界、NFの整列性 |
+| [stop_ot.lean](Subsp/new/stop_ot.lean) | OTの基底、共終性、下方閉性、正規形による特徴付け |
+| [stop_inverse.lean](Subsp/new/stop_inverse.lean) | 深さ・台の上界を保つcollapseとcardinal演算の逆構成 |
+| [stop_surjectivity.lean](Subsp/new/stop_surjectivity.lean) | SubNFへの翻訳と全次元での全射性 |
+| [stop.lean](Subsp/new/stop.lean) | OTとSubNFの順序同型、公開定理の入口 |
+
+公理依存の検査は `lake env lean SubspRepo/StopAxiomAudit.lean` で実行できます。
+
 ## 証明方針
 
-このリポジトリでは、証明の構成性と明示性を保つため、使用するタクティクを制限します。
+タクティクは、次の条件を満たす場合に使用できます。
 
-### 許可する公理
+- 使用前より証明が短くなること。
+- `#print axioms` で、証明結果が `Classical.choice` に依存しないことを確認すること。
+- 以下の禁止タクティクを使用しないこと。
 
-使用を許可する公理は次の2つだけです。
-
-- `propext`
-- `Quot.sound`
-
-`Classical.choice` など、これ以外の公理への依存は認めません。
-
-また、mathlib には依存しません。
-
-### 禁止タクティク
-
-以下のタクティクおよびタクティクコンビネータは禁止します。
-
-#### 自動化・探索
+### 引き続き禁止するタクティク
 
 - `simp`
-- `simpa`
-- `simp_all`
 - `dsimp`
-- `aesop`
-- `assumption`
+- `simp_all`
+- `simpa`
 - `trivial`
 - `try`
-- `repeat`
-- `omega`
-- `all_goals`
-- `any_goals`
-- `first`
-- `first_goals`
-- `solve`
-- `solve_by_elim`
-- `apply_rules`
-- `grind`
-- `<;>`
+- `aesop`
+- `assumption`
 
-#### 決定手続き・自動証明
+それ以外のタクティクは、上記の条件を満たせば使用できます。
+従来禁止していた `omega`、`rcases`、`obtain`、`by_cases`、`subst`、
+`injection`、タクティクコンビネータなども同じ条件で使用できます。
+`classical` や探索タクティクについても、最終的な証明の公理依存で判定します。
 
-- `decide`
-- `native_decide`
-- `bv_decide`
-- `linarith`
-- `nlinarith`
-- `ring`
-- `ring_nf`
-- `norm_num`
-- `positivity`
-- `tauto`
+### 検証
 
-#### 自動候補生成
+タクティクの変更後はLeanでビルドし、変更した定理と主要な公開定理について
+`#print axioms` を実行します。`Classical.choice` が含まれる変更は採用しません。
+既存の主要定理の公理依存は `propext` と `Quot.sound` のみです。
 
-- `exact?`
-- `apply?`
-- `rw?`
-- `simp?`
-
-#### 暗黙の場合分け・パターン分解・等式処理
-
-- タクティクモードの `if ... then ... else ...`
-- `by_cases`
-- `by_contra`
-- `split`
-- `rcases`
-- `obtain`
-- `injection`
-- `subst`
-- `conv`
-
-### 禁止する非構成的・未証明構文
-
-タクティクではありませんが、以下も禁止します。
-
-- `classical`
-- `Classical.em`
-- `Classical.choice`
-- `propDecidable`
-- `noncomputable`
-- `sorry`
-- `admit`
-
-### 許可タクティク
-
-証明過程がソースコード上で明示的に追える、以下のタクティクを使用できます。
-
-- `intro`
-- `exact`
-- `apply`
-- `refine`
-- `have`
-- `show`
-- `change`
-- `rw`
-- `rfl`
-- `unfold`
-- `cases`
-- `induction`
-- `constructor`
-- `left`
-- `right`
-- `exfalso`
-- `clear`
-
-また、ゴールを明示的に選択するための `case` / `next` 構文も使用できます。
-
-タクティクではありませんが、以下のような明示的な項・場合分けも使用できます。
-
-- `match ... with`
-- `exact match ... with`
-- `Decidable.byCases`
-- `cases (inferInstance : Decidable p)`
-
-特に命題の真偽で場合分けする場合、タクティクモードの `if ... then ... else ...` や `by_cases` は使用せず、利用可能な `Decidable p` を明示的に消去してください。
-
-Lean のタクティクモードにおける `if p then tac1 else tac2` は、実質的に `by_cases p` の別構文として命題 `p` と `¬p` の2ケースへ分岐するため禁止します。一方、項・定義の中で値を構成する通常の `if p then t else e`（`ite` / `dite`）は、明示的な `Decidable p` に基づく構成的な式なので禁止しません。
-
-### 原則
-
-「Lean が何を試したか」ではなく、「どの証明項・どの等式・どの constructor を使ったか」がコードから直接読める証明を優先します。
-
-禁止リストにない新しいタクティクを導入する場合でも、証明探索、自動簡約、暗黙の古典論理、暗黙の witness 抽出、暗黙の等式分解を行うものは使用しないでください。
+`sorry`・`admit` などの未証明部分や、証明を置き換える公理の追加は認めません。
+mathlibには依存しません。

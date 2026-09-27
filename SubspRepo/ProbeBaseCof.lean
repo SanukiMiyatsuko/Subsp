@@ -1,4 +1,4 @@
-import Subsp.new.stop_ot_downward
+import Subsp.new.stop_ot
 
 def v2 (a b:new.T 2) := new.Vec.snoc 1 (new.Vec.snoc 0 new.Vec.nil a) b
 def gen2 : Nat → List (new.T 2)

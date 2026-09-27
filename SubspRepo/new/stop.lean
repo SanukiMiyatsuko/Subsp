@@ -23,10 +23,11 @@ theorem trans_OT_injective (lam : Nat) (s t : new.T.OT lam)
 
 theorem trans_OT_surjective (lam : Nat) (t : T.SubNF lam) :
     ∃ s : new.T.OT lam, trans_OT lam s = t := by
-  obtain ⟨s, hs⟩ := exists_OT_of_SubNF lam t.val t.property
-  refine ⟨⟨s, hs.1⟩, ?_⟩
-  apply Subtype.ext
-  exact hs.2
+  cases exists_OT_of_SubNF lam t.val t.property with
+  | intro s hs =>
+      refine ⟨⟨s, hs.1⟩, ?_⟩
+      apply Subtype.ext
+      exact hs.2
 
 theorem trans_OT_lt_iff (lam : Nat) (s t : new.T.OT lam) :
     s.val < t.val ↔ (trans_OT lam s).val < (trans_OT lam t).val := by

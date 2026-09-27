@@ -1,4 +1,4 @@
-import Subsp.new.stop_ot_downward
+import Subsp.new.stop_ot
 
 open T
 

@@ -1,4 +1,4 @@
-import Subsp.new.stop_ot_cofinal
+import Subsp.new.stop_ot
 
 open T
 

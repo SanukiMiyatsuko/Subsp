@@ -98,3 +98,67 @@ Validation: Lean 4.34.0, `lake build Subsp.new.stop`. Axiom audits for the main
 normal-form, order, surjectivity, injectivity, and well-foundedness theorems all
 report only `propext` and `Quot.sound`. No experimental decoder is imported into
 the main library.
+
+## Proof cleanup (2026-09-27)
+
+The `stop*.lean` proof modules were reduced from 11,236 to 9,297 lines.
+Unused auxiliary declarations were removed using the elaborated proof dependency
+graph, and duplicate lemmas now share one proof. The low-dimensional
+surjectivity arguments use structural induction and reuse the same reconstructed
+normal form. Well-foundedness uses `InvImage.wf` and `Subrelation.wf`.
+
+The public normal-form, surjectivity, injectivity, well-foundedness, and order
+isomorphism results remain available. `T.isSubNF` now uses `ot_trans_bound` for
+its existing cutoff. `SubspRepo/StopAxiomAudit.lean` checks that this condition
+agrees with the original definition and collects the main axiom audits, which
+were removed from the library files.
+
+## Consolidation by role (2026-09-27)
+
+The 21 main proof files are now consolidated into six modules:
+`stop_algebra`, `stop_nf_order`, `stop_ot`, `stop_inverse`,
+`stop_surjectivity`, and the public entry point `stop`.
+The README describes the role of each module. All 275 declaration names,
+statements, and proof bodies were preserved. Imports of the removed modules
+in working files now refer to their consolidated replacements; filenames in
+earlier worklog entries describe the historical layout.
+
+## Second proof cleanup (2026-09-27)
+
+The six consolidated modules were reduced from 9,417 to 8,797 lines.
+Ten size-based inductions were replaced by structural induction. The three
+remaining measure inductions are used for support descent, the simultaneous
+normal-form/order argument, and exponent-depth reconstruction.
+
+Bounded and unbounded order preservation now share one proof. The finite-term
+and LF normal-form proofs share a constructor lemma, repeated vector comparisons
+share one inversion lemma, and the Omega-domain exclusion uses the coordinate
+bound directly. The inverse construction shares its fixed-part decomposition.
+The duplicate `cb_P0_mid_le`, one unused intermediate proof, and unused hypotheses
+of `ec_good0_mono` and `cb_shift_le_of_le` were removed. Unused local binding names
+were replaced by anonymous bindings.
+
+The public theorem statements, including `OT_SubNF_order_iso`, are unchanged.
+Validation: `lake build Subsp.new.stop`, the 15 public axiom audits in
+`SubspRepo/StopAxiomAudit.lean`, and tactic-aware unused-variable linting of all
+six modules pass. The elaborated dependency graph has no unreachable auxiliary
+declarations relative to the public results and main-library uses. The source
+review found no README-prohibited tactics, unproved declarations, or new axioms.
+
+## Structural consolidation (2026-09-27)
+
+A further review found semantic duplication that the unused-declaration check
+did not detect. After removing its unused hypothesis, `ec_good0_mono` had the
+same assumptions as `bridge_early_collapse_lt`, in a different order. Its call
+now uses the latter theorem; the duplicate and its four dedicated helper
+theorems were removed.
+
+The three wrapping lemmas `cs_self_lt_wrap`, `StopUncollapse.good_index0_lt`, and
+`StopSurjCard.index1_good_lt_wrap` were replaced by `bridge_good_index_lt_wrap`.
+This works for every natural-number index and does not require normal form.
+Its proof has no axiom dependencies. Checked instances are recorded in
+`SubspRepo/StopImprovementAudit.lean`.
+
+These changes reduce the six modules from 8,797 to 8,558 lines. The retained
+declarations' signatures are unchanged, including all public order-isomorphism
+results. The library build and the 15 public axiom audits pass.

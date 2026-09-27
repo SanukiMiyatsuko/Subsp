@@ -1,4 +1,4 @@
-import Subsp.new.stop_progress
+import Subsp.new.stop_algebra
 
 open T
 
@@ -115,4 +115,3 @@ theorem bridge_add_left_lt (p a b : T) (h : a < b) :
     exact T.Lt.p_tail p0 p1 (T.add p2 a) (T.add p2 b) ih2
 
 #print axioms bridge_add_left_lt
-
