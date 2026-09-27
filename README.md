@@ -23,23 +23,6 @@ SubspRepoが作業フォルダです。
 
 - 使用前より証明が短くなること。
 - `#print axioms` で、証明結果が `Classical.choice` に依存しないことを確認すること。
-- 以下の禁止タクティクを使用しないこと。
-
-### 引き続き禁止するタクティク
-
-- `simp`
-- `dsimp`
-- `simp_all`
-- `simpa`
-- `trivial`
-- `try`
-- `aesop`
-- `assumption`
-
-それ以外のタクティクは、上記の条件を満たせば使用できます。
-従来禁止していた `omega`、`rcases`、`obtain`、`by_cases`、`subst`、
-`injection`、タクティクコンビネータなども同じ条件で使用できます。
-`classical` や探索タクティクについても、最終的な証明の公理依存で判定します。
 
 ### 検証
 
