@@ -35,8 +35,6 @@ def T.SubNF (lam : Nat) := { t : T // isSubNF lam t }
 
 end SubNFImage
 
-/-! Reconstruction in dimensions zero and one. -/
-
 section LowDimensionalSurjectivity
 
 open T
