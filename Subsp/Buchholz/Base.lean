@@ -199,14 +199,10 @@ theorem T.add_Z (a : T) : T.add a Z = a := by
   cases a with rfl
 
 theorem T.P_add_eq (s0 : Nat) (s1 s2 y : T) : T.add (P s0 s1 s2) y = P s0 s1 (T.add s2 y) := by
-  cases y with
-  | Z => rw [T.add_Z s2]; rfl
-  | P u0 u1 u2 => rfl
+  cases y <;> simp [T.add, T.add_Z]
 
 theorem T.exists_add_eq_P (a : T) (t0 : Nat) (t1 t2 : T) : ∃ u0 u1 u2, T.add a (P t0 t1 t2) = P u0 u1 u2 := by
-  cases a with
-  | Z => exact ⟨t0, t1, t2, rfl⟩
-  | P s0 s1 s2 => exact ⟨s0, s1, T.add s2 (P t0 t1 t2), rfl⟩
+  cases a <;> exact ⟨_, _, _, rfl⟩
 
 inductive T.Lt : T → T → Prop where
 | Z_lt_P (n : Nat) (t1 t2 : T) :
@@ -228,30 +224,14 @@ theorem lt_P_Z_inv (s0 : Nat) (s1 s2 : T) (h : (P s0 s1 s2) < Z) : False := by
   cases h
 
 theorem lt_Z_inv {a : T} (h : a < Z) : False := by
-  cases a with
-  | Z => exact lt_Z_Z_inv h
-  | P a0 a1 a2 => exact lt_P_Z_inv a0 a1 a2 h
+  cases h
 
 theorem lt_inv (s0 : Nat) (s1 s2 : T) (t0 : Nat) (t1 t2 : T) (h : (P s0 s1 s2).Lt (P t0 t1 t2)) :
   s0 < t0 ∨ (s0 = t0 ∧ s1.Lt t1) ∨ (s0 = t0 ∧ s1 = t1 ∧ s2.Lt t2) := by
-  cases h
-  case p_head h_lt =>
-    apply Or.inl
-    exact h_lt
-  case p_mid h_lt =>
-    apply Or.inr
-    apply Or.inl
-    apply And.intro
-    · rfl
-    · exact h_lt
-  case p_tail h_lt =>
-    apply Or.inr
-    apply Or.inr
-    apply And.intro
-    · rfl
-    · apply And.intro
-      · rfl
-      · exact h_lt
+  cases h with
+  | p_head _ _ _ _ _ _ h => exact Or.inl h
+  | p_mid _ _ _ _ _ h => exact Or.inr (Or.inl ⟨rfl, h⟩)
+  | p_tail _ _ _ _ h => exact Or.inr (Or.inr ⟨rfl, rfl, h⟩)
 
 def T.decLt (a b : T) : Decidable (a.Lt b) :=
   match a, b with
@@ -299,186 +279,61 @@ instance (a b : T) : Decidable (a < b) :=
   T.decLt a b
 
 theorem nat_lt_total (n m : Nat) : n < m ∨ m < n ∨ n = m := by
-  induction n generalizing m with
-  | zero =>
-    cases m with
-    | zero =>
-      apply Or.inr
-      apply Or.inr
-      rfl
-    | succ m' =>
-      apply Or.inl
-      apply Nat.zero_lt_succ
-  | succ n' ih =>
-    cases m with
-    | zero =>
-      apply Or.inr
-      apply Or.inl
-      apply Nat.zero_lt_succ
-    | succ m' =>
-      cases ih m' with
-      | inl h_lt =>
-        apply Or.inl
-        exact Nat.succ_lt_succ h_lt
-      | inr h_or =>
-        cases h_or with
-        | inl h_gt =>
-          apply Or.inr
-          apply Or.inl
-          exact Nat.succ_lt_succ h_gt
-        | inr h_eq =>
-          apply Or.inr
-          apply Or.inr
-          rw [h_eq]
+  omega
 
 theorem lt_irrefl_thm (a : T) : ¬ a.Lt a := by
   induction a with
-  | Z =>
-    intro h
-    exact lt_Z_Z_inv h
+  | Z => exact lt_Z_inv
   | P s0 s1 s2 ih1 ih2 =>
-    intro h
-    have h_inv := lt_inv s0 s1 s2 s0 s1 s2 h
-    cases h_inv with
-    | inl h_lt =>
-      exact Nat.lt_irrefl s0 h_lt
-    | inr h_or =>
-      cases h_or with
-      | inl h_and =>
-        exact ih1 h_and.2
-      | inr h_and =>
-        exact ih2 h_and.2.2
+      intro h
+      cases h with
+      | p_head _ _ _ _ _ _ h => exact Nat.lt_irrefl _ h
+      | p_mid _ _ _ _ _ h => exact ih1 h
+      | p_tail _ _ _ _ h => exact ih2 h
 
 theorem lt_trans_thm (a : T) : ∀ b c : T, a.Lt b → b.Lt c → a.Lt c := by
   induction a with
-  | Z =>
-    intro b c h1 h2
-    cases b with
-    | Z => exact False.elim (lt_Z_Z_inv h1)
-    | P b0 b1 b2 =>
-      cases c with
-      | Z => exact False.elim (lt_P_Z_inv b0 b1 b2 h2)
-      | P c0 c1 c2 => exact T.Lt.Z_lt_P c0 c1 c2
+  | Z => intro b c _ h; cases h <;> exact T.Lt.Z_lt_P _ _ _
   | P a0 a1 a2 ih1 ih2 =>
-    intro b c h1 h2
-    cases b with
-    | Z => exact False.elim (lt_P_Z_inv a0 a1 a2 h1)
-    | P b0 b1 b2 =>
-      cases c with
-      | Z => exact False.elim (lt_P_Z_inv b0 b1 b2 h2)
-      | P c0 c1 c2 =>
-        have h1_inv := lt_inv a0 a1 a2 b0 b1 b2 h1
-        have h2_inv := lt_inv b0 b1 b2 c0 c1 c2 h2
-        cases h1_inv with
-        | inl h1_head =>
-          cases h2_inv with
-          | inl h2_head =>
-            have h_trans := Nat.lt_trans h1_head h2_head
-            exact T.Lt.p_head a0 c0 a1 c1 a2 c2 h_trans
-          | inr h2_or =>
-            cases h2_or with
-            | inl h2_mid =>
-              cases h2_mid.1
-              exact T.Lt.p_head a0 b0 a1 c1 a2 c2 h1_head
-            | inr h2_tail =>
-              cases h2_tail.1
-              exact T.Lt.p_head a0 b0 a1 c1 a2 c2 h1_head
-        | inr h1_or =>
-          cases h1_or with
-          | inl h1_mid =>
-            cases h1_mid.1
-            cases h2_inv with
-            | inl h2_head =>
-              exact T.Lt.p_head a0 c0 a1 c1 a2 c2 h2_head
-            | inr h2_or =>
-              cases h2_or with
-              | inl h2_mid =>
-                cases h2_mid.1
-                have h_trans := ih1 b1 c1 h1_mid.2 h2_mid.2
-                exact T.Lt.p_mid a0 a1 c1 a2 c2 h_trans
-              | inr h2_tail =>
-                cases h2_tail.1
-                cases h2_tail.2.1
-                exact T.Lt.p_mid a0 a1 b1 a2 c2 h1_mid.2
-          | inr h1_tail =>
-            cases h1_tail.1
-            cases h1_tail.2.1
-            cases h2_inv with
-            | inl h2_head =>
-              exact T.Lt.p_head a0 c0 a1 c1 a2 c2 h2_head
-            | inr h2_or =>
-              cases h2_or with
-              | inl h2_mid =>
-                cases h2_mid.1
-                exact T.Lt.p_mid a0 a1 c1 a2 c2 h2_mid.2
-              | inr h2_tail =>
-                cases h2_tail.1
-                cases h2_tail.2.1
-                have h_trans := ih2 b2 c2 h1_tail.2.2 h2_tail.2.2
-                exact T.Lt.p_tail a0 a1 a2 c2 h_trans
+      intro b c h1 h2
+      cases h1 with
+      | p_head _ _ _ _ _ _ h1 =>
+          cases h2 <;> apply T.Lt.p_head <;> omega
+      | p_mid _ _ _ _ _ h1 =>
+          cases h2 with
+          | p_head _ _ _ _ _ _ h2 => exact T.Lt.p_head _ _ _ _ _ _ h2
+          | p_mid _ _ _ _ _ h2 => exact T.Lt.p_mid _ _ _ _ _ (ih1 _ _ h1 h2)
+          | p_tail _ _ _ _ _ => exact T.Lt.p_mid _ _ _ _ _ h1
+      | p_tail _ _ _ _ h1 =>
+          cases h2 with
+          | p_head _ _ _ _ _ _ h2 => exact T.Lt.p_head _ _ _ _ _ _ h2
+          | p_mid _ _ _ _ _ h2 => exact T.Lt.p_mid _ _ _ _ _ h2
+          | p_tail _ _ _ _ h2 => exact T.Lt.p_tail _ _ _ _ (ih2 _ _ h1 h2)
 
 theorem lt_asymm_thm {a b : T} (h : a < b) : ¬ (b < a) := by
   intro hba
-  have htrans := lt_trans_thm a b a h hba
-  exact lt_irrefl_thm a htrans
+  exact lt_irrefl_thm a (lt_trans_thm a b a h hba)
 
 theorem lt_total_thm (a b : T) : a.Lt b ∨ b.Lt a ∨ a = b := by
   induction a generalizing b with
   | Z =>
-    cases b with
-    | Z =>
-      apply Or.inr
-      apply Or.inr
-      rfl
-    | P b0 b1 b2 =>
-      apply Or.inl
-      exact T.Lt.Z_lt_P b0 b1 b2
+      cases b with
+      | Z => exact Or.inr (Or.inr rfl)
+      | P _ _ _ => exact Or.inl (T.Lt.Z_lt_P _ _ _)
   | P a0 a1 a2 ih1 ih2 =>
-    cases b with
-    | Z =>
-      apply Or.inr
-      apply Or.inl
-      exact T.Lt.Z_lt_P a0 a1 a2
-    | P b0 b1 b2 =>
-      cases nat_lt_total a0 b0 with
-      | inl h_lt =>
-        apply Or.inl
-        exact T.Lt.p_head a0 b0 a1 b1 a2 b2 h_lt
-      | inr h_or =>
-        cases h_or with
-        | inl h_gt =>
-          apply Or.inr
-          apply Or.inl
-          exact T.Lt.p_head b0 a0 b1 a1 b2 a2 h_gt
-        | inr h_eq =>
-          cases h_eq
-          cases ih1 b1 with
-          | inl h1_lt =>
-            apply Or.inl
-            exact T.Lt.p_mid a0 a1 b1 a2 b2 h1_lt
-          | inr h1_or =>
-            cases h1_or with
-            | inl h1_gt =>
-              apply Or.inr
-              apply Or.inl
-              exact T.Lt.p_mid a0 b1 a1 b2 a2 h1_gt
-            | inr h1_eq =>
-              cases h1_eq
-              cases ih2 b2 with
-              | inl h2_lt =>
-                apply Or.inl
-                exact T.Lt.p_tail a0 a1 a2 b2 h2_lt
-              | inr h2_or =>
-                cases h2_or with
-                | inl h2_gt =>
-                  apply Or.inr
-                  apply Or.inl
-                  exact T.Lt.p_tail a0 a1 b2 a2 h2_gt
-                | inr h2_eq =>
-                  cases h2_eq
-                  apply Or.inr
-                  apply Or.inr
-                  rfl
+      cases b with
+      | Z => exact Or.inr (Or.inl (T.Lt.Z_lt_P _ _ _))
+      | P b0 b1 b2 =>
+          rcases nat_lt_total a0 b0 with h | h | rfl
+          · exact Or.inl (T.Lt.p_head _ _ _ _ _ _ h)
+          · exact Or.inr (Or.inl (T.Lt.p_head _ _ _ _ _ _ h))
+          · rcases ih1 b1 with h | h | rfl
+            · exact Or.inl (T.Lt.p_mid _ _ _ _ _ h)
+            · exact Or.inr (Or.inl (T.Lt.p_mid _ _ _ _ _ h))
+            · rcases ih2 b2 with h | h | rfl
+              · exact Or.inl (T.Lt.p_tail _ _ _ _ h)
+              · exact Or.inr (Or.inl (T.Lt.p_tail _ _ _ _ h))
+              · exact Or.inr (Or.inr rfl)
 
 instance : strict_partial_order T where
   irrefl a := lt_irrefl_thm a
@@ -490,130 +345,39 @@ instance : strict_linear_order T where
 theorem T.Z_le (s : T) : Z ≤ s := by
   cases s with
   | Z => exact Or.inr rfl
-  | P s0 s1 s2 =>
-    apply Or.inl
-    exact T.Lt.Z_lt_P s0 s1 s2
+  | P _ _ _ => exact Or.inl (T.Lt.Z_lt_P _ _ _)
 
 theorem add_lt_add_of_ne_Z (a X : T) (h : X ≠ Z) : a < T.add a X := by
   induction a with
-  | Z =>
-    rw [T.add.eq_1]
-    exact match T.Z_le X with
-    | Or.inl hlt => by
-      exact hlt
-    | Or.inr heq => by
-      exact absurd heq.symm h
-  | P a0 a1 a2 ih1 ih2 =>
-    rw [T.P_add_eq a0 a1 a2 X]
-    exact T.Lt.p_tail a0 a1 a2 (T.add a2 X) ih2
+  | Z => cases X with
+      | Z => exact False.elim (h rfl)
+      | P _ _ _ => exact T.Lt.Z_lt_P _ _ _
+  | P a0 a1 a2 _ ih =>
+      rw [T.P_add_eq]
+      exact T.Lt.p_tail _ _ _ _ ih
 
 theorem sandwich_tail (s0 : Nat) (s1 X c Y : T) (h1 : P s0 s1 X < c) (h2 : c < P s0 s1 Y) :
     ∃ c2, c = P s0 s1 c2 ∧ X < c2 ∧ c2 < Y := by
-  cases c with
-  | Z => exact absurd h1 (fun hh => lt_Z_inv hh)
-  | P c0 c1 c2 =>
-    have hinv1 := lt_inv s0 s1 X c0 c1 c2 h1
-    have hinv2 := lt_inv c0 c1 c2 s0 s1 Y h2
-    exact match hinv1 with
-    | Or.inl hh1 => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
-      | Or.inr (Or.inl hh2) => by
-        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-      | Or.inr (Or.inr hh2) => by
-        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-    | Or.inr (Or.inl hh1) => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
-      | Or.inr (Or.inl hh2) => by
-        have : s1 < s1 := lt_trans_thm s1 c1 s1 hh1.2 hh2.2
-        exact absurd this (lt_irrefl_thm s1)
-      | Or.inr (Or.inr hh2) => by
-        rw [hh2.2.1] at hh1
-        exact absurd hh1.2 (lt_irrefl_thm s1)
-    | Or.inr (Or.inr hh1) => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
-      | Or.inr (Or.inl hh2) => by
-        rw [← hh1.1] at hh2; rw [← hh1.2.1] at hh2
-        exact absurd hh2.2 (lt_irrefl_thm s1)
-      | Or.inr (Or.inr hh2) => by
-        refine ⟨c2, ?_, hh1.2.2, hh2.2.2⟩
-        rw [← hh1.1, ← hh1.2.1]
-
-theorem sandwich_mid (s0 : Nat) (X Y c : T) (_hXY : X < Y) (h1 : P s0 X Z < c) (h2 : c < P s0 Y Z) :
-    ∃ c1 c2, c = P s0 c1 c2 ∧ X ≤ c1 ∧ c1 < Y := by
-  cases c with
-  | Z => exact absurd h1 (fun hh => lt_Z_inv hh)
-  | P c0 c1 c2 =>
-    have hinv1 := lt_inv s0 X Z c0 c1 c2 h1
-    have hinv2 := lt_inv c0 c1 c2 s0 Y Z h2
-    exact match hinv1 with
-    | Or.inl hh1 => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
-      | Or.inr (Or.inl hh2) => by
-        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-      | Or.inr (Or.inr hh2) => by
-        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
-    | Or.inr (Or.inl hh1) => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
-      | Or.inr (Or.inl hh2) => by
-        refine ⟨c1, c2, ?_, Or.inl hh1.2, hh2.2⟩
-        rw [hh1.1]
-      | Or.inr (Or.inr hh2) => by
-        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
-    | Or.inr (Or.inr hh1) => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
-      | Or.inr (Or.inl hh2) => by
-        refine ⟨c1, c2, ?_, Or.inr hh1.2.1, ?_⟩
-        · rw [hh1.1]
-        · exact hh2.2
-      | Or.inr (Or.inr hh2) => by
-        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
+  cases h1 <;> cases h2 <;> try (exfalso; omega)
+  all_goals first
+    | exact ⟨_, rfl, ‹_›, ‹_›⟩
+    | exact False.elim (lt_irrefl_thm _ ‹_›)
+    | exact False.elim (lt_asymm_thm ‹_› ‹_›)
 
 theorem sandwich_mid_tail (s0 : Nat) (X W Y c' : T) (h1 : P s0 X W < c') (h2 : c' < P s0 Y Z) :
     ∃ c1 c2, c' = P s0 c1 c2 ∧ ((X < c1 ∧ c1 < Y) ∨ (c1 = X ∧ W < c2)) := by
-  cases c' with
-  | Z => exact absurd h1 (fun hh => lt_Z_inv hh)
-  | P c0 c1 c2 =>
-    have hinv1 := lt_inv s0 X W c0 c1 c2 h1
-    have hinv2 := lt_inv c0 c1 c2 s0 Y Z h2
-    exact match hinv1 with
-    | Or.inl hh1 => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        exact absurd (Nat.lt_trans hh1 hh2) (Nat.lt_irrefl s0)
-      | Or.inr (Or.inl hh2) => by
-        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-      | Or.inr (Or.inr hh2) => by
-        rw [hh2.1] at hh1; exact absurd hh1 (Nat.lt_irrefl s0)
-    | Or.inr (Or.inl hh1) => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        rw [hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl c0)
-      | Or.inr (Or.inl hh2) => by
-        refine ⟨c1, c2, ?_, Or.inl ⟨hh1.2, hh2.2⟩⟩
-        rw [hh1.1]
-      | Or.inr (Or.inr hh2) => by
-        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
-    | Or.inr (Or.inr hh1) => by
-      exact match hinv2 with
-      | Or.inl hh2 => by
-        rw [← hh1.1] at hh2; exact absurd hh2 (Nat.lt_irrefl s0)
-      | Or.inr (Or.inl hh2) => by
-        refine ⟨c1, c2, ?_, Or.inr ⟨hh1.2.1.symm, hh1.2.2⟩⟩
-        rw [hh1.1]
-      | Or.inr (Or.inr hh2) => by
-        exact absurd hh2.2.2 (fun hh => lt_Z_inv hh)
+  cases h1 <;> cases h2 <;> try (exfalso; omega)
+  all_goals first
+    | exact ⟨_, _, rfl, Or.inl ⟨‹_›, ‹_›⟩⟩
+    | exact ⟨_, _, rfl, Or.inr ⟨rfl, ‹_›⟩⟩
+    | exact False.elim (lt_Z_inv ‹_›)
+
+theorem sandwich_mid (s0 : Nat) (X Y c : T) (_hXY : X < Y) (h1 : P s0 X Z < c) (h2 : c < P s0 Y Z) :
+    ∃ c1 c2, c = P s0 c1 c2 ∧ X ≤ c1 ∧ c1 < Y := by
+  obtain ⟨c1, c2, rfl, h⟩ := sandwich_mid_tail s0 X Z Y c h1 h2
+  rcases h with h | ⟨rfl, _⟩
+  · exact ⟨c1, c2, rfl, Or.inl h.1, h.2⟩
+  · exact ⟨_, c2, rfl, Or.inr rfl, _hXY⟩
 
 def T.mul : T → T → T
 | _, Z => Z
@@ -626,32 +390,20 @@ inductive T.index_Prop (t : T) : T → Prop where
 
 theorem index_Prop_inv (t : T) (s0 : Nat) (s1 s2 : T) (h : T.index_Prop t (P s0 s1 s2)) :
   P s0 s1 Z < t ∧ T.index_Prop t s2 := by
-  cases h with
-  | P_holds _ _ _ hlt hrec =>
-    exact ⟨hlt, hrec⟩
+  cases h; exact ⟨‹_›, ‹_›⟩
 
 theorem index_Prop_Z_iff (t : T) : T.index_Prop t Z ↔ True := by
-  apply Iff.intro
-  · intro _
-    exact True.intro
-  · intro _
-    exact T.index_Prop.Z_holds
+  exact ⟨fun _ => trivial, fun _ => T.index_Prop.Z_holds⟩
 
 theorem index_Prop_P_iff (t : T) (s0 : Nat) (s1 s2 : T) :
   T.index_Prop t (P s0 s1 s2) ↔ (if P s0 s1 Z < t then T.index_Prop t s2 else False) := by
-  apply Iff.intro
+  constructor
   · intro h
     have hp := index_Prop_inv t s0 s1 s2 h
-    rw [ite_eq_left hp.1]
-    exact hp.2
-  · intro h
-    cases hdec : (inferInstance : Decidable (P s0 s1 Z < t)) with
-    | isTrue hlt =>
-      rw [ite_eq_left hlt] at h
-      exact T.index_Prop.P_holds s0 s1 s2 hlt h
-    | isFalse hnlt =>
-      rw [ite_eq_right hnlt] at h
-      exact False.elim h
+    simpa [hp.1] using hp.2
+  · split
+    · exact T.index_Prop.P_holds _ _ _ ‹_›
+    · exact False.elim
 
 def T.indexPropDecidable : (t s : T) → Decidable (T.index_Prop t s)
 | _, Z => isTrue T.index_Prop.Z_holds
@@ -681,28 +433,22 @@ def T.size : T → Nat
 theorem T.size_P (s0 : Nat) (s1 s2 : T) : (P s0 s1 s2).size = s1.size + s2.size + 1 := rfl
 
 theorem T.size_lt_size_P_left (s0 : Nat) (s1 s2 : T) : s1.size < (P s0 s1 s2).size := by
-  rw [T.size_P]
-  exact Nat.lt_succ_of_le (Nat.le_add_right s1.size s2.size)
+  simp only [T.size]
+  omega
 
 theorem T.size_lt_size_P_right (s0 : Nat) (s1 s2 : T) : s2.size < (P s0 s1 s2).size := by
-  rw [T.size_P]
-  exact Nat.lt_succ_of_le (Nat.le_add_left s2.size s1.size)
+  simp only [T.size]
+  omega
 
 theorem T.drop_size_le : ∀ (t s : T), (T.drop t s).size ≤ s.size := by
   intro t s
-  induction s generalizing t with
-  | Z => simp [T.drop, T.size]
+  induction s with
+  | Z => exact Nat.le_refl _
   | P s0 s1 s2 ih1 ih2 =>
-    unfold T.drop
-    split
-    · exact Nat.le_refl (P s0 s1 s2).size
-    · cases s2 with
-      | Z =>
-        exact Nat.le_succ_of_le (ih1 t)
-      | P s20 s21 s22 =>
-        have h2 := ih2 t
-        apply Nat.le_of_lt
-        apply Nat.lt_of_le_of_lt h2 (T.size_lt_size_P_right s0 s1 (P s20 s21 s22))
+      unfold T.drop
+      split
+      · exact Nat.le_refl _
+      · cases s2 <;> simp only [T.size] at * <;> omega
 
 inductive T.IsN : T → Prop
 | zero : T.IsN Z
@@ -715,45 +461,32 @@ def T.ofNat : Nat → T
 theorem ofNat_IsN : ∀ n : Nat, T.IsN (T.ofNat n) := by
   intro n
   induction n with
-  | zero => rw [T.ofNat.eq_1]; exact T.IsN.zero
-  | succ n ih => rw [T.ofNat.eq_2]; exact T.IsN.succ (T.ofNat n) ih
+  | zero => exact T.IsN.zero
+  | succ n ih => exact T.IsN.succ _ ih
 
 theorem mul_shape (s0 : Nat) (c t : T) (h : T.IsN t) :
     T.mul (P s0 c Z) t = Z ∨ ∃ Y, T.mul (P s0 c Z) t = P s0 c Y := by
   induction h with
-  | zero => left; exact T.mul.eq_1 (P s0 c Z)
-  | succ t' h' ih =>
-    rw [T.mul.eq_2]
-    cases ih with
-    | inl h0 =>
-      right
-      rw [h0]
-      exact ⟨Z, T.add.eq_1 (P s0 c Z)⟩
-    | inr h1 =>
-      exact match h1 with
-      | ⟨Y', hY'⟩ => by
-        right
-        rw [hY']
-        exact ⟨T.add Y' (P s0 c Z), T.P_add_eq s0 c Y' (P s0 c Z)⟩
+  | zero => exact Or.inl rfl
+  | succ t _ ih =>
+      rw [T.mul.eq_2]
+      rcases ih with h | ⟨y, h⟩
+      · exact Or.inr ⟨Z, by rw [h]; rfl⟩
+      · exact Or.inr ⟨T.add y (P s0 c Z), by rw [h]; exact T.P_add_eq _ _ _ _⟩
 
 theorem mul_ofNat_one_step (X : T) (hX : X ≠ Z) (n : Nat) :
     T.mul X (T.ofNat n) < T.mul X (T.ofNat (n+1)) := by
-  show T.mul X (T.ofNat n) < T.mul X (P 0 Z (T.ofNat n))
-  rw [T.mul.eq_2]
-  exact add_lt_add_of_ne_Z (T.mul X (T.ofNat n)) X hX
+  exact add_lt_add_of_ne_Z _ X hX
 
 theorem mul_ofNat_strict_mono (X : T) (hX : X ≠ Z) (n1 : Nat) :
     ∀ n0, n0 < n1 → T.mul X (T.ofNat n0) < T.mul X (T.ofNat n1) := by
   induction n1 with
-  | zero => intro n0 h; exact absurd h (Nat.not_lt_zero n0)
-  | succ n1' ih =>
-    intro n0 h
-    have hle : n0 ≤ n1' := Nat.le_of_lt_succ h
-    exact match Nat.lt_or_eq_of_le hle with
-    | Or.inl hlt2 => by
-      exact lt_trans_thm _ _ _ (ih n0 hlt2) (mul_ofNat_one_step X hX n1')
-    | Or.inr heq2 => by
-      rw [heq2]; exact mul_ofNat_one_step X hX n1'
+  | zero => intro n0 h; omega
+  | succ n ih =>
+      intro n0 h
+      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ h) with h | rfl
+      · exact lt_trans_thm _ _ _ (ih n0 h) (mul_ofNat_one_step X hX n)
+      · exact mul_ofNat_one_step X hX _
 
 theorem add_eq_hAdd (a b : T) : T.add a b = a + b := rfl
 
@@ -761,10 +494,8 @@ theorem mul_add_shape (s0 : Nat) (c : T) :
     ∀ n : Nat, (T.mul (P s0 c Z) (T.ofNat n)).add (P s0 c Z) = P s0 c (T.mul (P s0 c Z) (T.ofNat n)) := by
   intro n
   induction n with
-  | zero =>
-    rw [T.ofNat.eq_1, T.mul.eq_1, T.add.eq_1]
-  | succ n ih =>
-    rw [T.ofNat.eq_2, T.mul.eq_2, ← add_eq_hAdd, ih, T.P_add_eq s0 c (T.mul (P s0 c Z) (T.ofNat n)) (P s0 c Z), ih]
+  | zero => rfl
+  | succ n ih => simp only [T.ofNat, T.mul, ← add_eq_hAdd]; rw [ih, T.P_add_eq, ih]
 
 theorem mul_succ_shape (s0 : Nat) (c : T) :
     ∀ n : Nat, T.mul (P s0 c Z) (T.ofNat (n+1)) = P s0 c (T.mul (P s0 c Z) (T.ofNat n)) := by
@@ -775,57 +506,36 @@ theorem tail_lt_wrap (s0 : Nat) (c : T) :
     ∀ n : Nat, T.mul (P s0 c Z) (T.ofNat n) < P s0 c (T.mul (P s0 c Z) (T.ofNat n)) := by
   intro n
   induction n with
-  | zero =>
-    rw [T.ofNat.eq_1, T.mul.eq_1]
-    exact T.Lt.Z_lt_P s0 c Z
+  | zero => exact T.Lt.Z_lt_P _ _ _
   | succ n ih =>
-    rw [mul_succ_shape s0 c n]
-    exact T.Lt.p_tail s0 c (T.mul (P s0 c Z) (T.ofNat n)) (P s0 c (T.mul (P s0 c Z) (T.ofNat n))) ih
+      rw [mul_succ_shape]
+      exact T.Lt.p_tail _ _ _ _ ih
 
 theorem ofNat_one_step (n : Nat) : T.ofNat n < T.ofNat (n+1) := by
   induction n with
-  | zero =>
-    show T.ofNat 0 < T.ofNat 1
-    show Z < P 0 Z (T.ofNat 0)
-    show Z < P 0 Z Z
-    exact T.Lt.Z_lt_P 0 Z Z
-  | succ n' ih =>
-    show T.ofNat (n'+1) < T.ofNat (n'+1+1)
-    show P 0 Z (T.ofNat n') < P 0 Z (T.ofNat (n'+1))
-    exact T.Lt.p_tail 0 Z (T.ofNat n') (T.ofNat (n'+1)) ih
+  | zero => exact T.Lt.Z_lt_P _ _ _
+  | succ n ih => exact T.Lt.p_tail _ _ _ _ ih
 
 theorem ofNat_strict_mono {n m : Nat} (h : n < m) : T.ofNat n < T.ofNat m := by
   induction m generalizing n with
-  | zero => exact absurd h (Nat.not_lt_zero n)
-  | succ m' ih =>
-    have hle : n ≤ m' := Nat.le_of_lt_succ h
-    exact match Nat.lt_or_eq_of_le hle with
-    | Or.inl hlt2 => by
-      exact lt_trans_thm (T.ofNat n) (T.ofNat m') (T.ofNat (m'+1))
-        (ih hlt2) (ofNat_one_step m')
-    | Or.inr heq2 => by
-      rw [heq2]; exact ofNat_one_step m'
+  | zero => omega
+  | succ m ih =>
+      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ h) with h | rfl
+      · exact lt_trans_thm _ _ _ (ih h) (ofNat_one_step m)
+      · exact ofNat_one_step _
 
 theorem ofNat_reflect_lt {n m : Nat} (h : T.ofNat n < T.ofNat m) : n < m := by
-  exact match nat_lt_total n m with
-  | Or.inl hlt => by
-    exact hlt
-  | Or.inr hor => by
-    exact match hor with
-    | Or.inl hgt => by
-      exact absurd (ofNat_strict_mono hgt) (lt_asymm_thm h)
-    | Or.inr heq => by
-      rw [heq] at h; exact absurd h (lt_irrefl_thm (T.ofNat m))
+  rcases nat_lt_total n m with hlt | hgt | rfl
+  · exact hlt
+  · exact False.elim (lt_asymm_thm h (ofNat_strict_mono hgt))
+  · exact False.elim (lt_irrefl_thm _ h)
 
 theorem IsN_exists_ofNat {t : T} (h : T.IsN t) : ∃ n, t = T.ofNat n := by
   induction h with
   | zero => exact ⟨0, rfl⟩
-  | succ t' h' ih =>
-    exact match ih with
-    | ⟨n', hn'⟩ => by
-      refine ⟨n' + 1, ?_⟩
-      show P 0 Z t' = P 0 Z (T.ofNat n')
-      rw [hn']
+  | succ t _ ih =>
+      obtain ⟨n, rfl⟩ := ih
+      exact ⟨n + 1, rfl⟩
 
 def T.iter (F : T → T) : T → T
 | Z => Z
@@ -837,21 +547,16 @@ def T.head : T → T
 
 theorem T.head_mono {y x : T} (h : y < x) : T.head y ≤ T.head x := by
   cases h with
-  | Z_lt_P n t1 t2 =>
-    exact Or.inl (T.Lt.Z_lt_P n t1 Z)
-  | p_head s0 t0 s1 t1 s2 t2 h =>
-    exact Or.inl (T.Lt.p_head s0 t0 s1 t1 Z Z h)
-  | p_mid s0 s1 t1 s2 t2 h =>
-    exact Or.inl (T.Lt.p_mid s0 s1 t1 Z Z h)
-  | p_tail s0 s1 s2 t2 h =>
-    exact Or.inr rfl
+  | Z_lt_P _ _ _ => exact Or.inl (T.Lt.Z_lt_P _ _ _)
+  | p_head _ _ _ _ _ _ h => exact Or.inl (T.Lt.p_head _ _ _ _ _ _ h)
+  | p_mid _ _ _ _ _ h => exact Or.inl (T.Lt.p_mid _ _ _ _ _ h)
+  | p_tail _ _ _ _ _ => exact Or.inr rfl
 
 theorem T.head_add_Z (w X : T) (hw : w = Z) : T.head (T.add w X) = T.head X := by
   rw [hw, T.add.eq_1]
 
 theorem T.head_add_ne_Z (w0 : Nat) (w1 w2 X : T) : T.head (T.add (P w0 w1 w2) X) = T.head (P w0 w1 w2) := by
-  rw [T.P_add_eq w0 w1 w2 X]
-  rfl
+  cases X <;> rfl
 
 def T.listLe (L L' : List T) : Prop := ∀ x ∈ L, ∃ y ∈ L', x ≤ y
 
@@ -866,20 +571,14 @@ theorem listLe_self_append (L L' : List T) : T.listLe L (L ++ L') := by
 theorem listLe_append_congr (Pre L1 L2 : List T) (h : T.listLe L1 L2) :
     T.listLe (Pre ++ L1) (Pre ++ L2) := by
   intro x hx
-  rw [List.mem_append] at hx
-  exact match hx with
-  | Or.inl hx => by
-    exact ⟨x, List.mem_append_left _ hx, Or.inr rfl⟩
-  | Or.inr hx => by
-    exact match h x hx with
-    | ⟨y, hy1, hy2⟩ => by
-      exact ⟨y, List.mem_append_right _ hy1, hy2⟩
+  rcases List.mem_append.mp hx with hx | hx
+  · exact ⟨x, List.mem_append_left _ hx, Or.inr rfl⟩
+  · obtain ⟨y, hy, hxy⟩ := h x hx
+    exact ⟨y, List.mem_append_right _ hy, hxy⟩
 
 theorem listLe_trans (L1 L2 L3 : List T) (h1 : T.listLe L1 L2) (h2 : T.listLe L2 L3) :
     T.listLe L1 L3 := by
   intro x hx
-  exact match h1 x hx with
-  | ⟨y, hy1, hy2⟩ => by
-    exact match h2 y hy1 with
-    | ⟨w, hw1, hw2⟩ => by
-      exact ⟨w, hw1, partial_order.trans x y w hy2 hw2⟩
+  obtain ⟨y, hy, hxy⟩ := h1 x hx
+  obtain ⟨z, hz, hyz⟩ := h2 y hy
+  exact ⟨z, hz, partial_order.trans x y z hxy hyz⟩

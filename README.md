@@ -11,5 +11,13 @@
 `#print axioms` を実行します。`Classical.choice` が含まれる変更は採用しません。
 既存の主要定理の公理依存は `propext` と `Quot.sound` のみです。
 
+`ProofAudit.lean` はプロジェクト内の全定義・定理（自動生成された証明を含む）に
+`#print axioms` を実行し、`propext`・`Quot.sound` 以外の公理依存があれば失敗します。
+
+```sh
+lake build Subsp Subsp.new.stop
+lake env lean ProofAudit.lean
+```
+
 `sorry`・`admit` などの未証明部分や、証明を置き換える公理の追加は認めません。
 mathlibには依存しません。

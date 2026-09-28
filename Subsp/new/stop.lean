@@ -17,16 +17,12 @@ def trans_OT (lam : Nat) (s : new.T.OT lam) : T.SubNF lam :=
 
 theorem trans_OT_injective (lam : Nat) (s t : new.T.OT lam)
     (h : trans_OT lam s = trans_OT lam t) : s = t := by
-  apply Subtype.ext
-  exact trans_injective_OT lam s.val t.val s.property t.property
-    (congrArg Subtype.val h)
+  exact Subtype.ext (trans_injective_OT lam s.val t.val s.property t.property (congrArg Subtype.val h))
 
 theorem trans_OT_surjective (lam : Nat) (t : T.SubNF lam) :
     ∃ s : new.T.OT lam, trans_OT lam s = t := by
-  obtain ⟨s, hs⟩ := exists_OT_of_SubNF lam t.val t.property
-  refine ⟨⟨s, hs.1⟩, ?_⟩
-  apply Subtype.ext
-  exact hs.2
+  obtain ⟨s, hs, he⟩ := exists_OT_of_SubNF lam t.val t.property
+  exact ⟨⟨s, hs⟩, Subtype.ext he⟩
 
 theorem trans_OT_lt_iff (lam : Nat) (s t : new.T.OT lam) :
     s.val < t.val ↔ (trans_OT lam s).val < (trans_OT lam t).val := by
@@ -47,3 +43,5 @@ theorem OT_SubNF_order_iso (lam : Nat) :
       (∀ s t, s.val < t.val ↔ (f s).val < (f t).val) := by
   exact ⟨trans_OT lam, trans_OT_injective lam,
     trans_OT_surjective lam, trans_OT_lt_iff lam⟩
+
+#print axioms OT_SubNF_order_iso

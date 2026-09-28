@@ -84,73 +84,46 @@ mutual
   theorem T_refl {n : Nat} (x : T n) : compareT x x = Ordering.eq := by
     cases x with
     | Z => rfl
-    | P ls add =>
-      have step : compareT (T.P ls add) (T.P ls add)
-          = (match compareVec ls ls with
-              | .eq => compareT add add
-              | ord => ord) := rfl
-      rw [step, Vec_refl ls]
-      exact T_refl add
+    | P ls add => simp only [compareT, Vec_refl ls, T_refl add]
 
   theorem Vec_refl {n m : Nat} (v : Vec (T n) m) : compareVec v v = Ordering.eq := by
     cases v with
     | nil => rfl
-    | snoc _ xs x =>
-      have step : compareVec (Vec.snoc _ xs x) (Vec.snoc _ xs x)
-          = (match compareT x x with
-              | .eq => compareVec xs xs
-              | ord => ord) := rfl
-      rw [step, T_refl x]
-      exact Vec_refl xs
+    | snoc _ xs x => simp only [compareVec, T_refl x, Vec_refl xs]
+
 end
 
 mutual
   theorem T_eq_sound {n : Nat} (x y : T n) (h : compareT x y = Ordering.eq) : x = y := by
     cases x with
-    | Z =>
-      cases y with
-      | Z => rfl
-      | P ls add => cases h
-    | P ls_x add_x =>
+    | Z => cases y <;> first | rfl | cases h
+    | P vx ax =>
       cases y with
       | Z => cases h
-      | P ls_y add_y =>
-        have step : compareT (T.P ls_x add_x) (T.P ls_y add_y)
-            = (match compareVec ls_x ls_y with
-                | .eq => compareT add_x add_y
-                | ord => ord) := rfl
-        rw [step] at h
-        cases hc : compareVec ls_x ls_y with
-        | lt => rw [hc] at h; cases h
+      | P vy ay =>
+        simp only [compareT] at h
+        cases hc : compareVec vx vy with
+        | lt | gt => simp [hc] at h
         | eq =>
-          have heq_ls : ls_x = ls_y := Vec_eq_sound ls_x ls_y hc
-          rw [hc] at h
-          have heq_add : add_x = add_y := T_eq_sound add_x add_y h
-          rw [heq_ls, heq_add]
-        | gt => rw [hc] at h; cases h
+            have hv := Vec_eq_sound vx vy hc
+            have ha := T_eq_sound ax ay (by simpa [hc] using h)
+            cases hv; cases ha; rfl
 
   theorem Vec_eq_sound {n m : Nat} (v w : Vec (T n) m)
       (h : compareVec v w = Ordering.eq) : v = w := by
     cases v with
-    | nil =>
+    | nil => cases w; rfl
+    | snoc k xs x =>
       cases w with
-      | nil => rfl
-    | snoc _ xs_v x_v =>
-      cases w with
-      | snoc _ xs_w x_w =>
-        have step : compareVec (Vec.snoc _ xs_v x_v) (Vec.snoc _ xs_w x_w)
-            = (match compareT x_v x_w with
-                | .eq => compareVec xs_v xs_w
-                | ord => ord) := rfl
-        rw [step] at h
-        cases hc : compareT x_v x_w with
-        | lt => rw [hc] at h; cases h
+      | snoc _ ys y =>
+        simp only [compareVec] at h
+        cases hc : compareT x y with
+        | lt | gt => simp [hc] at h
         | eq =>
-          have heq_x : x_v = x_w := T_eq_sound x_v x_w hc
-          rw [hc] at h
-          have heq_xs : xs_v = xs_w := Vec_eq_sound xs_v xs_w h
-          rw [heq_x, heq_xs]
-        | gt => rw [hc] at h; cases h
+            have hv := Vec_eq_sound xs ys (by simpa [hc] using h)
+            have hx := T_eq_sound x y hc
+            cases hv; cases hx; rfl
+
 end
 
 mutual
@@ -158,231 +131,90 @@ mutual
       (h1 : compareT x y = Ordering.lt) (h2 : compareT y z = Ordering.lt) :
       compareT x z = Ordering.lt := by
     cases x with
-    | Z =>
+    | Z => cases y <;> cases z <;> simp_all [compareT]
+    | P vx ax =>
       cases y with
       | Z => cases h1
-      | P ls_y add_y =>
+      | P vy ay =>
         cases z with
         | Z => cases h2
-        | P ls_z add_z => rfl
-    | P ls_x add_x =>
-      cases y with
-      | Z => cases h1
-      | P ls_y add_y =>
-        cases z with
-        | Z => cases h2
-        | P ls_z add_z =>
-          have step12 : compareT (T.P ls_x add_x) (T.P ls_y add_y)
-              = (match compareVec ls_x ls_y with
-                  | .eq => compareT add_x add_y
-                  | ord => ord) := rfl
-          have step23 : compareT (T.P ls_y add_y) (T.P ls_z add_z)
-              = (match compareVec ls_y ls_z with
-                  | .eq => compareT add_y add_z
-                  | ord => ord) := rfl
-          have step13 : compareT (T.P ls_x add_x) (T.P ls_z add_z)
-              = (match compareVec ls_x ls_z with
-                  | .eq => compareT add_x add_z
-                  | ord => ord) := rfl
-          rw [step12] at h1
-          rw [step23] at h2
-          rw [step13]
-          cases hc12 : compareVec ls_x ls_y with
+        | P vz az =>
+          simp only [compareT] at h1 h2 ⊢
+          cases hxy : compareVec vx vy with
+          | gt => simp [hxy] at h1
           | lt =>
-            cases hc23 : compareVec ls_y ls_z with
-            | lt =>
-              have hv13 : compareVec ls_x ls_z = Ordering.lt :=
-                Vec_trans ls_x ls_y ls_z hc12 hc23
-              rw [hv13]
-            | eq =>
-              have heq23 : ls_y = ls_z := Vec_eq_sound ls_y ls_z hc23
-              have hv13 : compareVec ls_x ls_z = Ordering.lt := by
-                rw [← heq23]; exact hc12
-              rw [hv13]
-            | gt => rw [hc23] at h2; cases h2
+            cases hyz : compareVec vy vz with
+            | gt => simp [hyz] at h2
+            | lt => simp only [Vec_trans vx vy vz hxy hyz]
+            | eq => simp only [← Vec_eq_sound vy vz hyz, hxy]
           | eq =>
-            have heq12 : ls_x = ls_y := Vec_eq_sound ls_x ls_y hc12
-            cases hc23 : compareVec ls_y ls_z with
-            | lt =>
-              have hv13 : compareVec ls_x ls_z = Ordering.lt := by
-                rw [heq12]; exact hc23
-              rw [hv13]
-            | eq =>
-              have heq23 : ls_y = ls_z := Vec_eq_sound ls_y ls_z hc23
-              have hls13 : ls_x = ls_z := heq12.trans heq23
-              have hv13 : compareVec ls_x ls_z = Ordering.eq := by
-                rw [hls13]; exact Vec_refl ls_z
-              rw [hv13]
-              rw [hc12] at h1
-              rw [hc23] at h2
-              exact T_trans add_x add_y add_z h1 h2
-            | gt => rw [hc23] at h2; cases h2
-          | gt => rw [hc12] at h1; cases h1
+            cases Vec_eq_sound vx vy hxy
+            simp only [Vec_refl] at h1
+            cases hyz : compareVec vx vz with
+            | gt => simp [hyz] at h2
+            | lt => rfl
+            | eq => exact T_trans ax ay az h1 (by simpa [hyz] using h2)
 
   theorem Vec_trans {n m : Nat} (u v w : Vec (T n) m)
       (h1 : compareVec u v = Ordering.lt) (h2 : compareVec v w = Ordering.lt) :
       compareVec u w = Ordering.lt := by
     cases u with
-    | nil =>
+    | nil => cases v; cases w; cases h1
+    | snoc k xs x =>
       cases v with
-      | nil =>
+      | snoc _ ys y =>
         cases w with
-        | nil => cases h1
-    | snoc _ xs_u x_u =>
-      cases v with
-      | snoc _ xs_v x_v =>
-        cases w with
-        | snoc _ xs_w x_w =>
-          have step12 : compareVec (Vec.snoc _ xs_u x_u) (Vec.snoc _ xs_v x_v)
-              = (match compareT x_u x_v with
-                  | .eq => compareVec xs_u xs_v
-                  | ord => ord) := rfl
-          have step23 : compareVec (Vec.snoc _ xs_v x_v) (Vec.snoc _ xs_w x_w)
-              = (match compareT x_v x_w with
-                  | .eq => compareVec xs_v xs_w
-                  | ord => ord) := rfl
-          have step13 : compareVec (Vec.snoc _ xs_u x_u) (Vec.snoc _ xs_w x_w)
-              = (match compareT x_u x_w with
-                  | .eq => compareVec xs_u xs_w
-                  | ord => ord) := rfl
-          rw [step12] at h1
-          rw [step23] at h2
-          rw [step13]
-          cases hc12 : compareT x_u x_v with
+        | snoc _ zs z =>
+          simp only [compareVec] at h1 h2 ⊢
+          cases hxy : compareT x y with
+          | gt => simp [hxy] at h1
           | lt =>
-            cases hc23 : compareT x_v x_w with
-            | lt =>
-              have ht13 : compareT x_u x_w = Ordering.lt :=
-                T_trans x_u x_v x_w hc12 hc23
-              rw [ht13]
-            | eq =>
-              have heq23 : x_v = x_w := T_eq_sound x_v x_w hc23
-              have ht13 : compareT x_u x_w = Ordering.lt := by
-                rw [← heq23]; exact hc12
-              rw [ht13]
-            | gt => rw [hc23] at h2; cases h2
+            cases hyz : compareT y z with
+            | gt => simp [hyz] at h2
+            | lt => simp only [T_trans x y z hxy hyz]
+            | eq => simp only [← T_eq_sound y z hyz, hxy]
           | eq =>
-            have heq12 : x_u = x_v := T_eq_sound x_u x_v hc12
-            cases hc23 : compareT x_v x_w with
-            | lt =>
-              have ht13 : compareT x_u x_w = Ordering.lt := by
-                rw [heq12]; exact hc23
-              rw [ht13]
-            | eq =>
-              have heq23 : x_v = x_w := T_eq_sound x_v x_w hc23
-              have hx13 : x_u = x_w := heq12.trans heq23
-              have ht13 : compareT x_u x_w = Ordering.eq := by
-                rw [hx13]; exact T_refl x_w
-              rw [ht13]
-              rw [hc12] at h1
-              rw [hc23] at h2
-              exact Vec_trans xs_u xs_v xs_w h1 h2
-            | gt => rw [hc23] at h2; cases h2
-          | gt => rw [hc12] at h1; cases h1
+            cases T_eq_sound x y hxy
+            simp only [T_refl] at h1
+            cases hyz : compareT x z with
+            | gt => simp [hyz] at h2
+            | lt => rfl
+            | eq => exact Vec_trans xs ys zs h1 (by simpa [hyz] using h2)
+
 end
 
 mutual
   theorem T_total {n : Nat} (x y : T n) :
       compareT x y = Ordering.lt ∨ compareT y x = Ordering.lt ∨ x = y := by
     cases x with
-    | Z =>
-      cases y with
-      | Z => exact Or.inr (Or.inr rfl)
-      | P ls add => exact Or.inl rfl
-    | P ls_x add_x =>
+    | Z => cases y <;> simp [compareT]
+    | P vx ax =>
       cases y with
       | Z => exact Or.inr (Or.inl rfl)
-      | P ls_y add_y =>
-        have stepXY : compareT (T.P ls_x add_x) (T.P ls_y add_y)
-            = (match compareVec ls_x ls_y with
-                | .eq => compareT add_x add_y
-                | ord => ord) := rfl
-        have stepYX : compareT (T.P ls_y add_y) (T.P ls_x add_x)
-            = (match compareVec ls_y ls_x with
-                | .eq => compareT add_y add_x
-                | ord => ord) := rfl
-        cases Vec_total ls_x ls_y with
-        | inl hvlt =>
-          apply Or.inl
-          rw [stepXY, hvlt]
-        | inr hv =>
-          cases hv with
-          | inl hvlt =>
-            apply Or.inr; apply Or.inl
-            rw [stepYX, hvlt]
-          | inr hveq =>
-            have hvxy : compareVec ls_x ls_y = Ordering.eq := by
-              rw [hveq]; exact Vec_refl ls_y
-            have hvyx : compareVec ls_y ls_x = Ordering.eq := by
-              rw [hveq]; exact Vec_refl ls_y
-            cases T_total add_x add_y with
-            | inl htlt =>
-              apply Or.inl
-              rw [stepXY, hvxy]
-              exact htlt
-            | inr ht =>
-              cases ht with
-              | inl htlt =>
-                apply Or.inr; apply Or.inl
-                rw [stepYX, hvyx]
-                exact htlt
-              | inr hteq =>
-                apply Or.inr; apply Or.inr
-                rw [hveq, hteq]
+      | P vy ay =>
+        rcases Vec_total vx vy with h | h | h
+        · exact Or.inl (by simp [compareT, h])
+        · exact Or.inr (Or.inl (by simp [compareT, h]))
+        · cases h
+          simpa [compareT, Vec_refl] using T_total ax ay
 
   theorem Vec_total {n m : Nat} (v w : Vec (T n) m) :
       compareVec v w = Ordering.lt ∨ compareVec w v = Ordering.lt ∨ v = w := by
     cases v with
-    | nil =>
+    | nil => cases w; exact Or.inr (Or.inr rfl)
+    | snoc k xs x =>
       cases w with
-      | nil => exact Or.inr (Or.inr rfl)
-    | snoc _ xs_v x_v =>
-      cases w with
-      | snoc _ xs_w x_w =>
-        have stepVW : compareVec (Vec.snoc _ xs_v x_v) (Vec.snoc _ xs_w x_w)
-            = (match compareT x_v x_w with
-                | .eq => compareVec xs_v xs_w
-                | ord => ord) := rfl
-        have stepWV : compareVec (Vec.snoc _ xs_w x_w) (Vec.snoc _ xs_v x_v)
-            = (match compareT x_w x_v with
-                | .eq => compareVec xs_w xs_v
-                | ord => ord) := rfl
-        cases T_total x_v x_w with
-        | inl htlt =>
-          apply Or.inl
-          rw [stepVW, htlt]
-        | inr ht =>
-          cases ht with
-          | inl htlt =>
-            apply Or.inr; apply Or.inl
-            rw [stepWV, htlt]
-          | inr hteq =>
-            have htvw : compareT x_v x_w = Ordering.eq := by
-              rw [hteq]; exact T_refl x_w
-            have htwv : compareT x_w x_v = Ordering.eq := by
-              rw [hteq]; exact T_refl x_w
-            cases Vec_total xs_v xs_w with
-            | inl hvlt =>
-              apply Or.inl
-              rw [stepVW, htvw]
-              exact hvlt
-            | inr hv =>
-              cases hv with
-              | inl hvlt =>
-                apply Or.inr; apply Or.inl
-                rw [stepWV, htwv]
-                exact hvlt
-              | inr hveq =>
-                apply Or.inr; apply Or.inr
-                rw [hteq, hveq]
+      | snoc _ ys y =>
+        rcases T_total x y with h | h | h
+        · exact Or.inl (by simp [compareVec, h])
+        · exact Or.inr (Or.inl (by simp [compareVec, h]))
+        · cases h
+          simpa [compareVec, T_refl] using Vec_total xs ys
+
 end
 
 instance {n : Nat} : strict_linear_order (T n) where
-  irrefl x h := by
-    have h' : compareT x x = Ordering.lt := h
-    have he : compareT x x = Ordering.eq := T_refl x
-    rw [he] at h'
-    cases h'
+  irrefl x h := by simp [LT.lt, T.lt, T_refl] at h
   trans x y z h1 h2 := T_trans x y z h1 h2
   total x y := T_total x y
 
@@ -396,28 +228,14 @@ theorem Vec.ofFn_idx {A : Type} : ∀ (k : Nat) (f : Fin k → A) (i : Fin k),
   induction k with
   | zero => intro f i; exact i.elim0
   | succ k ih =>
-    intro f i
-    show (Vec.snoc k (Vec.ofFn k (fun j => f j.castSucc)) (f (Fin.last k))).idx i = f i
-    show (if h : i.val < k then Vec.idx (Vec.ofFn k (fun j => f j.castSucc)) ⟨i.val, h⟩
-          else f (Fin.last k)) = f i
-    apply Decidable.byCases (p := i.val < k)
-    · intro h
-      rw [dite_eq_left h]
-      have heq : (⟨i.val, h⟩ : Fin k).castSucc = i := by
+      intro f i
+      simp only [Vec.ofFn, Vec.idx]
+      split
+      · exact ih _ _
+      · congr 1
         apply Fin.eq_of_val_eq
-        rfl
-      rw [ih (fun j => f j.castSucc) ⟨i.val, h⟩]
-      show f ((⟨i.val, h⟩ : Fin k).castSucc) = f i
-      rw [heq]
-    · intro h
-      rw [dite_eq_right h]
-      have hik : i.val ≤ k := Nat.lt_succ_iff.mp i.isLt
-      have hge : k ≤ i.val := Nat.not_lt.mp h
-      have hval : i.val = k := Nat.le_antisymm hik hge
-      have : i = Fin.last k := by
-        apply Fin.eq_of_val_eq
-        exact hval
-      rw [this]
+        simp only [Fin.val_last]
+        omega
 
 def Vec.rplc {A : Type} {n : Nat} (v : Vec A n) (i : Fin n) (a : A) : Vec A n :=
   Vec.ofFn n (fun j =>
