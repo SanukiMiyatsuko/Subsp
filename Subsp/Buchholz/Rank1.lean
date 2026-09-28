@@ -1453,4 +1453,58 @@ def T.OT1 := { s : T // T.isOT1 s }
 theorem T.well_founded_OT1 : WellFounded (fun s t : T.OT1 => s.1 < t.1) := by
   exact InvImage.wf (fun s : T.OT1 => (⟨s.1, (isOT1_sound s.1 s.2).1⟩ : T.NF1)) T.well_founded_NF1
 
-#print axioms T.well_founded_OT1
+def T.OT1Step (a b : T.OT1) : Prop :=
+  b.val ≠ T.Z ∧ ∃ n : Nat, a.val = T.fund1 b.val (T.ofNat n)
+
+abbrev T.OT1FundLt : T.OT1 → T.OT1 → Prop :=
+  FundOrder.TransClosure T.OT1Step
+
+theorem T.OT1Step_lt {a b : T.OT1} (h : T.OT1Step a b) :
+    a.val < b.val := by
+  rcases h with ⟨hbne, n, ha⟩
+  rw [ha]
+  have hb := isOT1_sound b.val b.property
+  cases hd : T.dom1 b.val with
+  | Zero => exact False.elim (hbne (dom1_Zero_imp_eq_Z b.val hd))
+  | One =>
+      rw [fund1_One_const b.val hd (T.ofNat n)]
+      exact T.fund1_fall b.val T.Z
+        ((ValidArg1_One_iff b.val T.Z hd).mpr rfl)
+  | ω =>
+      exact T.fund1_fall b.val (T.ofNat n)
+        ((ValidArg1_ω_iff b.val (T.ofNat n) hd).mpr (ofNat_IsN n))
+  | Ω l =>
+      exact False.elim (dom1_Ω_not_countable b.val hb.1 hb.2 l hd)
+
+theorem T.OT1FundLt_lt {a b : T.OT1} (h : T.OT1FundLt a b) :
+    a.val < b.val := by
+  induction h with
+  | single hstep => exact T.OT1Step_lt hstep
+  | tail _ hstep ih =>
+      exact strict_partial_order.trans _ _ _ ih (T.OT1Step_lt hstep)
+
+theorem T.OT1FundLt_of_lt (a b : T.OT1) (hab : a.val < b.val) :
+    T.OT1FundLt a b := by
+  induction b using T.well_founded_OT1.induction generalizing a with
+  | h b ih =>
+      have hb := isOT1_sound b.val b.property
+      have ha := isOT1_sound a.val a.property
+      obtain ⟨n, hfall, hupper⟩ :=
+        fund1_countable_cofinal b.val a.val hb.1 ha.1 hb.2 hab
+      let c : T.OT1 :=
+        ⟨T.fund1 b.val (T.ofNat n), T.isOT1.step b.val b.property n⟩
+      have hbne : b.val ≠ T.Z := by
+        intro hbz
+        rw [hbz] at hab
+        exact lt_Z_inv hab
+      have hstep : T.OT1Step c b := by
+        exact ⟨hbne, n, rfl⟩
+      rcases hupper with hlt | heq
+      · exact FundOrder.TransClosure.tail (ih c hfall a hlt) hstep
+      · have hac : a = c := Subtype.ext heq
+        subst a
+        exact FundOrder.TransClosure.single hstep
+
+theorem T.OT1FundLt_iff_lt (a b : T.OT1) :
+    T.OT1FundLt a b ↔ a.val < b.val := by
+  exact ⟨T.OT1FundLt_lt, T.OT1FundLt_of_lt a b⟩

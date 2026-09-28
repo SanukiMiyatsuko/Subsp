@@ -1,3 +1,4 @@
+import Subsp.order
 import Subsp.new.stop_surjectivity
 
 /-! The order isomorphism between OT and SubNF. Import this module for all stop results. -/
@@ -44,4 +45,52 @@ theorem OT_SubNF_order_iso (lam : Nat) :
   exact ⟨trans_OT lam, trans_OT_injective lam,
     trans_OT_surjective lam, trans_OT_lt_iff lam⟩
 
-#print axioms OT_SubNF_order_iso
+def new.T.OTStep {lam : Nat} (a b : new.T.OT lam) : Prop :=
+  b.val ≠ new.T.Z ∧
+    ∃ n : Nat, a.val = new.T.fund b.val (new.T.ofNat n)
+
+abbrev new.T.OTFundLt {lam : Nat} : new.T.OT lam → new.T.OT lam → Prop :=
+  FundOrder.TransClosure new.T.OTStep
+
+theorem new.T.OTStep_lt {lam : Nat} {a b : new.T.OT lam}
+    (h : new.T.OTStep a b) :
+    a.val < b.val := by
+  rcases h with ⟨hbne, n, ha⟩
+  rw [ha]
+  exact new.T.fund_lt_self b.val (new.T.ofNat n) hbne
+
+theorem new.T.OTFundLt_lt {lam : Nat} {a b : new.T.OT lam}
+    (h : new.T.OTFundLt a b) :
+    a.val < b.val := by
+  induction h with
+  | single hstep => exact new.T.OTStep_lt hstep
+  | tail _ hstep ih =>
+      exact strict_partial_order.trans _ _ _ ih (new.T.OTStep_lt hstep)
+
+theorem new.T.OTFundLt_of_lt {lam : Nat} (a b : new.T.OT lam)
+    (hab : a.val < b.val) :
+    new.T.OTFundLt a b := by
+  induction b using (wellfounded_OT lam).induction generalizing a with
+  | h b ih =>
+      have hb := ot_new_isOT_sound lam b.val b.property
+      have ha := ot_new_isOT_sound lam a.val a.property
+      obtain ⟨n, hfall, hupper⟩ :=
+        ot_fund_countable_cofinal b.val a.val hb.1 ha.1 hb.2 hab
+      let c : new.T.OT lam :=
+        ⟨new.T.fund b.val (new.T.ofNat n),
+          new.T.isOT.step lam b.val b.property n⟩
+      have hbne : b.val ≠ new.T.Z := by
+        intro hbz
+        rw [hbz] at hab
+        exact ot_lt_Z_inv a.val hab
+      have hstep : new.T.OTStep c b := by
+        exact ⟨hbne, n, rfl⟩
+      rcases hupper with hlt | heq
+      · exact FundOrder.TransClosure.tail (ih c hfall a hlt) hstep
+      · have hac : a = c := Subtype.ext (new.T_eq_sound _ _ heq)
+        subst a
+        exact FundOrder.TransClosure.single hstep
+
+theorem new.T.OTFundLt_iff_lt {lam : Nat} (a b : new.T.OT lam) :
+    new.T.OTFundLt a b ↔ a.val < b.val := by
+  exact ⟨new.T.OTFundLt_lt, new.T.OTFundLt_of_lt a b⟩
