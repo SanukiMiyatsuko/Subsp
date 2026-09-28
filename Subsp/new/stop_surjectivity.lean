@@ -1,10 +1,6 @@
 import Subsp.new.stop_ot
 import Subsp.new.stop_inverse
 
-/-! Translation into SubNF and constructive surjectivity in every dimension. -/
-
-/-! The target subtype and soundness of translation. -/
-
 section SubNFImage
 
 def T.isSubNF (n : Nat) (s : T) :=
