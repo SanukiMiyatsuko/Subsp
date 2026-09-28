@@ -1445,6 +1445,4 @@ theorem T.fund_NF_closed {lam : Nat} (s t : T lam)
   | omega => exact (T.fund_omega_master s t hs hdom).1
   | Omega => exact (T.fund_Omega_master s t hs hdom (ht hdom)).1
 
-#print axioms T.fund_NF_closed
-
 end new
