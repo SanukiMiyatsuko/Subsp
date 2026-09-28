@@ -338,7 +338,6 @@ theorem bridge_part_prefix_upper (s t : T)
 
 theorem bridge_insert_lt (a b d : T)
     (hb : T.isNF1 b) (hd : T.isNF1 d)
-    (hpb : T.part b = (T.Z, b))
     (hpd : T.part d = (T.Z, d))
     (hbd : b < d) :
     T.stand (T.P 0 a b) < T.stand (T.P 0 a d) := by
@@ -433,7 +432,7 @@ theorem bridge_early_collapse_lt (s t : T)
       exact hst
     · rw [T.early_collapse, ite_eq_right ha, T.early_collapse, ← he, ite_eq_right ha]
       exact bridge_insert_lt _ _ _ (bridge_part_NF1 s hs).2 (bridge_part_NF1 t ht).2
-        (bridge_part_snd_fixed s) (bridge_part_snd_fixed t) hbd
+        (bridge_part_snd_fixed t) hbd
 
 theorem tc_card_times_zero (c : T) : T.card_times 0 c = c := by
   cases c <;> rfl
