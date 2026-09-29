@@ -31,8 +31,8 @@ jobs:
           } > "$GITHUB_WORKSPACE/toolchain-files.txt"
           tar -czf "$GITHUB_WORKSPACE/lean-min-toolchain.tar.gz" -T "$GITHUB_WORKSPACE/toolchain-files.txt"
           cd "$GITHUB_WORKSPACE"
-          tar -czf subsp-source.tar.gz --exclude=.git --exclude='*.tar.gz' --exclude=toolchain-files.txt .
-          ls -lh lean-min-toolchain.tar.gz subsp-source.tar.gz
+          tar -czf /tmp/subsp-source.tar.gz --exclude=.git --exclude='*.tar.gz' --exclude=toolchain-files.txt .
+          ls -lh lean-min-toolchain.tar.gz /tmp/subsp-source.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: lean-4.34.0-min-toolchain
@@ -41,5 +41,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: subsp-source
-          path: subsp-source.tar.gz
+          path: /tmp/subsp-source.tar.gz
           compression-level: 0
