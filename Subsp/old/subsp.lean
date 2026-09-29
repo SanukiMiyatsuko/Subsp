@@ -84,4 +84,6 @@ inductive T.isOT : (lam : Nat) → T lam → Prop where
 | base_succ (lam : Nat) (n : Nat) : isOT (lam + 1) (P (Vec.ofFn (lam + 1) (fun i => if i.val = 0 then LF (lam + 1) n else Z)) Z)
 | step (lam : Nat) (s : T lam) (hs : isOT lam s) (n : Nat) : isOT lam (fund s (ofNat n))
 
+def T.OT (lam : Nat) := { s : T lam // T.isOT lam s }
+
 end new
