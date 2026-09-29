@@ -1,0 +1,29 @@
+name: Package Lean Toolchain
+
+on:
+  push:
+    branches:
+      - chatgpt/old-stop-proof
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: leanprover/lean-action@v1
+        with:
+          build: false
+          test: false
+          lint: false
+      - name: Package toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_BIN="$(elan which lean)"
+          TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
+          tar -czf "$GITHUB_WORKSPACE/lean-toolchain.tar.gz" -C "$TOOLCHAIN" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-4.34.0-toolchain
+          path: lean-toolchain.tar.gz
+          compression-level: 0
