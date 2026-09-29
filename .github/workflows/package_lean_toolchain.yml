@@ -15,18 +15,28 @@ jobs:
           build: false
           test: false
           lint: false
-      - name: Package toolchain and source
+      - name: Package minimal toolchain and source
         shell: bash
         run: |
           set -euo pipefail
           LEAN_BIN="$(elan which lean)"
           TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
-          tar -czf "$GITHUB_WORKSPACE/lean-toolchain.tar.gz" -C "$TOOLCHAIN" .
-          tar -czf "$GITHUB_WORKSPACE/subsp-source.tar.gz" --exclude=.git --exclude='*.tar.gz' .
+          cd "$TOOLCHAIN"
+          {
+            echo bin/lean
+            echo bin/lake
+            echo lib/lean
+            echo include
+            find lib -maxdepth 1 -type f -print
+          } > "$GITHUB_WORKSPACE/toolchain-files.txt"
+          tar -czf "$GITHUB_WORKSPACE/lean-min-toolchain.tar.gz" -T "$GITHUB_WORKSPACE/toolchain-files.txt"
+          cd "$GITHUB_WORKSPACE"
+          tar -czf subsp-source.tar.gz --exclude=.git --exclude='*.tar.gz' --exclude=toolchain-files.txt .
+          ls -lh lean-min-toolchain.tar.gz subsp-source.tar.gz
       - uses: actions/upload-artifact@v4
         with:
-          name: lean-4.34.0-toolchain
-          path: lean-toolchain.tar.gz
+          name: lean-4.34.0-min-toolchain
+          path: lean-min-toolchain.tar.gz
           compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
