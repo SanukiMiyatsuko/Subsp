@@ -40,7 +40,7 @@ def T.card_times (n : Nat) : T → T
       else P n (stand (P s0 Z (early_collapse s0 s1))) Z
     else if s0 = n then
       if s1 < P n (P 0 Z Z) Z then
-        P n (stand (P n Z s1)) Z
+        P n (P n Z s1) Z
       else P s0 s1 Z
     else P s0 s1 Z
   head + card_times n s2
