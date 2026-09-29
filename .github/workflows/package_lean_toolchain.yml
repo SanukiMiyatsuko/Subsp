@@ -15,15 +15,21 @@ jobs:
           build: false
           test: false
           lint: false
-      - name: Package toolchain
+      - name: Package toolchain and source
         shell: bash
         run: |
           set -euo pipefail
           LEAN_BIN="$(elan which lean)"
           TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
           tar -czf "$GITHUB_WORKSPACE/lean-toolchain.tar.gz" -C "$TOOLCHAIN" .
+          tar -czf "$GITHUB_WORKSPACE/subsp-source.tar.gz" --exclude=.git --exclude='*.tar.gz' .
       - uses: actions/upload-artifact@v4
         with:
           name: lean-4.34.0-toolchain
           path: lean-toolchain.tar.gz
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subsp-source
+          path: subsp-source.tar.gz
           compression-level: 0
