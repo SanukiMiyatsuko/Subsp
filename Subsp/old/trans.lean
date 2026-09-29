@@ -14,16 +14,16 @@ def T.stand : T → T
 def T.part (n : Nat) : T → T × T
 | Z => (Z, Z)
 | P s0 s1 s2 =>
+  let ps2 := part n s2
   if s0 ≤ n then
-    (Z, P s0 s1 s2)
+    (ps2.1, P s0 s1 ps2.2)
   else
-    let ps2 := part n s2
     (P s0 s1 ps2.1, ps2.2)
 
 def T.early_collapse (n : Nat) (s : T) : T :=
   let ps := part n s
   if ps.1 = Z then
-    s
+    ps.2
   else stand (P n ps.1 ps.2)
 
 def T.one_del : T → T
@@ -50,23 +50,25 @@ mutual
 def trans {lam : Nat} : new.T lam → T
 | new.T.Z => T.Z
 | new.T.P ls add =>
-  let (foundAbove0, sumAbove0, transA0) := transAux ls
-  if foundAbove0 then
-    T.P 1 (T.card_times 1 (T.one_del sumAbove0) + T.early_collapse transA0) (trans add)
-  else if transA0 = T.Z then
-    T.P 0 T.Z (trans add)
-  else
-    T.P 0 transA0 (trans add)
+  let (head, _) := transAux ls
+  head + trans add
 
-def transAux {lam k : Nat} : new.Vec (new.T lam) k → Bool × T × T
-| .nil => (false, T.Z, T.Z)
-| .snoc 0 .nil a0 => (false, T.Z, trans a0)
+def transAux {lam k : Nat} : new.Vec (new.T lam) k → T × T
+| .nil => (T.P 0 T.Z T.Z, T.Z)
+| .snoc 0 .nil a0 =>
+  let ta0 := trans a0
+  let lower := T.early_collapse 0 ta0
+  match a0 with
+  | new.T.Z => (T.P 0 T.Z T.Z, lower)
+  | _ => (T.P 0 ta0 T.Z, lower)
 | .snoc (m + 1) v a =>
-  let (foundRest, sumRest, transA0) := transAux v
-  let found : Bool :=
-    match a with
-    | new.T.Z => foundRest
-    | _ => true
-  (found, T.card_times m (T.early_collapse (trans a)) + sumRest, transA0)
+  let (headRest, lowerRest) := transAux v
+  let ta := trans a
+  let idx := m + 1
+  let lower := T.card_times idx (T.early_collapse idx ta) + lowerRest
+  match a with
+  | new.T.Z => (headRest, lower)
+  | _ =>
+    (T.P idx (T.card_times idx (T.one_del ta) + lowerRest) T.Z, lower)
 
 end
