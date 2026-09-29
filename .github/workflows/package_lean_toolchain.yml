@@ -10,36 +10,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: leanprover/lean-action@v1
-        with:
-          build: false
-          test: false
-          lint: false
-      - name: Package minimal toolchain and source
+      - name: Download and split Lean 4.34.0
         shell: bash
         run: |
           set -euo pipefail
-          LEAN_BIN="$(elan which lean)"
-          TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
-          cd "$TOOLCHAIN"
-          {
-            echo bin/lean
-            echo bin/lake
-            echo lib/lean
-            echo include
-            find lib -maxdepth 1 -type f -print
-          } > "$GITHUB_WORKSPACE/toolchain-files.txt"
-          tar -czf "$GITHUB_WORKSPACE/lean-min-toolchain.tar.gz" -T "$GITHUB_WORKSPACE/toolchain-files.txt"
-          cd "$GITHUB_WORKSPACE"
-          tar -czf /tmp/subsp-source.tar.gz --exclude=.git --exclude='*.tar.gz' --exclude=toolchain-files.txt .
-          ls -lh lean-min-toolchain.tar.gz /tmp/subsp-source.tar.gz
+          curl -L --fail -o /tmp/lean.tar.zst https://releases.lean-lang.org/lean4/v4.34.0/lean-4.34.0-linux.tar.zst
+          split -d -a 2 -b 250M /tmp/lean.tar.zst /tmp/lean-part-
+          ls -lh /tmp/lean-part-*
       - uses: actions/upload-artifact@v4
         with:
-          name: lean-4.34.0-min-toolchain
-          path: lean-min-toolchain.tar.gz
+          name: lean-part-00
+          path: /tmp/lean-part-00
           compression-level: 0
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
-          name: subsp-source
-          path: /tmp/subsp-source.tar.gz
+          name: lean-part-01
+          path: /tmp/lean-part-01
           compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-part-02
+          path: /tmp/lean-part-02
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-part-03
+          path: /tmp/lean-part-03
+          compression-level: 0
+          if-no-files-found: ignore
