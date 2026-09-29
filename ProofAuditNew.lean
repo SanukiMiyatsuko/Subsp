@@ -3,7 +3,7 @@ import Subsp
 import Subsp.new.stop
 
 /-! Audit every definition and theorem in the project, including generated proofs.
-Run `lake build Subsp Subsp.new.stop`, then `lake env lean ProofAudit.lean`.
+Run `lake build Subsp Subsp.old.stop`, then `lake env lean ProofAuditOld.lean`.
 -/
 
 open Lean Elab Command in

@@ -11,20 +11,20 @@ def T.stand : T → T
     P s0 s1 sts2
   else sts2
 
-def T.part : T → T × T
+def T.part (n : Nat) : T → T × T
 | Z => (Z, Z)
 | P s0 s1 s2 =>
-  if s0 = 0 then
+  if s0 ≤ n then
     (Z, P s0 s1 s2)
   else
-    let ps2 := part s2
+    let ps2 := part n s2
     (P s0 s1 ps2.1, ps2.2)
 
-def T.early_collapse (s : T) : T :=
-  let ps := part s
+def T.early_collapse (n : Nat) (s : T) : T :=
+  let ps := part n s
   if ps.1 = Z then
     s
-  else stand (P 0 ps.1 ps.2)
+  else stand (P n ps.1 ps.2)
 
 def T.one_del : T → T
 | P 0 Z s2 => s2
@@ -33,14 +33,17 @@ def T.one_del : T → T
 def T.card_times (n : Nat) : T → T
 | Z => Z
 | P s0 s1 s2 =>
-  match n with
-  | 0 => P s0 s1 s2
-  | n' + 1 =>
-    let head : T :=
+  let head : T :=
+    if s0 < n then
       if s0 = 0 then
-        P 1 (mul (P 1 Z Z) (ofNat n') + early_collapse s1) Z
-      else P 1 (mul (P 1 Z Z) (ofNat n) + s1) Z
-    head + card_times n s2
+        P n (early_collapse s0 s1) Z
+      else P n (stand (P s0 Z (early_collapse s0 s1))) Z
+    else if s0 = n then
+      if s1 < P n (P 0 Z Z) Z then
+        P n (stand (P n Z s1)) Z
+      else P s0 s1 Z
+    else P s0 s1 Z
+  head + card_times n s2
 
 mutual
 

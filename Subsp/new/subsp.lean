@@ -1,4 +1,4 @@
-import Subsp.new.Base
+import Subsp.Base
 
 namespace new
 
@@ -34,44 +34,6 @@ mutual
       if dx = .zero then none
       else some (Fin.last k, dx)
 end
-
-mutual
-  def T.size {lam : Nat} : T lam → Nat
-    | .Z => 0
-    | .P ls add => 1 + Vec.size ls + T.size add
-
-  def Vec.size {lam m : Nat} : Vec (T lam) m → Nat
-    | .nil => 0
-    | .snoc _ xs x => 1 + Vec.size xs + T.size x
-end
-
-theorem Vec.idx_size_lt {lam m : Nat} :
-    ∀ (v : Vec (T lam) m) (i : Fin m), T.size (v.idx i) < Vec.size v := by
-  intro v
-  induction v with
-  | nil => intro i; exact i.elim0
-  | snoc k xs x ih =>
-      intro i
-      simp only [Vec.idx, Vec.size]
-      split
-      · have h := ih ⟨i.val, ‹i.val < k›⟩
-        omega
-      · omega
-
-theorem Vec.getElem_eq_idx {A : Type} {n : Nat} (v : Vec A n) (m : Fin n) :
-    v[m] = v.idx m := by
-  rfl
-
-theorem T.idx_size_lt_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) (i : Fin lam) :
-    T.size (ls[i]) < T.size (T.P ls add) := by
-  have h := Vec.idx_size_lt ls i
-  simp only [Vec.getElem_eq_idx, T.size]
-  omega
-
-theorem T.add_size_lt_P {lam : Nat} (ls : Vec (T lam) lam) (add : T lam) :
-    T.size add < T.size (T.P ls add) := by
-  simp only [T.size]
-  omega
 
 theorem T.domVecMinIdx_spec {lam m : Nat} (v : Vec (T lam) m) :
     match T.domVecMinIdx v with
