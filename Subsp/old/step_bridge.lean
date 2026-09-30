@@ -175,3 +175,128 @@ theorem trans_eq_Z_iff {lam : Nat} (s : T lam) :
       · intro h; cases h
 
 end new
+
+
+namespace new
+
+def T.outerChain {lam : Nat} : T lam → Prop
+| .Z => True
+| .P ls add => Vec.outer0 ls ∧ T.outerChain add
+
+theorem T.outerChain_mul_PZ {lam : Nat}
+    (v : Vec (T lam) lam) (t : T lam)
+    (hv : Vec.outer0 v) :
+    T.outerChain (T.mul (T.P v T.Z) t) := by
+  induction t using T.rec (motive_2 := fun _ _ => True) with
+  | Z => trivial
+  | P tls add _ ih =>
+      rw [T.mul]
+      change Vec.outer0 v ∧ T.outerChain (T.mul (T.P v T.Z) add)
+      exact ⟨hv, ih⟩
+  | nil => trivial
+  | snoc => trivial
+
+theorem T.outerChain_fund {lam : Nat}
+    (s t : T lam) (hs : T.outerChain s) :
+    T.outerChain (T.fund s t) := by
+  induction s using (measure T.size).wf.induction generalizing t with
+  | h s ih =>
+      cases s with
+      | Z => simp [T.fund, T.outerChain]
+      | P ls add =>
+          have hls : Vec.outer0 ls := hs.1
+          have haddChain : T.outerChain add := hs.2
+          by_cases hadd : add = T.Z
+          · subst add
+            cases hmin : T.domVecMinIdx ls with
+            | none => rw [T.fund_PZ_none ls t hmin]; trivial
+            | some md =>
+                obtain ⟨m, d⟩ := md
+                have hm0 := Vec.outer0_min_index_zero ls hls m d hmin
+                have hrplc (u : T lam) : Vec.outer0 (ls.rplc m u) :=
+                  Vec.outer0_rplc_zero ls m u hls hm0
+                cases d with
+                | zero =>
+                    exact False.elim ((T.domVecMinIdx_some_spec ls m .zero hmin).1 rfl)
+                | one =>
+                    rw [T.fund, ite_eq_left rfl, hmin]
+                    obtain ⟨mv, mh⟩ := m
+                    cases mv with
+                    | zero =>
+                        exact T.outerChain_mul_PZ _ t (hrplc _)
+                    | succ r =>
+                        change r + 1 = 0 at hm0
+                        exact False.elim (Nat.noConfusion hm0)
+                | omega =>
+                    rw [T.fund, ite_eq_left rfl, hmin]
+                    exact ⟨hrplc _, trivial⟩
+                | Omega i =>
+                    rw [T.fund_PZ_outer0_Omega ls hls t m i hmin]
+                    exact ⟨hrplc _, trivial⟩
+          · rw [T.fund, ite_eq_right hadd]
+            exact ⟨hls, ih add (T.add_size_lt_P ls add) t haddChain⟩
+
+theorem T.base_succ_outerChain (k n : Nat) :
+    T.outerChain
+      (T.P (Vec.ofFn (k + 1)
+        (fun i => if i.val = 0 then T.LF (k + 1) n else T.Z)) T.Z) := by
+  constructor
+  · intro i hi
+    rw [Vec.ofFn_idx]
+    simp [hi]
+  · trivial
+
+theorem T.isOT_outerChain {lam : Nat} {s : T lam} (hs : T.isOT lam s) :
+    T.outerChain s := by
+  induction hs with
+  | base_0 n =>
+      induction n with
+      | zero => trivial
+      | succ n ih =>
+          rw [T.LF]
+          exact ⟨fun i => i.elim0, ih⟩
+  | base_succ k n => exact T.base_succ_outerChain k n
+  | step lam s hs n ih => exact T.outerChain_fund s (T.ofNat n) ih
+
+theorem T.outerChain_dom_not_Omega {lam : Nat}
+    (s : T lam) (hs : T.outerChain s) (i : Fin lam) :
+    T.dom s ≠ .Omega i := by
+  induction s using (measure T.size).wf.induction with
+  | h s ih =>
+      cases s with
+      | Z => intro hd; cases hd
+      | P ls add =>
+          have hls := hs.1
+          have ha := hs.2
+          by_cases hadd : add = T.Z
+          · subst add
+            intro hd
+            simp only [T.dom, ite_true] at hd
+            cases hmin : T.domVecMinIdx ls with
+            | none => rw [hmin] at hd; cases hd
+            | some md =>
+                obtain ⟨m, d⟩ := md
+                rw [hmin] at hd
+                have hm0 := Vec.outer0_min_index_zero ls hls m d hmin
+                cases d with
+                | zero =>
+                    exact False.elim ((T.domVecMinIdx_some_spec ls m .zero hmin).1 rfl)
+                | one => simp [hm0] at hd
+                | omega => cases hd
+                | Omega j =>
+                    have hjpos := T.dom_Omega_pos (ls.idx m) j
+                      (T.domVecMinIdx_some_spec ls m (.Omega j) hmin).2.1
+                    have hjm : ¬ j ≤ m := by
+                      intro hjm
+                      have hv : j.val ≤ m.val := hjm
+                      omega
+                    simp [hjm] at hd
+          · rw [T.dom, ite_eq_right hadd]
+            exact ih add (T.add_size_lt_P ls add) ha
+
+theorem T.isOT_dom_not_Omega {lam : Nat} {s : T lam}
+    (hs : T.isOT lam s) (i : Fin lam) :
+    T.dom s ≠ .Omega i :=
+  T.outerChain_dom_not_Omega s (T.isOT_outerChain hs) i
+
+end new
