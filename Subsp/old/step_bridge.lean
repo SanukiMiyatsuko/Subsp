@@ -300,3 +300,104 @@ theorem T.isOT_dom_not_Omega {lam : Nat} {s : T lam}
   T.outerChain_dom_not_Omega s (T.isOT_outerChain hs) i
 
 end new
+
+
+theorem target_dom1_add_right (a b : _root_.T) (hb : b ≠ _root_.T.Z) :
+    _root_.T.dom1 (_root_.T.add a b) = _root_.T.dom1 b := by
+  induction a with
+  | Z => rfl
+  | P p x y ihx ihy =>
+      rw [_root_.T.P_add_eq]
+      have htail : _root_.T.add y b ≠ _root_.T.Z := by
+        cases y <;> cases b <;> simp_all [_root_.T.add]
+      simp [_root_.T.dom1, htail, ihy]
+
+theorem target_dom1_P0_ne_Z (a : _root_.T) (ha : a ≠ _root_.T.Z) :
+    _root_.T.dom1 (_root_.T.P 0 a _root_.T.Z) = .ω := by
+  cases hd : _root_.T.dom1 a with
+  | Zero => exact False.elim (ha (_root_.dom1_Zero_imp_eq_Z a hd))
+  | One => simp [_root_.T.dom1, hd]
+  | ω => simp [_root_.T.dom1, hd]
+  | Ω l => simp [_root_.T.dom1, hd]
+
+namespace new
+
+theorem T.outerChain_dom1_trans {lam : Nat}
+    (s : T lam) (hs : T.outerChain s) :
+    match T.dom s with
+    | .zero => _root_.T.dom1 (_root_.trans s) = .Zero
+    | .one => _root_.T.dom1 (_root_.trans s) = .One
+    | .omega => _root_.T.dom1 (_root_.trans s) = .ω
+    | .Omega _ => False := by
+  induction s using (measure T.size).wf.induction with
+  | h s ih =>
+      cases s with
+      | Z => rfl
+      | P ls add =>
+          have hls : Vec.outer0 ls := hs.1
+          have ha : T.outerChain add := hs.2
+          by_cases hadd : add = T.Z
+          · subst add
+            cases lam with
+            | zero =>
+                cases ls
+                rfl
+            | succ k =>
+                let i0 : Fin (k + 1) := ⟨0, Nat.zero_lt_succ k⟩
+                have htr := trans_outer0_P ls T.Z hls
+                cases hmin : T.domVecMinIdx ls with
+                | none =>
+                    have hzdom := T.domVecMinIdx_none_all_zero ls hmin
+                    have hz : ls.idx i0 = T.Z := T.dom_zero_eq_Z _ (hzdom i0)
+                    have hshape : _root_.trans (T.P ls T.Z) = _root_.T.P 0 _root_.T.Z _root_.T.Z := by
+                      rw [htr, hz]
+                      rfl
+                    rw [T.dom, ite_eq_left rfl, hmin, hshape]
+                    rfl
+                | some md =>
+                    obtain ⟨m, d⟩ := md
+                    have hm0 := Vec.outer0_min_index_zero ls hls m d hmin
+                    have hm : m = i0 := Fin.eq_of_val_eq hm0
+                    have hspec := T.domVecMinIdx_some_spec ls m d hmin
+                    have hne0 : ls.idx i0 ≠ T.Z := by
+                      rw [← hm]
+                      intro hz
+                      have hd := hspec.2.1
+                      rw [hz] at hd
+                      exact hspec.1 hd.symm
+                    have htrne : _root_.trans (ls.idx i0) ≠ _root_.T.Z := by
+                      intro hz
+                      exact hne0 ((trans_eq_Z_iff _).mp hz)
+                    have hshape : _root_.trans (T.P ls T.Z) =
+                        _root_.T.P 0 (_root_.trans (ls.idx i0)) _root_.T.Z := by
+                      rw [htr]
+                      cases he : ls.idx i0 with
+                      | Z => exact False.elim (hne0 he)
+                      | P v a => rfl
+                    have htarget : _root_.T.dom1 (_root_.trans (T.P ls T.Z)) = .ω := by
+                      rw [hshape]
+                      exact target_dom1_P0_ne_Z _ htrne
+                    rw [T.dom, ite_eq_left rfl, hmin]
+                    cases d with
+                    | zero => exact False.elim (hspec.1 rfl)
+                    | one =>
+                        simp only [hm0, ite_true]
+                        exact htarget
+                    | omega => exact htarget
+                    | Omega i =>
+                        have hnot : ¬ i ≤ m := T.outer0_Omega_not_le ls hls m i hmin
+                        simp only [hnot, ite_false]
+                        exact htarget
+          · have hta : _root_.trans add ≠ _root_.T.Z := by
+              intro hz
+              exact hadd ((trans_eq_Z_iff add).mp hz)
+            have hdomEq : _root_.T.dom1 (_root_.trans (T.P ls add)) =
+                _root_.T.dom1 (_root_.trans add) := by
+              rw [_root_.trans]
+              rcases haux : transAux ls with ⟨head, lower⟩
+              simp only [haux]
+              exact target_dom1_add_right head (_root_.trans add) hta
+            rw [T.dom, ite_eq_right hadd, hdomEq]
+            exact ih add (T.add_size_lt_P ls add) ha
+
+end new
