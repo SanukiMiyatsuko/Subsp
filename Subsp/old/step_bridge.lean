@@ -42,6 +42,45 @@ end new
 
 namespace new
 
+theorem Vec.outer0_min_index_zero {lam : Nat}
+    (ls : Vec (T lam) lam) (hls : Vec.outer0 ls)
+    (m : Fin lam) (d : Dom lam)
+    (hmin : T.domVecMinIdx ls = some (m, d)) :
+    m.val = 0 := by
+  have hspec := T.domVecMinIdx_some_spec ls m d hmin
+  by_cases hm : m.val = 0
+  · exact hm
+  · have hz := hls m hm
+    have hd := hspec.2.1
+    rw [hz] at hd
+    exact False.elim (hspec.1 hd.symm)
+
+theorem T.outer0_Omega_not_le {lam : Nat}
+    (ls : Vec (T lam) lam) (hls : Vec.outer0 ls)
+    (m i : Fin lam)
+    (hmin : T.domVecMinIdx ls = some (m, Dom.Omega i)) :
+    ¬ i ≤ m := by
+  intro him
+  have hm0 := Vec.outer0_min_index_zero ls hls m (.Omega i) hmin
+  have hiPos := T.dom_Omega_pos (ls.idx m) i
+    (T.domVecMinIdx_some_spec ls m (.Omega i) hmin).2.1
+  have hval : i.val ≤ m.val := him
+  omega
+
+theorem T.fund_PZ_outer0_Omega {lam : Nat}
+    (ls : Vec (T lam) lam) (hls : Vec.outer0 ls)
+    (t : T lam) (m i : Fin lam)
+    (hmin : T.domVecMinIdx ls = some (m, Dom.Omega i)) :
+    T.fund (T.P ls T.Z) t =
+      T.P (ls.rplc m
+        (T.fund ls[m] (T.iter (fun x => T.fund ls[m] x) t))) T.Z := by
+  rw [T.fund_PZ_Omega ls t m i hmin,
+    ite_eq_right (T.outer0_Omega_not_le ls hls m i hmin)]
+
+end new
+
+namespace new
+
 theorem T.dom_PZ_ne_zero {lam : Nat} (ls : Vec (T lam) lam) :
     T.dom (T.P ls T.Z) ≠ .zero := by
   cases hmin : T.domVecMinIdx ls with
