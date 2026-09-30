@@ -119,6 +119,17 @@ theorem T.fund_PZ_none {lam : Nat}
     T.fund (T.P ls T.Z) t = T.Z := by
   rw [T.fund, ite_eq_left rfl, hmin]
 
+theorem T.fund_PZ_Omega {lam : Nat}
+    (ls : Vec (T lam) lam) (t : T lam) (m i : Fin lam)
+    (hmin : T.domVecMinIdx ls = some (m, Dom.Omega i)) :
+    T.fund (T.P ls T.Z) t =
+      if i ≤ m then
+        T.P (ls.rplc m (T.fund ls[m] t)) T.Z
+      else
+        T.P (ls.rplc m
+          (T.fund ls[m] (T.iter (fun x => T.fund ls[m] x) t))) T.Z := by
+  simp [T.fund, hmin]
+
 theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
     (u v : Vec (T lam) lam) (t : T lam)
     (h : compareVec u v = Ordering.lt) :
@@ -147,24 +158,33 @@ theorem T.fund_lt_self {lam : Nat}
                   have hd := hspec.2.1
                   rw [hz] at hd
                   exact hspec.1 hd.symm
-                have hrec (u) : T.fund (ls.idx m) u < ls.idx m :=
-                  ih _ (T.idx_size_lt_P ls T.Z m) u hmne
-                rw [T.fund, ite_eq_left rfl, hmin]
-                by_cases hd1 : d = .one
-                · subst d
-                  obtain ⟨mv, mh⟩ := m
-                  cases mv with
-                  | zero =>
-                      exact T.mul_PZ_lt_of_compareVec_lt _ _ _
-                        (Vec.compare_rplc_lt _ _ _ (hrec T.Z))
-                  | succ r =>
-                      exact T.P_lt_P_of_compareVec_lt _ _ _ _
-                        (Vec.compare_rplc_rplc_lt _ _ _ _ _
-                          (Nat.lt_succ_self r) (hrec T.Z))
-                · simp only [hd1, ite_false]
-                  split <;>
+                have hmne' : ls[m] ≠ T.Z := by
+                  simpa only [Vec.getElem_eq_idx] using hmne
+                have hrec (u) : T.fund ls[m] u < ls[m] :=
+                  ih _ (T.idx_size_lt_P ls T.Z m) u hmne'
+                cases d with
+                | zero => exact False.elim (hspec.1 rfl)
+                | one =>
+                    rw [T.fund, ite_eq_left rfl, hmin]
+                    obtain ⟨mv, mh⟩ := m
+                    cases mv with
+                    | zero =>
+                        exact T.mul_PZ_lt_of_compareVec_lt _ _ _
+                          (Vec.compare_rplc_lt _ _ _ (by simpa only [Vec.getElem_eq_idx] using hrec T.Z))
+                    | succ r =>
+                        exact T.P_lt_P_of_compareVec_lt _ _ _ _
+                          (Vec.compare_rplc_rplc_lt _ _ _ _ _
+                            (Nat.lt_succ_self r) (by simpa only [Vec.getElem_eq_idx] using hrec T.Z))
+                | omega =>
+                    rw [T.fund, ite_eq_left rfl, hmin]
                     exact T.P_lt_P_of_compareVec_lt _ _ _ _
-                      (Vec.compare_rplc_lt _ _ _ (hrec _))
+                      (Vec.compare_rplc_lt _ _ _ (by simpa only [Vec.getElem_eq_idx] using hrec t))
+                | Omega i =>
+                    rw [T.fund_PZ_Omega ls t m i hmin]
+                    split <;>
+                      exact T.P_lt_P_of_compareVec_lt _ _ _ _
+                        (Vec.compare_rplc_lt _ _ _
+                          (by simpa only [Vec.getElem_eq_idx] using hrec _))
           · rw [T.fund, ite_eq_right hadd]
             change (match compareVec ls ls with
               | .eq => compareT (T.fund add t) add | ord => ord) = .lt
