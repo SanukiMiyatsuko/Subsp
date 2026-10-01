@@ -145,17 +145,6 @@ theorem early_collapse_closed (n : Nat) (s : T) (hs : T.isNF1 s)
     · exact ⟨.p n _ _ ha hb hga ‹_›, .p n _ _ (Nat.le_refl n) hi⟩
     · exact ⟨hb, hi⟩
 
-theorem add_self_le (a b : T) : a ≤ T.add a b := by
-  induction a with
-  | Z => exact T.Z_le b
-  | P p a c _ ih =>
-      rw [T.P_add_eq]
-      exact ih.imp (T.Lt.p_tail _ _ _ _) (congrArg (T.P p a))
-
-theorem part_first_le (n : Nat) (s : T) (hs : T.isNF1 s) : (T.part n s).1 ≤ s := by
-  have h := add_self_le (T.part n s).1 (T.part n s).2
-  rwa [part_add n s hs] at h
-
 theorem early_collapse_support_above (n u : Nat) (s : T) (hs : T.isNF1 s)
     (hg : ∀ x ∈ T.G1 n s, x < s) (hu : n < u) :
     T.G1 u (T.early_collapse n s) = [] :=
@@ -337,6 +326,17 @@ theorem head_le_self (s : T) : T.head s ≤ s := by
   cases s with
   | Z => exact Or.inr rfl
   | P p a b => exact (T.Z_le b).imp (T.Lt.p_tail p a _ _) (congrArg (T.P p a))
+
+theorem add_self_le (a b : T) : a ≤ T.add a b := by
+  induction a with
+  | Z => exact T.Z_le b
+  | P p a c _ ih =>
+      rw [T.P_add_eq]
+      exact ih.imp (T.Lt.p_tail _ _ _ _) (congrArg (T.P p a))
+
+theorem part_first_le (n : Nat) (s : T) (hs : T.isNF1 s) : (T.part n s).1 ≤ s := by
+  have h := add_self_le (T.part n s).1 (T.part n s).2
+  rwa [part_add n s hs] at h
 
 theorem lt_of_not_le (a b : T) (h : ¬ a ≤ b) : b < a := by
   rcases lt_total_thm a b with hab | hba | he

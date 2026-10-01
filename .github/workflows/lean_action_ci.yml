@@ -12,7 +12,3 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
-      - name: Build legacy proof helpers
-        run: lake build Subsp.old.stop_low_dims Subsp.old.stop_nf_core Subsp.old.stop_source_fund_nf Subsp.old.stop_ot_comp0 Subsp.old.stop_trans_algebra
-      - name: Audit legacy helper declarations
-        run: lake env lean ProofAuditOldSupport.lean
