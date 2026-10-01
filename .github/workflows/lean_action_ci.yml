@@ -8,7 +8,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    name: Build and audit
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
+      - name: Build legacy stop theorem
+        run: lake build Subsp.old.stop
+      - name: Audit legacy declarations
+        run: lake env lean ProofAuditOld.lean
