@@ -59,6 +59,46 @@ theorem trans_countable_P {k : Nat}
       T.P 0 (trans (v.idx ⟨0, Nat.zero_lt_succ k⟩)) (trans b) := by
   rw [trans_as_add, transAux_countable_head_exact v hv, T.P_add_eq, zero_add]
 
+theorem compareVec_countable_succ {lam k : Nat}
+    (v w : new.Vec (new.T lam) (k + 1))
+    (hv : ∀ i : Fin (k + 1), 0 < i.val → v.idx i = new.T.Z)
+    (hw : ∀ i : Fin (k + 1), 0 < i.val → w.idx i = new.T.Z) :
+    new.compareVec v w =
+      new.compareT
+        (v.idx ⟨0, Nat.zero_lt_succ k⟩)
+        (w.idx ⟨0, Nat.zero_lt_succ k⟩) := by
+  induction k with
+  | zero =>
+      cases v with
+      | snoc _ xs a =>
+          cases xs
+          cases w with
+          | snoc _ ys b =>
+              cases ys
+              rfl
+  | succ k ih =>
+      cases v with
+      | snoc _ xs a =>
+          cases w with
+          | snoc _ ys b =>
+              have ha : a = new.T.Z := by
+                have h := hv (Fin.last (k + 1)) (Nat.zero_lt_succ k)
+                simpa [new.Vec.idx] using h
+              have hb : b = new.T.Z := by
+                have h := hw (Fin.last (k + 1)) (Nat.zero_lt_succ k)
+                simpa [new.Vec.idx] using h
+              subst a
+              subst b
+              have hxs : ∀ i : Fin (k + 1), 0 < i.val → xs.idx i = new.T.Z := by
+                intro i hi
+                have h := hv i.castSucc hi
+                simpa [new.Vec.idx, i.isLt] using h
+              have hys : ∀ i : Fin (k + 1), 0 < i.val → ys.idx i = new.T.Z := by
+                intro i hi
+                have h := hw i.castSucc hi
+                simpa [new.Vec.idx, i.isLt] using h
+              simpa [new.compareVec, new.Vec.idx] using ih xs ys hxs hys
+
 theorem trans_ofNat {lam : Nat} (n : Nat) :
     trans (new.T.ofNat (lam := lam) n) = T.ofNat n := by
   induction n with
