@@ -126,4 +126,21 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
               (ih add (T.add_size_lt_P ls add) x y i
                 (by simpa [T.dom, hadd] using hd) hxy)
 
+
+theorem T.iter_fund_lt_next {lam : Nat}
+    (s t : T lam) (i : Fin lam)
+    (hd : T.dom s = .Omega i) :
+    T.iter (fun x => T.fund s x) t <
+      T.fund s (T.iter (fun x => T.fund s x) t) := by
+  induction t using T.rec (motive_2 := fun _ _ => True) with
+  | Z =>
+      rw [T.iter]
+      cases he : T.fund s T.Z with
+      | Z => exact False.elim (T.fund_Omega_ne_Z s T.Z i hd he)
+      | P ls add => rfl
+  | P us add _ ih =>
+      exact T.fund_Omega_strict_mono s _ _ i hd ih
+  | nil => trivial
+  | snoc => trivial
+
 end new
