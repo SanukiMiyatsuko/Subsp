@@ -11,9 +11,9 @@ theorem card_times_ne_zero (n : Nat) (s : T) (hs : s ≠ T.Z) :
   cases s with
   | Z => exact False.elim (hs rfl)
   | P p a b =>
-      simp only [T.card_times]
-      split <;> split <;> split <;> split <;>
-        intro h <;> cases h
+      simp only [T.card_times, ← add_eq_hAdd]
+      repeat' split
+      all_goals simp only [T.P_add_eq, zero_add]; intro h; cases h
 
 theorem card_times_add (n : Nat) (a b : T) :
     T.card_times n (T.add a b) =
@@ -22,7 +22,7 @@ theorem card_times_add (n : Nat) (a b : T) :
   | Z => rfl
   | P p x y _ ih =>
       rw [T.P_add_eq]
-      simp only [T.card_times]
+      simp only [T.card_times, ← add_eq_hAdd]
       rw [ih, Rank1Termination.add_assoc]
 
 theorem one_del_NF (s : T) (hs : T.isNF1 s) :

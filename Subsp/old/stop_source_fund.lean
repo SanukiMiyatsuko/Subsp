@@ -59,6 +59,7 @@ theorem T.fund_isWNF {lam : Nat} :
                     apply T.isWNF_PZ_of_coords
                     exact T.isWNF_rplc ls m _ hls (hrec t ht)
                 | Omega i =>
+                    dsimp only
                     split
                     · apply T.isWNF_PZ_of_coords
                       exact T.isWNF_rplc ls m _ hls (hrec t ht)
@@ -101,7 +102,7 @@ theorem T.LF_isWNF (lam n : Nat) :
           cases n with
           | zero => exact T.Z_le _
           | succ n =>
-              exact Or.inr (by simp only [T.LF, T.head, compareT, Vec_refl, T_refl])
+              exact Or.inr (T_refl _)
       | succ k =>
           rw [T.LF]
           apply T.isWNF_PZ_of_coords

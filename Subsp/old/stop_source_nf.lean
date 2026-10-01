@@ -78,25 +78,23 @@ theorem T.ofNat_isWNF {lam : Nat} (n : Nat) :
       · cases n with
         | zero => exact T.Z_le _
         | succ n =>
-            exact Or.inr (by simp only [T.head, compareT, Vec_refl, T_refl])
+            exact Or.inr (T_refl _)
 
 theorem T.principal_mul_isWNF {lam : Nat}
     (ls : Vec (T lam) lam)
     (hls : ∀ i : Fin lam, T.isWNF (ls.idx i))
     (t : T lam) :
     T.isWNF (T.mul (T.P ls T.Z) t) := by
-  induction t with
+  induction t using T.rec (motive_2 := fun _ _ => True) with
   | Z => exact .z
   | P tls add _ ih =>
       rw [T.mul]
       change T.isWNF (T.P ls (T.mul (T.P ls T.Z) add))
       refine .p ls _ hls ih ?_
-      cases hmul : T.mul (T.P ls T.Z) add with
+      cases add with
       | Z => exact T.Z_le _
-      | P us b =>
-          have hhead : T.head (T.mul (T.P ls T.Z) add) = T.P ls T.Z := by
-            cases add <;> simp [T.mul] at hmul ⊢
-          rw [hhead]
-          exact Or.inr (T_refl _)
+      | P _ _ => exact Or.inr (T_refl _)
+  | nil => trivial
+  | snoc => trivial
 
 end new
