@@ -56,7 +56,8 @@ theorem transAux_zeros {lam : Nat} (k : Nat) :
         intro i hi
         rw [new.Vec.ofFn_idx]
       rw [transAux_countable_exact _ hv]
-      simp [new.Vec.ofFn_idx, transAux, _root_.trans]
+      simp [new.Vec.ofFn_idx, transAux, _root_.trans,
+        T.early_collapse, T.part]
 
 theorem transAux_countable_head_exact {lam k : Nat}
     (v : new.Vec (new.T lam) (k + 1))
