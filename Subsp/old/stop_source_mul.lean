@@ -76,4 +76,18 @@ theorem T.mul_PZ_NFComp_closed {lam : Nat}
   | nil => trivial
   | snoc => trivial
 
+
+theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
+    (u v : Vec (T lam) lam) (t : T lam)
+    (hvec : compareVec u v = Ordering.lt) :
+    T.mul (T.P u T.Z) t < T.P v T.Z := by
+  cases t with
+  | Z =>
+      rw [T.mul]
+      exact T.Z_lt_P _ _ _
+  | P ts add =>
+      rw [T.mul]
+      change T.P u (T.mul (T.P u T.Z) add) < T.P v T.Z
+      exact T.P_lt_P_of_compareVec_lt _ _ _ _ hvec
+
 end new
