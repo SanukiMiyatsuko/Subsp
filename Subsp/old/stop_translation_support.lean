@@ -122,4 +122,143 @@ theorem card_times_support_decomp (u n : Nat) (hun : u ≤ n)
         · exact Or.inr (Or.inl h)
         · exact Or.inr (Or.inr h)
 
+
+def VecWitness {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (x : T) : Prop :=
+  ∃ z : new.T lam, z ∈ new.Vec.Gi u v ∧ x ≤ trans z
+
+theorem VecWitness_mono {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (x y : T)
+    (hxy : x ≤ y) (hy : VecWitness u v y) :
+    VecWitness u v x := by
+  obtain ⟨z, hz, hyz⟩ := hy
+  exact ⟨z, hz, partial_order.trans _ _ _ hxy hyz⟩
+
+theorem VecWitness_prefix {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (a : new.T lam) (x : T)
+    (h : VecWitness u v x) :
+    VecWitness u (.snoc k v a) x := by
+  obtain ⟨z, hz, hxz⟩ := h
+  exact ⟨z, by
+    rw [new.Vec.Gi]
+    exact List.mem_append_left _ hz, hxz⟩
+
+theorem VecWitness_last {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (a : new.T lam)
+    (huk : u ≤ k) (x : T) (hx : x ≤ trans a) :
+    VecWitness u (.snoc k v a) x := by
+  refine ⟨a, ?_, hx⟩
+  simp [new.Vec.Gi, huk]
+
+theorem VecWitness_last_support {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (a z : new.T lam)
+    (huk : u ≤ k) (x : T)
+    (hz : z ∈ new.T.Gi u a) (hx : x ≤ trans z) :
+    VecWitness u (.snoc k v a) x := by
+  refine ⟨z, ?_, hx⟩
+  simp [new.Vec.Gi, huk, hz]
+
+theorem early_collapse_coord_decomp {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (a : new.T lam)
+    (huk : u ≤ k) (ha : GoodAt k a)
+    (hdec : ∀ y : T, y ∈ T.G1 u (trans a) →
+      y < trans a ∨
+        ∃ z : new.T lam, z ∈ new.T.Gi u a ∧ y ≤ trans z) :
+    ∀ y : T, y ∈ T.G1 u (T.early_collapse k (trans a)) →
+      y < trans a ∨ VecWitness u (.snoc k v a) y := by
+  intro y hy
+  rcases early_collapse_support_source u k (trans a) huk ha.1 y hy with h | h
+  · exact Or.inr (VecWitness_last u v a huk y h)
+  · rcases hdec y h with hlt | ⟨z, hz, hyz⟩
+    · exact Or.inl hlt
+    · exact Or.inr (VecWitness_last_support u v a z huk y hz hyz)
+
+theorem card_early_support_decomp {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (a : new.T lam)
+    (huk : u ≤ k) (ha : GoodAt k a)
+    (hdec : ∀ y : T, y ∈ T.G1 u (trans a) →
+      y < trans a ∨
+        ∃ z : new.T lam, z ∈ new.T.Gi u a ∧ y ≤ trans z) :
+    ∀ x : T,
+      x ∈ T.G1 u (T.card_times k (T.early_collapse k (trans a))) →
+      x < T.card_times k (T.early_collapse k (trans a)) ∨
+        VecWitness u (.snoc k v a) x := by
+  have hec := early_collapse_closed k (trans a) ha.1 ha.2
+  have hdecEc :
+      ∀ y : T, y ∈ T.G1 u (T.early_collapse k (trans a)) →
+        y < trans a ∨ VecWitness u (.snoc k v a) y :=
+    early_collapse_coord_decomp u v a huk ha hdec
+  intro x hx
+  rcases card_times_support_decomp u k huk
+      (VecWitness u (.snoc k v a))
+      (fun x y hxy hy => VecWitness_mono u _ x y hxy hy)
+      (T.early_collapse k (trans a)) (trans a) hec.1
+      (early_collapse_le_self k (trans a) ha.1) hdecEc x hx with
+    h | h | h
+  · exact Or.inl h
+  · exact Or.inr (VecWitness_last u v a huk x (Or.inl h))
+  · exact Or.inr h
+
+theorem aux_lower_support_decomp {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (hv : VecGood v) :
+    (∀ i : Fin k, u ≤ i.val →
+      ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) →
+        y < trans (v.idx i) ∨
+          ∃ z : new.T lam, z ∈ new.T.Gi u (v.idx i) ∧ y ≤ trans z) →
+    ∀ x : T, x ∈ T.G1 u (transAux v).2 →
+      x < (transAux v).2 ∨ VecWitness u v x := by
+  induction v with
+  | nil =>
+      intro _ x hx
+      cases hx
+  | snoc k v a ih =>
+      intro hdec
+      have ha := VecGood_last v a hv
+      have hp := VecGood_prefix v a hv
+      have hdecPrefix :
+          ∀ i : Fin k, u ≤ i.val →
+            ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) →
+              y < trans (v.idx i) ∨
+                ∃ z : new.T lam, z ∈ new.T.Gi u (v.idx i) ∧ y ≤ trans z := by
+        intro i hui y hy
+        simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
+          hdec i.castSucc hui y hy
+      by_cases hku : k < u
+      · have hi := (aux_lower_closed (.snoc k v a) hv).2.1
+        have hemp : T.G1 u (transAux (.snoc k v a)).2 = [] := by
+          apply index_Prop1_G1_empty k _ ?_ u hku
+          simpa using hi
+        rw [hemp]
+        intro x hx
+        cases hx
+      · have huk : u ≤ k := Nat.le_of_not_gt hku
+        have hdecLast :
+            ∀ y : T, y ∈ T.G1 u (trans a) →
+              y < trans a ∨
+                ∃ z : new.T lam, z ∈ new.T.Gi u a ∧ y ≤ trans z := by
+          simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
+            hdec (Fin.last k) huk
+        cases k with
+        | zero =>
+            cases v
+            rw [aux_single]
+            intro x hx
+            rcases early_collapse_coord_decomp u new.Vec.nil a huk ha hdecLast x hx with h | h
+            · exact Or.inr (VecWitness_last u new.Vec.nil a huk x (Or.inl h))
+            · exact Or.inr h
+        | succ k =>
+            rw [aux_lower_snoc]
+            intro x hx
+            rw [G1_add] at hx
+            rcases hx with hx | hx
+            · rcases card_early_support_decomp u v a huk ha hdecLast x hx with h | h
+              · exact Or.inl (lt_of_lt_of_le_thm T _ _ _ h (add_self_le _ _))
+              · exact Or.inr h
+            · rcases ih hp hdecPrefix x hx with h | h
+              · have hnf := (aux_lower_closed (.snoc (k + 1) v a) hv).1
+                rw [aux_lower_snoc] at hnf
+                exact Or.inl (lt_of_lt_of_le_thm T _ _ _ h
+                  (add_right_le_of_NF _ _ hnf))
+              · exact Or.inr (VecWitness_prefix u v a x h)
+
 end LegacyTranslation
