@@ -9,7 +9,7 @@ def GoodAt {lam : Nat} (u : Nat) (s : new.T lam) : Prop :=
 
 theorem GoodAt_mono {lam : Nat} (u v : Nat) (huv : u ≤ v)
     (s : new.T lam) (hs : GoodAt u s) : GoodAt v s :=
-  ⟨hs.1, fun x hx => hs.2 x (T.G1_antitone u v huv (trans s) x hx)⟩
+  ⟨hs.1, fun x hx => hs.2 x (G1_antitone u v huv (trans s) x hx)⟩
 
 theorem good_index_lt_wrap (k : Nat) (a b : T)
     (hi : T.index_Prop1 k a)
