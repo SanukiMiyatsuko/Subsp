@@ -7,6 +7,18 @@ namespace LegacyTranslation
 def GoodAt {lam : Nat} (u : Nat) (s : new.T lam) : Prop :=
   T.isNF1 (trans s) ∧ ∀ x ∈ T.G1 u (trans s), x < trans s
 
+theorem good_index_lt_wrap (k : Nat) (a b : T)
+    (hi : T.index_Prop1 k a)
+    (hg : ∀ x : T, x ∈ T.G1 k a → x < a) :
+    a < T.P k a b := by
+  cases hi with
+  | z => exact T.Lt.Z_lt_P _ _ _
+  | p p c d hp _ =>
+      rcases Nat.eq_or_lt_of_le hp with rfl | hp
+      · exact T.Lt.p_mid _ _ _ _ _ (hg c (by simp [T.G1]))
+      · exact T.Lt.p_head _ _ _ _ _ _ hp
+
+
 theorem order_preserve_bounded {lam : Nat} (N : Nat)
     (hgood : ∀ (s : new.T lam), new.T.size s < N →
       ∀ u, new.T.isNFComp u s → GoodAt u s)
