@@ -42,11 +42,12 @@ theorem T.SDom_rplc_lower {lam : Nat}
       rcases (T.mem_Gi_P level low T.Z x).mp hx with ⟨q, hlq, hq⟩ | ht
       · rcases Nat.lt_trichotomy q.val m.val with hqm | hqm | hmq
         · by_cases hqj : q.val = j.val
-          · obtain rfl := Fin.eq_of_val_eq hqj
-            have hlowj : low.idx j = z := by
+          · have hqeq : q = j := Fin.eq_of_val_eq hqj
+            have hlowq : low.idx q = z := by
+              rw [hqeq]
               dsimp [low]
               rw [Vec.rplc_idx_same]
-            rw [hlowj] at hq
+            rw [hlowq] at hq
             refine ⟨x, List.mem_append_right _ ?_, T.le_refl _⟩
             rcases hq with rfl | hq
             · simp [T.GZ]
@@ -62,25 +63,29 @@ theorem T.SDom_rplc_lower {lam : Nat}
             · refine ⟨T.Z, List.mem_append_right _ ?_, T.le_refl _⟩
               simp [T.GZ]
             · cases hq
-        · obtain rfl := Fin.eq_of_val_eq hqm
-          rw [hlowm] at hq
+        · have hqeq : q = m := Fin.eq_of_val_eq hqm
+          have hlowq : low.idx q = b := by
+            rw [hqeq]
+            exact hlowm
+          rw [hlowq] at hq
+          have hbmid : b ≤ mid.idx q := by
+            simpa only [hlowq] using hbetween.2.1
+          have hmidhi : mid.idx q ≤ ls.idx m := by
+            simpa only [hqeq] using hbetween.2.2
           rcases hq with rfl | hx
           · refine ⟨mid.idx q,
               List.mem_append_left _
                 ((T.mem_Gi_P level mid add _).mpr
-                  (Or.inl ⟨q, hlq, Or.inl rfl⟩)), ?_⟩
-            simpa only [Vec.rplc_idx_same] using hbetween.2.1
-          · have hbmid : b ≤ mid.idx q := by
-              simpa only [Vec.rplc_idx_same] using hbetween.2.1
-            obtain ⟨y, hy, hxy⟩ :=
-              hinner.2 level (mid.idx q) hbmid hbetween.2.2 x hx
+                  (Or.inl ⟨q, hlq, Or.inl rfl⟩)), hbmid⟩
+          · obtain ⟨y, hy, hxy⟩ :=
+              hinner.2 level (mid.idx q) hbmid hmidhi x hx
             refine ⟨y, ?_, hxy⟩
             rcases List.mem_append.mp hy with hy | hy
             · exact List.mem_append_left _
                 ((T.mem_Gi_P level mid add y).mpr
                   (Or.inl ⟨q, hlq, Or.inr hy⟩))
             · have hyz : y = T.Z := by
-                simpa [T.GZ] using hy
+                simpa [T.GZ, T.Gi] using hy
               subst y
               exact List.mem_append_right _ (by simp [T.GZ])
         · have heq : low.idx q = mid.idx q := by
