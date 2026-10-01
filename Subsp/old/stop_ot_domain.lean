@@ -79,7 +79,7 @@ theorem T.outerChain_dom1_trans {lam : Nat}
                     have hshape :
                         _root_.trans (T.P ls T.Z) =
                           _root_.T.P 0 (_root_.trans (ls.idx i0)) _root_.T.Z := by
-                      rw [htr]
+                      simpa [_root_.trans] using htr
                     have htarget :
                         _root_.T.dom1 (_root_.trans (T.P ls T.Z)) = .ω := by
                       rw [hshape]
