@@ -43,40 +43,6 @@ theorem Vec.outer0_min_index_zero {lam : Nat}
     rw [hz] at hd
     exact False.elim (hspec.1 hd.symm)
 
-theorem T.dom_Omega_pos {lam : Nat} (s : T lam) (i : Fin lam)
-    (hdom : T.dom s = .Omega i) : 0 < i.val := by
-  induction s using (measure T.size).wf.induction with
-  | h s ih =>
-      cases s with
-      | Z => cases hdom
-      | P ls add =>
-          by_cases hadd : add = T.Z
-          · subst add
-            simp only [T.dom, ite_true] at hdom
-            cases hmin : T.domVecMinIdx ls with
-            | none => rw [hmin] at hdom; cases hdom
-            | some md =>
-                obtain ⟨m, d⟩ := md
-                rw [hmin] at hdom
-                have hspec := T.domVecMinIdx_some_spec ls m d hmin
-                cases d with
-                | zero => exact False.elim (hspec.1 rfl)
-                | one =>
-                    by_cases hm : m.val = 0
-                    · simp [hm] at hdom
-                    · simp [hm] at hdom
-                      cases hdom
-                      exact Nat.pos_of_ne_zero hm
-                | omega => cases hdom
-                | Omega j =>
-                    by_cases hjm : j ≤ m
-                    · simp [hjm] at hdom
-                      cases hdom
-                      exact ih (ls.idx m) (T.idx_size_lt_P ls T.Z m) hspec.2.1
-                    · simp [hjm] at hdom
-          · rw [T.dom, ite_eq_right hadd] at hdom
-            exact ih add (T.add_size_lt_P ls add) hdom
-
 theorem T.outer0_Omega_not_le {lam : Nat}
     (ls : Vec (T lam) lam) (hls : Vec.outer0 ls)
     (m i : Fin lam)
@@ -204,9 +170,5 @@ theorem T.outerChain_dom_not_Omega {lam : Nat}
           · rw [T.dom, ite_eq_right hadd]
             exact ih add (T.add_size_lt_P ls add) ha
 
-theorem T.isOT_dom_not_Omega {lam : Nat} {s : T lam}
-    (hs : T.isOT lam s) (i : Fin lam) :
-    T.dom s ≠ .Omega i :=
-  T.outerChain_dom_not_Omega s (T.isOT_outerChain hs) i
 
 end new
