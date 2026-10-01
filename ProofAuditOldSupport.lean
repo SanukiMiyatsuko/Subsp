@@ -3,10 +3,10 @@ import Subsp
 import Subsp.old.stop_low_dims
 import Subsp.old.stop_collapse
 import Subsp.old.stop_nf_core
-import Subsp.old.stop_source_successor
+import Subsp.old.stop_source_support
 
 /-! Audit the completed legacy support lemmas independently of the open theorem.
-Run `lake build Subsp.old.stop_low_dims Subsp.old.stop_nf_core Subsp.old.stop_source_successor`, then
+Run `lake build Subsp.old.stop_low_dims Subsp.old.stop_nf_core Subsp.old.stop_source_support`, then
 `lake env lean ProofAuditOldSupport.lean`.
 `ProofAuditOld.lean` remains the complete audit, including `OT_SubNF_order_iso`.
 -/
