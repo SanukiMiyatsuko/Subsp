@@ -42,6 +42,22 @@ theorem transAux_countable_exact {lam k : Nat}
             simpa [new.Vec.idx, i.isLt] using h
           simpa [new.Vec.idx] using ih xs hxs
 
+theorem transAux_zeros {lam : Nat} (k : Nat) :
+    transAux
+      (new.Vec.ofFn k (fun _ => (new.T.Z : new.T lam))) =
+      (T.P 0 T.Z T.Z, T.Z) := by
+  cases k with
+  | zero => rfl
+  | succ k =>
+      have hv :
+          ∀ i : Fin (k + 1), 0 < i.val →
+            (new.Vec.ofFn (k + 1)
+              (fun _ => (new.T.Z : new.T lam))).idx i = new.T.Z := by
+        intro i hi
+        rw [new.Vec.ofFn_idx]
+      rw [transAux_countable_exact _ hv]
+      simp [new.Vec.ofFn_idx, transAux, _root_.trans]
+
 theorem transAux_countable_head_exact {lam k : Nat}
     (v : new.Vec (new.T lam) (k + 1))
     (hv : ∀ i : Fin (k + 1), 0 < i.val → v.idx i = new.T.Z) :
