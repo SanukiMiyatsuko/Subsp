@@ -139,6 +139,31 @@ theorem early_collapse_support_above (n u : Nat) (s : T) (hs : T.isNF1 s)
     T.G1 u (T.early_collapse n s) = [] :=
   index_Prop1_G1_empty n _ (early_collapse_closed n s hs hg).2 u hu
 
+theorem early_collapse_support_le (u n : Nat) (s : T)
+    (hun : u ≤ n) (hs : T.isNF1 s)
+    (hg : ∀ x : T, x ∈ T.G1 u s → x < s) :
+    ∀ x : T, x ∈ T.G1 u (T.early_collapse n s) → x ≤ s := by
+  intro x hx
+  rcases hp : T.part n s with ⟨a, b⟩
+  have hb : T.isNF1 b := by
+    simpa [hp] using (part_NF n s hs).2
+  have hmem : ∀ y : T, y ∈ T.G1 u a ++ T.G1 u b → y < s := by
+    intro y hy
+    apply hg y
+    rw [← part_add n s hs, hp, G1_add]
+    exact hy
+  simp only [T.early_collapse, hp] at hx
+  split at hx
+  · exact Or.inl (hmem x (List.mem_append_right _ hx))
+  · rw [T.stand, stand_eq_self b hb] at hx
+    split at hx
+    · simp only [T.G1, hun, ite_true, List.mem_append, List.mem_singleton] at hx
+      rcases hx with (rfl | hx) | hx
+      · simpa [hp] using part_first_le n s hs
+      · exact Or.inl (hmem x (List.mem_append_left _ hx))
+      · exact Or.inl (hmem x (List.mem_append_right _ hx))
+    · exact Or.inl (hmem x (List.mem_append_right _ hx))
+
 theorem early_collapse_ne_zero (n : Nat) (s : T) (hs : T.isNF1 s) (hne : s ≠ T.Z) :
     T.early_collapse n s ≠ T.Z := by
   have he := part_add n s hs
