@@ -18,6 +18,19 @@ theorem good_index_lt_wrap (k : Nat) (a b : T)
       · exact T.Lt.p_mid _ _ _ _ _ (hg c (by simp [T.G1]))
       · exact T.Lt.p_head _ _ _ _ _ _ hp
 
+theorem good_wrap_support (u k : Nat) (a : T)
+    (huk : u ≤ k) (hi : T.index_Prop1 k a)
+    (hgk : ∀ x : T, x ∈ T.G1 k a → x < a)
+    (hgu : ∀ x : T, x ∈ T.G1 u a → x < a) :
+    ∀ x : T, x ∈ T.G1 u (T.P k a T.Z) → x < T.P k a T.Z := by
+  intro x hx
+  have ha : a < T.P k a T.Z := good_index_lt_wrap k a T.Z hi hgk
+  simp only [T.G1, huk, ite_true, List.append_nil, List.mem_append,
+    List.mem_singleton] at hx
+  rcases hx with rfl | hx
+  · exact ha
+  · exact lt_trans_thm _ _ _ (hgu x hx) ha
+
 
 theorem order_preserve_bounded {lam : Nat} (N : Nat)
     (hgood : ∀ (s : new.T lam), new.T.size s < N →
