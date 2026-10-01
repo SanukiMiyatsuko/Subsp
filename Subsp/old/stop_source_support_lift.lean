@@ -69,9 +69,11 @@ theorem T.SDom_rplc_lower {lam : Nat}
               List.mem_append_left _
                 ((T.mem_Gi_P level mid add _).mpr
                   (Or.inl ⟨q, hlq, Or.inl rfl⟩)), ?_⟩
-            exact hbetween.2.1
-          · obtain ⟨y, hy, hxy⟩ :=
-              hinner.2 level (mid.idx q) hbetween.2.1 hbetween.2.2 y hx
+            simpa only [Vec.rplc_idx_same] using hbetween.2.1
+          · have hbmid : b ≤ mid.idx q := by
+              simpa only [Vec.rplc_idx_same] using hbetween.2.1
+            obtain ⟨y, hy, hxy⟩ :=
+              hinner.2 level (mid.idx q) hbmid hbetween.2.2 x hx
             refine ⟨y, ?_, hxy⟩
             rcases List.mem_append.mp hy with hy | hy
             · exact List.mem_append_left _
