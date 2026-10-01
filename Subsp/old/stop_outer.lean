@@ -112,7 +112,8 @@ theorem compareVec_countable_succ {lam k : Nat}
           cases w with
           | snoc _ ys b =>
               cases ys
-              simp [new.compareVec, new.Vec.idx]
+              cases h : new.compareT a b <;>
+                simp [new.compareVec, new.Vec.idx, h]
   | succ k ih =>
       cases v with
       | snoc _ xs a =>
