@@ -73,8 +73,10 @@ theorem T.SDom_rplc_lower {lam : Nat}
             exact hbetween.2.1
           have hbmid : b ≤ mid.idx q := by
             rwa [hqeq]
+          have hmidhi_m : mid.idx m ≤ ls.idx m := hbetween.2.2
           have hmidhi : mid.idx q ≤ ls.idx m := by
-            rwa [hqeq]
+            rw [hqeq]
+            exact hmidhi_m
           rcases hq with rfl | hx
           · refine ⟨mid.idx q,
               List.mem_append_left _
