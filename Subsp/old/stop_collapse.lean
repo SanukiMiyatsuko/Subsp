@@ -224,6 +224,18 @@ theorem early_collapse_ne_zero (n : Nat) (s : T) (hs : T.isNF1 s) (hne : s ≠ T
     exact hne he.symm
   · exact stand_ne_zero _ (fun h => by cases h)
 
+theorem part_first_head_gt (n p : Nat) (s a b : T)
+    (h : (T.part n s).1 = T.P p a b) : n < p := by
+  induction s with
+  | Z => cases h
+  | P q c d _ ih =>
+      by_cases hq : q ≤ n
+      · simp only [T.part, hq, ite_true] at h
+        exact ih h
+      · simp only [T.part, hq, ite_false] at h
+        cases h
+        omega
+
 theorem part_first_fixed (n : Nat) (s : T) :
     T.part n (T.part n s).1 = ((T.part n s).1, T.Z) := by
   induction s with
