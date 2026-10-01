@@ -142,4 +142,23 @@ theorem T.iter_fund_lt_next {lam : Nat}
   | nil => trivial
   | snoc => trivial
 
+
+theorem T.SDom_mul_PZ {lam : Nat}
+    (u v : Vec (T lam) lam) (t : T lam)
+    (hvec : compareVec u v = Ordering.lt)
+    (hbase : T.SDom T.Z (T.P u T.Z) (T.P v T.Z)) :
+    T.SDom T.Z (T.mul (T.P u T.Z) t) (T.P v T.Z) := by
+  refine ⟨T.mul_PZ_lt_of_compareVec_lt u v t hvec, ?_⟩
+  intro q c hmc hcv x hx
+  cases t with
+  | Z =>
+      rw [T.mul] at hx
+      cases hx
+  | P ts add =>
+      exact hbase.2 q c
+        (T.le_trans _ _ _
+          (T.P_le_P_same u T.Z _ (T.Z_le _)) hmc)
+        hcv x
+        (T.Gi_mul_PZ_subset q u (T.P ts add) x hx)
+
 end new
