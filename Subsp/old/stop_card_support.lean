@@ -124,8 +124,9 @@ theorem cardArg_support_bound (u n p : Nat) (a b c : T)
     have hnp : n ≤ p := Nat.le_of_not_gt hpn
     have hup : u ≤ p := Nat.le_trans hun hnp
     split
-    · intro x hx
-      simp only [T.G1, hup, ite_true, List.mem_append, List.mem_singleton] at hx
+    · obtain ⟨rfl, _⟩ := ‹p = n ∧ _›
+      intro x hx
+      simp only [T.G1, hun, ite_true, List.mem_append, List.mem_singleton] at hx
       rcases hx with (rfl | hx) | hx
       · exact T.Z_le c
       · cases hx
@@ -181,8 +182,9 @@ theorem cardArg_support_witness (u n p : Nat) (a b : T)
     have hnp : n ≤ p := Nat.le_of_not_gt hpn
     have hup : u ≤ p := Nat.le_trans hun hnp
     split
-    · intro x hx
-      simp only [T.G1, hup, ite_true, List.mem_append, List.mem_singleton] at hx
+    · obtain ⟨rfl, _⟩ := ‹p = n ∧ _›
+      intro x hx
+      simp only [T.G1, hun, ite_true, List.mem_append, List.mem_singleton] at hx
       rcases hx with (rfl | hx) | hx
       · exact ⟨a, by simp [T.G1, hup], T.Z_le a⟩
       · cases hx
@@ -249,7 +251,7 @@ theorem card_times_support_bound (u n : Nat) (hun : u ≤ n) :
           apply hsup y
           by_cases hup : u ≤ p <;> simp [T.G1, hup, hy]
         rcases ih c hb_le hbsup x hx with h | h
-        · exact Or.inl (lt_trans_thm T _ _ _ h
+        · exact Or.inl (lt_trans_thm _ _ _ h
             (NF_tail_lt (max p n) (cardArg n p a) (T.card_times n b) hcardNF))
         · exact Or.inr h
 
