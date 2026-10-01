@@ -503,4 +503,215 @@ theorem aux_head_support_decomp {lam k : Nat} (u : Nat)
               intro x hx
               simp [T.G1, huk] at hx
 
+
+theorem aux_lower_support_below {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (hv : VecGood v) (C : T)
+    (hcoord : ∀ i : Fin k, u ≤ i.val → trans (v.idx i) < C)
+    (hsupport : ∀ i : Fin k, u ≤ i.val →
+      ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) → y < C) :
+    ∀ x : T, x ∈ T.G1 u (transAux v).2 →
+      x < (transAux v).2 ∨ x < C := by
+  induction v with
+  | nil =>
+      intro x hx
+      cases hx
+  | snoc k v a ih =>
+      have ha := VecGood_last v a hv
+      have hp := VecGood_prefix v a hv
+      have hcoordPrefix :
+          ∀ i : Fin k, u ≤ i.val → trans (v.idx i) < C := by
+        intro i hui
+        simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
+          hcoord i.castSucc hui
+      have hsupportPrefix :
+          ∀ i : Fin k, u ≤ i.val →
+            ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) → y < C := by
+        intro i hui y hy
+        simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
+          hsupport i.castSucc hui y hy
+      by_cases hku : k < u
+      · have hi := (aux_lower_closed (.snoc k v a) hv).2.1
+        have hemp : T.G1 u (transAux (.snoc k v a)).2 = [] := by
+          apply index_Prop1_G1_empty k _ ?_ u hku
+          simpa using hi
+        rw [hemp]
+        intro x hx
+        cases hx
+      · have huk : u ≤ k := Nat.le_of_not_gt hku
+        have hcoordLast : trans a < C := by
+          simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
+            hcoord (Fin.last k) huk
+        have hsupportLast :
+            ∀ y : T, y ∈ T.G1 u (trans a) → y < C := by
+          simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
+            hsupport (Fin.last k) huk
+        cases k with
+        | zero =>
+            cases v
+            rw [aux_single]
+            intro x hx
+            rcases early_collapse_support_source u 0 (trans a) huk ha.1 x hx with h | h
+            · exact Or.inr (lt_of_le_of_lt_thm T _ _ _ h hcoordLast)
+            · exact Or.inr (hsupportLast x h)
+        | succ k =>
+            rw [aux_lower_snoc]
+            intro x hx
+            rw [G1_add] at hx
+            rcases hx with hx | hx
+            · have hec := early_collapse_closed (k + 1) (trans a) ha.1 ha.2
+              have hdecEc :
+                  ∀ y : T, y ∈ T.G1 u (T.early_collapse (k + 1) (trans a)) →
+                    y < C := by
+                intro y hy
+                rcases early_collapse_support_source u (k + 1) (trans a)
+                    huk ha.1 y hy with h | h
+                · exact lt_of_le_of_lt_thm T _ _ _ h hcoordLast
+                · exact hsupportLast y h
+              have hecC : T.early_collapse (k + 1) (trans a) ≤ C :=
+                partial_order.trans _ _ _
+                  (early_collapse_le_self (k + 1) (trans a) ha.1)
+                  (Or.inl hcoordLast)
+              rcases card_times_support_decomp u (k + 1) huk
+                  (fun _ : T => False)
+                  (fun _ _ _ h => False.elim h)
+                  (T.early_collapse (k + 1) (trans a)) C hec.1 hecC
+                  (fun y hy => Or.inl (hdecEc y hy)) x hx with h | h | h
+              · exact Or.inl
+                  (lt_of_lt_of_le_thm T _ _ _ h (add_self_le _ _))
+              · exact Or.inr h
+              · cases h
+            · rcases ih hp C hcoordPrefix hsupportPrefix x hx with h | h
+              · have hnf := (aux_lower_closed (.snoc (k + 1) v a) hv).1
+                rw [aux_lower_snoc] at hnf
+                exact Or.inl (lt_of_lt_of_le_thm T _ _ _ h
+                  (add_right_le_of_NF _ _ hnf))
+              · exact Or.inr h
+
+theorem aux_head_support_below {lam k : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) k) (hv : VecGood v)
+    (C : T) (hheadC : T.head C = (transAux v).1)
+    (hcoord : ∀ i : Fin k, u ≤ i.val → trans (v.idx i) < C)
+    (hsupport : ∀ i : Fin k, u ≤ i.val →
+      ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) → y < C) :
+    ∀ x : T, x ∈ T.G1 u (transAux v).1 → x < C := by
+  have hheadLe : (transAux v).1 ≤ C := by
+    rw [← hheadC]
+    exact head_le_self C
+  induction v with
+  | nil =>
+      intro x hx
+      by_cases hu : u ≤ 0
+      · simp [transAux, T.G1, hu] at hx
+        subst x
+        exact lt_of_lt_of_le_thm T _ _ _
+          (T.Lt.Z_lt_P 0 T.Z T.Z) hheadLe
+      · simp [transAux, T.G1, hu] at hx
+  | snoc k v a ih =>
+      have ha := VecGood_last v a hv
+      have hp := VecGood_prefix v a hv
+      have hcoordPrefix :
+          ∀ i : Fin k, u ≤ i.val → trans (v.idx i) < C := by
+        intro i hui
+        simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
+          hcoord i.castSucc hui
+      have hsupportPrefix :
+          ∀ i : Fin k, u ≤ i.val →
+            ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) → y < C := by
+        intro i hui y hy
+        simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
+          hsupport i.castSucc hui y hy
+      cases k with
+      | zero =>
+          cases v
+          by_cases hu : u ≤ 0
+          · have hcoordLast : trans a < C := by
+              simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
+                hcoord (Fin.last 0) hu
+            have hsupportLast :
+                ∀ y : T, y ∈ T.G1 u (trans a) → y < C := by
+              simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
+                hsupport (Fin.last 0) hu
+            rw [aux_single]
+            intro x hx
+            simp only [T.G1, hu, ite_true, List.append_nil,
+              List.mem_append, List.mem_singleton] at hx
+            rcases hx with rfl | hx
+            · exact hcoordLast
+            · exact hsupportLast x hx
+          · rw [aux_single]
+            intro x hx
+            simp [T.G1, hu] at hx
+      | succ k =>
+          by_cases haz : a = new.T.Z
+          · subst a
+            have hheadPrefix : T.head C = (transAux v).1 := by
+              rw [← aux_zero_tail v]
+              exact hheadC
+            intro x hx
+            rw [aux_zero_tail] at hx
+            exact ih hp C hheadPrefix hcoordPrefix hsupportPrefix x hx
+          · by_cases huk : u ≤ k + 1
+            · have hcoordLast : trans a < C := by
+                simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
+                  hcoord (Fin.last (k + 1)) huk
+              have hsupportLast :
+                  ∀ y : T, y ∈ T.G1 u (trans a) → y < C := by
+                simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
+                  hsupport (Fin.last (k + 1)) huk
+              let M := T.add
+                (T.card_times (k + 1) (T.one_del (trans a))) (transAux v).2
+              have hMlt : M < T.P (k + 1) M T.Z :=
+                aux_positive_middle_lt_of_head v a hv haz C hheadC hcoordLast
+              have hwrapC : T.P (k + 1) M T.Z ≤ C := by
+                rw [← aux_head_snoc v a haz, ← hheadC]
+                exact head_le_self C
+              rw [aux_head_snoc v a haz]
+              intro x hx
+              simp only [T.G1, huk, ite_true, List.append_nil,
+                List.mem_append, List.mem_singleton] at hx
+              rcases hx with rfl | hx
+              · exact lt_of_lt_of_le_thm T _ _ _ hMlt hwrapC
+              · dsimp only [M] at hx
+                rw [G1_add] at hx
+                rcases hx with hx | hx
+                · have hdelNF : T.isNF1 (T.one_del (trans a)) := one_del_NF _ ha.1
+                  have hdelC : T.one_del (trans a) ≤ C :=
+                    partial_order.trans _ _ _ (one_del_le _ ha.1) (Or.inl hcoordLast)
+                  have hdecDel :
+                      ∀ y : T, y ∈ T.G1 u (T.one_del (trans a)) →
+                        y < C ∨ False := by
+                    intro y hy
+                    exact Or.inl (hsupportLast y
+                      (one_del_G1_subset u (trans a) y hy))
+                  rcases card_times_support_decomp u (k + 1) huk
+                      (fun _ : T => False) (fun _ _ _ h => False.elim h)
+                      (T.one_del (trans a)) C hdelNF hdelC hdecDel x hx with
+                    h | h | h
+                  · have hxM : x < M := by
+                      dsimp only [M]
+                      exact lt_of_lt_of_le_thm T _ _ _ h (add_self_le _ _)
+                    exact lt_of_lt_of_le_thm T _ _ _
+                      (lt_trans_thm _ _ _ hxM hMlt) hwrapC
+                  · exact h
+                  · cases h
+                · rcases aux_lower_support_below u v hp C
+                    hcoordPrefix hsupportPrefix x hx with h | h
+                  · have hlower := aux_lower_closed v hp
+                    have hMNF :
+                        T.isNF1 M := by
+                      dsimp only [M]
+                      exact card_times_append_closed (k + 1)
+                        (T.one_del (trans a)) (transAux v).2
+                        (one_del_NF _ ha.1) hlower.1 hlower.2.2
+                    have hxM : x < M := by
+                      dsimp only [M] at hMNF ⊢
+                      exact lt_of_lt_of_le_thm T _ _ _ h
+                        (add_right_le_of_NF _ _ hMNF)
+                    exact lt_of_lt_of_le_thm T _ _ _
+                      (lt_trans_thm _ _ _ hxM hMlt) hwrapC
+                  · exact h
+            · rw [aux_head_snoc v a haz]
+              intro x hx
+              simp [T.G1, huk] at hx
+
 end LegacyTranslation
