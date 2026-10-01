@@ -388,6 +388,30 @@ theorem early_collapse_lt (n : Nat) (s t : T) (hs : T.isNF1 s)
     · rw [T.early_collapse, ite_eq_right hz, T.early_collapse, ← he, ite_eq_right hz]
       exact stand_insert_lt n _ _ _ (part_NF n s hs).2 (part_NF n t ht).2 h
 
+theorem early_collapse_le_self (n : Nat) (s : T) (hs : T.isNF1 s) :
+    T.early_collapse n s ≤ s := by
+  rcases hp : T.part n s with ⟨a, b⟩
+  have he : T.add a b = s := by
+    simpa [hp] using part_add n s hs
+  have hbNF : T.isNF1 b := by
+    simpa [hp] using (part_NF n s hs).2
+  have hb_le : b ≤ s := by
+    have h := add_right_le_of_NF a b (he.symm ▸ hs)
+    rwa [he] at h
+  simp only [T.early_collapse, hp]
+  split
+  · simpa [‹a = T.Z›] using hb_le
+  · cases a with
+    | Z => exact False.elim (‹T.Z ≠ T.Z› rfl)
+    | P p c d =>
+        have hnp : n < p := part_first_head_gt n p s c d (by simp [hp])
+        rw [T.stand, stand_eq_self b hbNF]
+        split
+        · apply Or.inl
+          rw [← he, T.P_add_eq]
+          exact T.Lt.p_head _ _ _ _ _ _ hnp
+        · exact hb_le
+
 theorem early_collapse_le (n : Nat) (s t : T) (hs : T.isNF1 s)
     (hg : ∀ x ∈ T.G1 n s, x < s) (ht : T.isNF1 t) (hst : s ≤ t) :
     T.early_collapse n s ≤ T.early_collapse n t :=
