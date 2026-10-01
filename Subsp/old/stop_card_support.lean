@@ -77,6 +77,24 @@ theorem card_times_good (n : Nat) (s : T) (hs : T.isNF1 s)
   · exact h
   · exact lt_of_lt_of_le_thm T _ _ _ (hg x h) (card_times_self_le n s hs)
 
+theorem one_del_G1_subset (u : Nat) (s x : T)
+    (hx : x ∈ T.G1 u (T.one_del s)) :
+    x ∈ T.G1 u s := by
+  cases s with
+  | Z => exact hx
+  | P p a b =>
+      cases p with
+      | zero =>
+          cases a with
+          | Z =>
+              by_cases hu : u ≤ 0
+              · simp only [T.one_del, T.G1, hu, ite_true, List.mem_append,
+                  List.mem_singleton] at hx ⊢
+                exact Or.inr (Or.inr hx)
+              · simpa only [T.one_del, T.G1, hu, ite_false] using hx
+          | P q c d => exact hx
+      | succ p => exact hx
+
 theorem one_del_good_pos (n : Nat) (hn : 0 < n) (s : T) (hs : T.isNF1 s)
     (hg : ∀ x ∈ T.G1 n s, x < s) :
     ∀ x ∈ T.G1 n (T.one_del s), x < T.one_del s := by
