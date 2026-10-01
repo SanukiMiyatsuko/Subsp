@@ -23,4 +23,19 @@ theorem trans_mul {lam : Nat} (s t : new.T lam) :
   | nil => trivial
   | snoc => trivial
 
+
+theorem trans_iter {lam : Nat}
+    (F : new.T lam → new.T lam) (G : T → T)
+    (hFG : ∀ x, trans (F x) = G (trans x))
+    (t : new.T lam) :
+    trans (new.T.iter F t) = T.iter G (trans t) := by
+  induction t using new.T.rec (motive_2 := fun _ _ => True) with
+  | Z => rfl
+  | P v a _ ih =>
+      rw [new.T.iter, hFG, _root_.trans.eq_2]
+      rcases haux : transAux v with ⟨head, lower⟩
+      simp only [haux, T.iter, ih]
+  | nil => trivial
+  | snoc => trivial
+
 end LegacyTranslation
