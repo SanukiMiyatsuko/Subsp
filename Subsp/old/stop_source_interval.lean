@@ -42,7 +42,8 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
         · obtain rfl := Fin.eq_of_val_eq heq
           have hc := T_trans _ _ _ hpLt hqLt
           rw [← heqAbove q hip] at hc
-          exact strict_partial_order.irrefl _ hc
+          simp only [T_refl] at hc
+          cases hc
         · rw [← hpEq q hpq, heqAbove q (by omega)] at hqLt
           exact strict_partial_order.irrefl _ hqLt
       · rw [← heqAbove p hip] at hpLt
@@ -107,9 +108,11 @@ theorem T.SDom_rplc_min {lam : Nat}
               List.mem_append_left _
                 ((T.mem_Gi_P u mid add _).mpr
                   (Or.inl ⟨q, huq, Or.inl rfl⟩)), ?_⟩
-            exact hbetween.2.1
+            simpa only [Vec.rplc_idx_same] using hbetween.2.1
           · obtain ⟨y, hy, hxy⟩ :=
-              hinner.2 u (mid.idx q) hbetween.2.1 hbetween.2.2 y hx
+              hinner.2 u (mid.idx q)
+                (by simpa only [Vec.rplc_idx_same] using hbetween.2.1)
+                hbetween.2.2 x hx
             refine ⟨y, ?_, hxy⟩
             rcases List.mem_append.mp hy with hy | hy
             · exact List.mem_append_left _
