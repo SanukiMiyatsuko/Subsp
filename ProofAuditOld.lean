@@ -1,9 +1,9 @@
 import Lean
 import Subsp
-import Subsp.new.stop
+import Subsp.old.stop
 
 /-! Audit every definition and theorem in the project, including generated proofs.
-Run `lake build Subsp Subsp.new.stop`, then `lake env lean ProofAuditNew.lean`.
+Run `lake build Subsp Subsp.old.stop`, then `lake env lean ProofAuditOld.lean`.
 -/
 
 open Lean Elab Command in
