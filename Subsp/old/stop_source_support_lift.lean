@@ -5,33 +5,6 @@ import Subsp.old.stop_source_interval
 
 namespace new
 
-theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
-    (u v : Vec (T lam) lam) (t : T lam)
-    (hvec : compareVec u v = Ordering.lt) :
-    T.mul (T.P u T.Z) t < T.P v T.Z := by
-  cases t with
-  | Z => exact .Z_lt_P _ _ _
-  | P ts add =>
-      rw [T.mul]
-      exact T.P_lt_P_of_compareVec_lt _ _ _ _ hvec
-
-theorem T.SDom_mul_PZ {lam : Nat}
-    (u v : Vec (T lam) lam) (t : T lam)
-    (hvec : compareVec u v = Ordering.lt)
-    (hbase : T.SDom T.Z (T.P u T.Z) (T.P v T.Z)) :
-    T.SDom T.Z (T.mul (T.P u T.Z) t) (T.P v T.Z) := by
-  refine ⟨T.mul_PZ_lt_of_compareVec_lt u v t hvec, ?_⟩
-  intro level c hmc hcv x hx
-  cases t with
-  | Z => cases hx
-  | P ts add =>
-      apply hbase.2 level c
-        (T.le_trans _ _ _
-          (T.P_le_P_same u T.Z _
-            (T.Z_le (T.mul (T.P u T.Z) add))) hmc)
-        hcv x
-      exact T.Gi_mul_PZ_subset level u (T.P ts add) x hx
-
 theorem T.SDom_rplc_lower {lam : Nat}
     (z : T lam) (ls : Vec (T lam) lam)
     (m j : Fin lam) (d : Dom lam) (b : T lam)
@@ -118,5 +91,6 @@ theorem T.SDom_rplc_lower {lam : Nat}
             ((T.mem_Gi_P level mid add x).mpr
               (Or.inl ⟨q, hlq, hq⟩)), T.le_refl _⟩
       · cases ht
+
 
 end new
