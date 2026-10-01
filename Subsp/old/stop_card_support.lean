@@ -152,6 +152,35 @@ theorem cardArg_head_or_bound (u n p : Nat) (a b tail c : T)
       apply hg a
       simp [T.G1, hup]
 
+theorem card_times_support_bound (u n : Nat) (hun : u ≤ n) :
+    ∀ s c : T, T.isNF1 s → s ≤ c →
+      (∀ x : T, x ∈ T.G1 u s → x ≤ c) →
+      ∀ x : T, x ∈ T.G1 u (T.card_times n s) →
+        x < T.card_times n s ∨ x ≤ c := by
+  intro s c hs hsc hsup
+  induction hs generalizing c with
+  | z =>
+      intro x hx
+      cases hx
+  | p p a b ha hb hga hh _ ih =>
+      have hsfull : T.isNF1 (T.P p a b) := .p p a b ha hb hga hh
+      rw [card_times_P]
+      have hum : u ≤ max p n := Nat.le_trans hun (Nat.le_max_right p n)
+      intro x hx
+      simp only [T.G1, hum, ite_true, List.mem_append, List.mem_singleton] at hx
+      rcases hx with (rfl | hx) | hx
+      · exact cardArg_head_or_bound u n p a b (T.card_times n b) c hun hsfull hsup
+      · exact Or.inr (cardArg_support_bound u n p a b c hun hsfull hsup x hx)
+      · have hb_le : b ≤ c := partial_order.trans _ _ _
+          (T.isNF1_tail_le _ hsfull p a b rfl) hsc
+        have hbsup : ∀ y : T, y ∈ T.G1 u b → y ≤ c := by
+          intro y hy
+          apply hsup y
+          by_cases hup : u ≤ p <;> simp [T.G1, hup, hy]
+        rcases ih c hb_le hbsup x hx with h | h
+        · exact Or.inl (T.Lt.p_tail _ _ _ _ h)
+        · exact Or.inr h
+
 theorem card_times_good (n : Nat) (s : T) (hs : T.isNF1 s)
     (hg : ∀ x ∈ T.G1 n s, x < s) :
     ∀ x ∈ T.G1 n (T.card_times n s), x < T.card_times n s := by
