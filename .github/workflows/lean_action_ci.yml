@@ -13,6 +13,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
       - name: Build legacy stop theorem
-        run: lake build Subsp.old.stop
+        run: lake build Subsp.old.stop_nf_core Subsp.old.stop_ot_comp0 Subsp.old.stop
       - name: Audit legacy declarations
         run: lake env lean ProofAuditOld.lean
