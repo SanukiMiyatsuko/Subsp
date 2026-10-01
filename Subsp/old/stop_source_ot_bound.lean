@@ -32,7 +32,7 @@ theorem T.isOT_sound_bound (lam : Nat) (s : T lam)
     T.isNF s ∧ (1 < lam → s < T.otBound lam) := by
   induction hs with
   | base_0 n =>
-      exact ⟨T.LF_isNF 0 n, by intro h; omega⟩
+      exact ⟨T.LF_isNF 0 n, by intro h; exact False.elim (Nat.not_lt_zero _ h)⟩
   | base_succ k n =>
       exact ⟨T.base_succ_isNF k n, T.base_succ_lt_otBound k n⟩
   | step lam a _ n ih =>
