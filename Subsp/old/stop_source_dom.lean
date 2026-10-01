@@ -52,4 +52,15 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
         intro h
         cases h
 
+
+theorem Vec.compare_rplc_same_index_lt {lam m : Nat}
+    (v : Vec (T lam) m) (i : Fin m)
+    (a b : T lam) (hab : a < b) :
+    compareVec (v.rplc i a) (v.rplc i b) = Ordering.lt := by
+  apply Vec.compare_lt_of_pivot _ _ i
+  · intro j hij
+    rw [Vec.rplc_idx_of_ne _ _ _ _ (Nat.ne_of_gt hij),
+      Vec.rplc_idx_of_ne _ _ _ _ (Nat.ne_of_gt hij)]
+  · simpa only [Vec.rplc_idx_same] using hab
+
 end new
