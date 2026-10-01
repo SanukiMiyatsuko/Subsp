@@ -55,7 +55,12 @@ theorem T.fund_PZ_one_pos_NFComp {lam : Nat}
         T.isNFComp_rplc_lower u
           (ls.rplc ⟨r + 1, mh⟩
             (T.fund (ls.idx ⟨r + 1, mh⟩) T.Z))
-          j z (by dsimp [j]; omega) hbaseComp hfinalNF
+          j z (by dsimp [j]; omega)
+          (by
+            rw [Vec.rplc_idx_of_ne _ _ _ _ (by dsimp [j]; omega)]
+            exact T.dom_zero_eq_Z _
+              (hspec.2.2 j (by dsimp [j]; omega)))
+          hbaseComp hfinalNF
       rw [T.fund, ite_eq_left rfl, hmin]
       exact hfinalComp
 
