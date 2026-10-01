@@ -261,4 +261,58 @@ theorem aux_lower_support_decomp {lam k : Nat} (u : Nat)
                   (add_right_le_of_NF _ _ hnf))
               · exact Or.inr (VecWitness_prefix u v a x h)
 
+
+theorem aux_positive_middle_lt {lam k : Nat}
+    (v : new.Vec (new.T lam) (k + 1)) (a tail : new.T lam)
+    (hv : VecGood (.snoc (k + 1) v a))
+    (hane : a ≠ new.T.Z)
+    (halt : trans a < trans (new.T.P (.snoc (k + 1) v a) tail)) :
+    let M := T.add
+      (T.card_times (k + 1) (T.one_del (trans a))) (transAux v).2
+    M < T.P (k + 1) M T.Z := by
+  let M := T.add
+    (T.card_times (k + 1) (T.one_del (trans a))) (transAux v).2
+  have ha := VecGood_last v a hv
+  have hp := VecGood_prefix v a hv
+  have htrane : trans a ≠ T.Z := trans_ne_zero_of_ne_zero a hane
+  cases hta : trans a with
+  | Z => exact False.elim (htrane hta)
+  | P p c d =>
+      have hhead :
+          T.head (trans a) ≤
+            T.head (trans (new.T.P (.snoc (k + 1) v a) tail)) :=
+        T.head_mono_le _ _ (Or.inl halt)
+      rw [trans_P_head, aux_head_snoc v a hane] at hhead
+      change T.P p c T.Z ≤ T.P (k + 1) M T.Z at hhead
+      have hpk : p ≤ k + 1 := T.head_le_index p (k + 1) c M hhead
+      have htaNF : T.isNF1 (T.P p c d) := by simpa [hta] using ha.1
+      have hidxTa : T.index_Prop1 (k + 1) (trans a) := by
+        rw [hta]
+        exact T.isNF1_index (k + 1) p c d htaNF hpk
+      have hdelIdx : T.index_Prop1 (k + 1) (T.one_del (trans a)) :=
+        one_del_index (k + 1) _ hidxTa
+      have hcardIdx :
+          T.index_Prop1 (k + 1)
+            (T.card_times (k + 1) (T.one_del (trans a))) := by
+        simpa only [Nat.max_self] using
+          card_times_index (k + 1) (k + 1) _ hdelIdx
+      have hlower := aux_lower_closed v hp
+      have hlowerIdx :
+          T.index_Prop1 (k + 1) (transAux v).2 :=
+        Rank1Termination.index_mono (by omega) _ hlower.2.1
+      have hMIdx : T.index_Prop1 (k + 1) M := by
+        dsimp only [M]
+        exact Rank1Termination.index_add (k + 1) _ _ hcardIdx hlowerIdx
+      have hdelNF : T.isNF1 (T.one_del (trans a)) := one_del_NF _ ha.1
+      have hdelGood :
+          ∀ x : T, x ∈ T.G1 (k + 1) (T.one_del (trans a)) →
+            x < T.one_del (trans a) :=
+        one_del_good_pos (k + 1) (Nat.zero_lt_succ k) _ ha.1 ha.2
+      have hMGood :
+          ∀ x : T, x ∈ T.G1 (k + 1) M → x < M := by
+        dsimp only [M]
+        exact card_times_append_good (k + 1) k (Nat.lt_succ_self k)
+          _ _ hdelNF hdelGood hlower.2.1
+      exact good_index_lt_wrap (k + 1) M T.Z hMIdx hMGood
+
 end LegacyTranslation
