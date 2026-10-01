@@ -41,7 +41,7 @@ theorem T.isOT_sound_bound (lam : Nat) (s : T lam)
       by_cases haz : a = T.Z
       · subst a
         rw [T.fund]
-        exact T.Lt.Z_lt_P _ _ _
+        rfl
       · exact strict_partial_order.trans _ _ _
           (T.fund_lt_self a (T.ofNat n) haz) (ih.2 hlam)
 
