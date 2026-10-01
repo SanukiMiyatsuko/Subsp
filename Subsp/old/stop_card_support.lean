@@ -118,6 +118,40 @@ theorem cardArg_support_bound (u n p : Nat) (a b c : T)
       · exact support_arg hup x hx
     · exact support_arg hup
 
+theorem cardArg_head_or_bound (u n p : Nat) (a b tail c : T)
+    (hun : u ≤ n) (hs : T.isNF1 (T.P p a b))
+    (hg : ∀ x : T, x ∈ T.G1 u (T.P p a b) → x ≤ c) :
+    cardArg n p a < T.P (max p n) (cardArg n p a) tail ∨
+      cardArg n p a ≤ c := by
+  obtain ⟨ha, _, hga, _⟩ := T.isNF1_P_inv p a b hs
+  by_cases hpn : p < n
+  · have hm : max p n = n := Nat.max_eq_right (Nat.le_of_lt hpn)
+    have hiP := cardArg_index_of_lt n p a ha hga hpn
+    have hiN : T.index_Prop1 n (cardArg n p a) :=
+      Rank1Termination.index_mono (Nat.le_of_lt hpn) _ hiP
+    have hclosed := cardArg_closed n p a ha hga
+    have hgood : ∀ x : T, x ∈ T.G1 n (cardArg n p a) → x < cardArg n p a := by
+      simpa only [hm] using hclosed.2
+    apply Or.inl
+    rw [hm]
+    cases hiN with
+    | z => exact T.Lt.Z_lt_P _ _ _
+    | p q d e hq _ =>
+        rcases Nat.eq_or_lt_of_le hq with rfl | hq
+        · exact T.Lt.p_mid _ _ _ _ _ (hgood d (by simp [T.G1]))
+        · exact T.Lt.p_head _ _ _ _ _ _ hq
+  · have hnp : n ≤ p := Nat.le_of_not_gt hpn
+    have hm : max p n = p := Nat.max_eq_left hnp
+    rw [hm]
+    unfold cardArg
+    rw [ite_eq_right hpn]
+    split
+    · exact Or.inl (T.Lt.p_mid _ _ _ _ _ (T.Lt.Z_lt_P _ _ _))
+    · apply Or.inr
+      have hup : u ≤ p := Nat.le_trans hun hnp
+      apply hg a
+      simp [T.G1, hup]
+
 theorem card_times_good (n : Nat) (s : T) (hs : T.isNF1 s)
     (hg : ∀ x ∈ T.G1 n s, x < s) :
     ∀ x ∈ T.G1 n (T.card_times n s), x < T.card_times n s := by
