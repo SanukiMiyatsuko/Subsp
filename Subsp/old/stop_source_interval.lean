@@ -43,6 +43,7 @@ theorem Vec.interval_pivot_properties {lam m : Nat}
           have hc := T_trans _ _ _ hpLt hqLt
           rw [← heqAbove q hip] at hc
           simp only [T_refl] at hc
+          cases hc
         · rw [← hpEq q hpq, heqAbove q (by omega)] at hqLt
           exact strict_partial_order.irrefl _ hqLt
       · rw [← heqAbove p hip] at hpLt
