@@ -118,6 +118,63 @@ theorem cardArg_support_bound (u n p : Nat) (a b c : T)
       · exact support_arg hup x hx
     · exact support_arg hup
 
+theorem cardArg_support_witness (u n p : Nat) (a b : T)
+    (hun : u ≤ n) (hs : T.isNF1 (T.P p a b)) :
+    ∀ x : T, x ∈ T.G1 u (cardArg n p a) →
+      ∃ y : T, y ∈ T.G1 u (T.P p a b) ∧ x ≤ y := by
+  obtain ⟨ha, _, hga, _⟩ := T.isNF1_P_inv p a b hs
+  by_cases hpn : p < n
+  · unfold cardArg
+    rw [ite_eq_left hpn]
+    by_cases hup : u ≤ p
+    · have hec := early_collapse_closed p a ha hga
+      have lift_ec :
+          ∀ x : T, x ∈ T.G1 u (T.early_collapse p a) →
+            ∃ y : T, y ∈ T.G1 u (T.P p a b) ∧ x ≤ y := by
+        intro x hx
+        rcases early_collapse_support_source u p a hup ha x hx with h | h
+        · exact ⟨a, by simp [T.G1, hup], h⟩
+        · exact ⟨x, by simp [T.G1, hup, h], Or.inr rfl⟩
+      by_cases hp : p = 0
+      · rw [ite_eq_left hp]
+        exact lift_ec
+      · rw [ite_eq_right hp, T.stand, stand_eq_self _ hec.1]
+        split
+        · intro x hx
+          simp only [T.G1, hup, ite_true, List.append_nil,
+            List.mem_append, List.mem_singleton] at hx
+          rcases hx with rfl | hx
+          · exact ⟨a, by simp [T.G1, hup], T.Z_le a⟩
+          · exact lift_ec x hx
+        · exact lift_ec
+    · have hpu : p < u := Nat.lt_of_not_ge hup
+      have hemp : T.G1 u (T.early_collapse p a) = [] :=
+        early_collapse_support_above p u a ha hga hpu
+      by_cases hp : p = 0
+      · rw [ite_eq_left hp, hemp]
+        intro x hx
+        cases hx
+      · rw [ite_eq_right hp, T.stand,
+          stand_eq_self _ (early_collapse_closed p a ha hga).1]
+        split
+        · simp [T.G1, hup, hemp]
+        · rw [hemp]
+          intro x hx
+          cases hx
+  · unfold cardArg
+    rw [ite_eq_right hpn]
+    have hnp : n ≤ p := Nat.le_of_not_gt hpn
+    have hup : u ≤ p := Nat.le_trans hun hnp
+    split
+    · intro x hx
+      simp only [T.G1, hup, ite_true, List.mem_append, List.mem_singleton] at hx
+      rcases hx with (rfl | hx) | hx
+      · exact ⟨a, by simp [T.G1, hup], T.Z_le a⟩
+      · cases hx
+      · exact ⟨x, by simp [T.G1, hup, hx], Or.inr rfl⟩
+    · intro x hx
+      exact ⟨x, by simp [T.G1, hup, hx], Or.inr rfl⟩
+
 theorem cardArg_head_or_bound (u n p : Nat) (a b tail c : T)
     (hun : u ≤ n) (hs : T.isNF1 (T.P p a b))
     (hg : ∀ x : T, x ∈ T.G1 u (T.P p a b) → x ≤ c) :
