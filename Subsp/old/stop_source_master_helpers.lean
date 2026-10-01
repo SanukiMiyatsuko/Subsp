@@ -14,7 +14,9 @@ theorem T.head_fund_le {lam : Nat}
     (s t : T lam) :
     T.head (T.fund s t) ≤ T.head s := by
   cases s with
-  | Z => exact T.le_refl _
+  | Z =>
+      rw [T.fund]
+      exact T.le_refl _
   | P ls add =>
       exact T.head_mono _ _
         (T.fund_lt_self (T.P ls add) t (by intro h; cases h))
