@@ -69,6 +69,19 @@ theorem card_times_support (n : Nat) (s : T) (hs : T.isNF1 s) :
         · apply Or.inr
           by_cases hnp' : n ≤ p <;> simp [T.G1, hnp', h]
 
+theorem indexed_good_lt_wrap (n : Nat) (a tail : T)
+    (hi : T.index_Prop1 n a)
+    (hg : ∀ x : T, x ∈ T.G1 n a → x < a) :
+    a < T.P n a tail := by
+  cases a with
+  | Z => exact .Z_lt_P _ _ _
+  | P q d e =>
+      cases hi with
+      | p _ _ _ hq _ =>
+          rcases Nat.eq_or_lt_of_le hq with rfl | hq
+          · exact .p_mid _ _ _ _ _ (hg d (by simp [T.G1]))
+          · exact .p_head _ _ _ _ _ _ hq
+
 theorem cardArg_support_bound (u n p : Nat) (a b c : T)
     (hun : u ≤ n) (hs : T.isNF1 (T.P p a b))
     (hg : ∀ x : T, x ∈ T.G1 u (T.P p a b) → x ≤ c) :
@@ -97,14 +110,15 @@ theorem cardArg_support_bound (u n p : Nat) (a b c : T)
       have hemp : T.G1 u (T.early_collapse p a) = [] :=
         early_collapse_support_above p u a ha hga hpu
       by_cases hp : p = 0
-      · rw [ite_eq_left hp, hemp]
+      · rw [ite_eq_left hp]
         intro x hx
+        rw [hemp] at hx
         cases hx
       · rw [ite_eq_right hp, T.stand, stand_eq_self _ (early_collapse_closed p a ha hga).1]
         split
         · simp [T.G1, hup, hemp]
-        · rw [hemp]
-          intro x hx
+        · intro x hx
+          rw [hemp] at hx
           cases hx
   · rw [ite_eq_right hpn]
     have hnp : n ≤ p := Nat.le_of_not_gt hpn
@@ -151,15 +165,16 @@ theorem cardArg_support_witness (u n p : Nat) (a b : T)
       have hemp : T.G1 u (T.early_collapse p a) = [] :=
         early_collapse_support_above p u a ha hga hpu
       by_cases hp : p = 0
-      · rw [ite_eq_left hp, hemp]
+      · rw [ite_eq_left hp]
         intro x hx
+        rw [hemp] at hx
         cases hx
       · rw [ite_eq_right hp, T.stand,
           stand_eq_self _ (early_collapse_closed p a ha hga).1]
         split
         · simp [T.G1, hup, hemp]
-        · rw [hemp]
-          intro x hx
+        · intro x hx
+          rw [hemp] at hx
           cases hx
   · unfold cardArg
     rw [ite_eq_right hpn]
@@ -191,19 +206,16 @@ theorem cardArg_head_or_bound (u n p : Nat) (a b tail c : T)
       simpa only [hm] using hclosed.2
     apply Or.inl
     rw [hm]
-    cases hiN with
-    | z => exact T.Lt.Z_lt_P _ _ _
-    | p q d e hq _ =>
-        rcases Nat.eq_or_lt_of_le hq with rfl | hq
-        · exact T.Lt.p_mid _ _ _ _ _ (hgood d (by simp [T.G1]))
-        · exact T.Lt.p_head _ _ _ _ _ _ hq
+    exact indexed_good_lt_wrap n (cardArg n p a) tail hiN hgood
   · have hnp : n ≤ p := Nat.le_of_not_gt hpn
     have hm : max p n = p := Nat.max_eq_left hnp
     rw [hm]
     unfold cardArg
     rw [ite_eq_right hpn]
     split
-    · exact Or.inl (T.Lt.p_mid _ _ _ _ _ (T.Lt.Z_lt_P _ _ _))
+    · rcases Nat.eq_or_lt_of_le hnp with rfl | hnp
+      · exact Or.inl (T.Lt.p_mid _ _ _ _ _ (T.Lt.Z_lt_P _ _ _))
+      · exact Or.inl (T.Lt.p_head _ _ _ _ _ _ hnp)
     · apply Or.inr
       have hup : u ≤ p := Nat.le_trans hun hnp
       apply hg a
@@ -221,6 +233,8 @@ theorem card_times_support_bound (u n : Nat) (hun : u ≤ n) :
       cases hx
   | p p a b ha hb hga hh _ ih =>
       have hsfull : T.isNF1 (T.P p a b) := .p p a b ha hb hga hh
+      have hcardNF := card_times_closed n _ hsfull
+      rw [card_times_P] at hcardNF
       rw [card_times_P]
       have hum : u ≤ max p n := Nat.le_trans hun (Nat.le_max_right p n)
       intro x hx
@@ -235,7 +249,8 @@ theorem card_times_support_bound (u n : Nat) (hun : u ≤ n) :
           apply hsup y
           by_cases hup : u ≤ p <;> simp [T.G1, hup, hy]
         rcases ih c hb_le hbsup x hx with h | h
-        · exact Or.inl (T.Lt.p_tail _ _ _ _ h)
+        · exact Or.inl (lt_trans_thm T _ _ _ h
+            (NF_tail_lt (max p n) (cardArg n p a) (T.card_times n b) hcardNF))
         · exact Or.inr h
 
 theorem card_times_good (n : Nat) (s : T) (hs : T.isNF1 s)
@@ -259,7 +274,7 @@ theorem one_del_G1_subset (u : Nat) (s x : T)
               by_cases hu : u ≤ 0
               · simp only [T.one_del, T.G1, hu, ite_true, List.mem_append,
                   List.mem_singleton] at hx ⊢
-                exact Or.inr (Or.inr hx)
+                exact Or.inr hx
               · simpa only [T.one_del, T.G1, hu, ite_false] using hx
           | P q c d => exact hx
       | succ p => exact hx
