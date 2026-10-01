@@ -59,6 +59,26 @@ theorem trans_countable_P {k : Nat}
       T.P 0 (trans (v.idx ⟨0, Nat.zero_lt_succ k⟩)) (trans b) := by
   rw [trans_as_add, transAux_countable_head_exact v hv, T.P_add_eq, zero_add]
 
+theorem trans_base_succ (k n : Nat) :
+    trans
+      (new.T.P
+        (new.Vec.ofFn (k + 1)
+          (fun i =>
+            if i.val = 0 then new.T.LF (k + 1) n
+            else new.T.Z))
+        new.T.Z) =
+      T.P 0 (trans (new.T.LF (k + 1) n)) T.Z := by
+  have hv :
+      ∀ i : Fin (k + 1), 0 < i.val →
+        (new.Vec.ofFn (k + 1)
+          (fun j =>
+            if j.val = 0 then new.T.LF (k + 1) n
+            else new.T.Z)).idx i = new.T.Z := by
+    intro i hi
+    rw [new.Vec.ofFn_idx, ite_eq_right (Nat.ne_of_gt hi)]
+  rw [trans_countable_P _ _ hv, new.Vec.ofFn_idx]
+  rfl
+
 theorem compareVec_countable_succ {lam k : Nat}
     (v w : new.Vec (new.T lam) (k + 1))
     (hv : ∀ i : Fin (k + 1), 0 < i.val → v.idx i = new.T.Z)
