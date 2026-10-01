@@ -18,7 +18,7 @@ theorem T.dom_PZ_Omega_split {lam : Nat}
       cases hd
   | some md =>
       obtain ⟨m, d⟩ := md
-      refine ⟨m, d, hmin, ?_⟩
+      refine ⟨m, d, rfl, ?_⟩
       rw [hmin] at hd
       cases d with
       | zero => cases hd
@@ -33,7 +33,7 @@ theorem T.dom_PZ_Omega_split {lam : Nat}
           by_cases hjm : j ≤ m
           · simp only [hjm, ite_true] at hd
             cases hd
-            exact Or.inr ⟨j, rfl, hjm, rfl⟩
+            exact Or.inr ⟨i, rfl, hjm, rfl⟩
           · simp [hjm] at hd
 
 theorem T.dom_PZ_omega_split {lam : Nat}
@@ -52,7 +52,7 @@ theorem T.dom_PZ_omega_split {lam : Nat}
   | some md =>
       obtain ⟨m, d⟩ := md
       have hspec := T.domVecMinIdx_some_spec ls m d hmin
-      refine ⟨m, d, hmin, ?_⟩
+      refine ⟨m, d, rfl, ?_⟩
       rw [hmin] at hd
       cases d with
       | zero => exact False.elim (hspec.1 rfl)
