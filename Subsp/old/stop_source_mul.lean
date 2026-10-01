@@ -84,7 +84,7 @@ theorem T.mul_PZ_lt_of_compareVec_lt {lam : Nat}
   cases t with
   | Z =>
       rw [T.mul]
-      exact T.Z_lt_P _ _ _
+      exact .Z_lt_P _ _ _
   | P ts add =>
       rw [T.mul]
       change T.P u (T.mul (T.P u T.Z) add) < T.P v T.Z
