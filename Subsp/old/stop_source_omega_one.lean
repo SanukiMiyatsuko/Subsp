@@ -29,10 +29,11 @@ theorem T.fund_PZ_one_pos_NFComp {lam : Nat}
       T.isNFComp u
         (T.P (ls.rplc m (T.fund (ls.idx m) T.Z)) T.Z) :=
     T.NFComp_of_SDom_zero u _ _ hbaseNF hs hbaseSDom
-  obtain ⟨mv, mh⟩ := m
-  cases mv with
-  | zero => omega
-  | succ r =>
+  cases m with
+  | mk mv mh =>
+    cases mv with
+    | zero => simp at hm
+    | succ r =>
       let j : Fin lam := ⟨r, Nat.lt_of_succ_lt mh⟩
       have hzj : T.isNFComp j.val z :=
         T.isNFComp_mono 0 j.val (Nat.zero_le _) z hz
@@ -46,6 +47,10 @@ theorem T.fund_PZ_one_pos_NFComp {lam : Nat}
           (ls.rplc ⟨r + 1, mh⟩
             (T.fund (ls.idx ⟨r + 1, mh⟩) T.Z))
           j z hbaseNF hzj
+      have hjm : j.val < (⟨r + 1, mh⟩ : Fin lam).val := by
+        simp [j]
+      have hju : j.val < u :=
+        Nat.lt_of_lt_of_le hjm hmu
       have hfinalComp :
           T.isNFComp u
             (T.P
@@ -55,11 +60,10 @@ theorem T.fund_PZ_one_pos_NFComp {lam : Nat}
         T.isNFComp_rplc_lower u
           (ls.rplc ⟨r + 1, mh⟩
             (T.fund (ls.idx ⟨r + 1, mh⟩) T.Z))
-          j z (by dsimp [j]; omega)
+          j z hju
           (by
-            rw [Vec.rplc_idx_of_ne _ _ _ _ (by dsimp [j]; omega)]
-            exact T.dom_zero_eq_Z _
-              (hspec.2.2 j (by dsimp [j]; omega)))
+            rw [Vec.rplc_idx_of_ne _ _ _ _ (Nat.ne_of_lt hjm)]
+            exact T.dom_zero_eq_Z _ (hspec.2.2 j hjm))
           hbaseComp hfinalNF
       rw [T.fund, ite_eq_left rfl, hmin]
       exact hfinalComp
