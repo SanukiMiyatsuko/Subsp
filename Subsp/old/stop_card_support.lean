@@ -69,6 +69,55 @@ theorem card_times_support (n : Nat) (s : T) (hs : T.isNF1 s) :
         · apply Or.inr
           by_cases hnp' : n ≤ p <;> simp [T.G1, hnp', h]
 
+theorem cardArg_support_bound (u n p : Nat) (a b c : T)
+    (hun : u ≤ n) (hs : T.isNF1 (T.P p a b))
+    (hg : ∀ x : T, x ∈ T.G1 u (T.P p a b) → x ≤ c) :
+    ∀ x : T, x ∈ T.G1 u (cardArg n p a) → x ≤ c := by
+  obtain ⟨ha, _, hga, _⟩ := T.isNF1_P_inv p a b hs
+  have support_arg (hup : u ≤ p) :
+      ∀ x : T, x ∈ T.G1 u a → x ≤ c := by
+    intro x hx
+    apply hg x
+    simp [T.G1, hup, hx]
+  have arg_le (hup : u ≤ p) : a ≤ c := by
+    apply hg a
+    simp [T.G1, hup]
+  unfold cardArg
+  by_cases hpn : p < n
+  · rw [ite_eq_left hpn]
+    by_cases hup : u ≤ p
+    · have hec := early_collapse_closed p a ha hga
+      by_cases hp : p = 0
+      · rw [ite_eq_left hp]
+        exact early_collapse_support_bound u p a c hup ha (arg_le hup) (support_arg hup)
+      · rw [ite_eq_right hp]
+        apply stand_zero_support_le u p _ c hup hec.1
+        exact early_collapse_support_bound u p a c hup ha (arg_le hup) (support_arg hup)
+    · have hpu : p < u := Nat.lt_of_not_ge hup
+      have hemp : T.G1 u (T.early_collapse p a) = [] :=
+        early_collapse_support_above p u a ha hga hpu
+      by_cases hp : p = 0
+      · rw [ite_eq_left hp, hemp]
+        intro x hx
+        cases hx
+      · rw [ite_eq_right hp, T.stand, stand_eq_self _ (early_collapse_closed p a ha hga).1]
+        split
+        · simp [T.G1, hup, hemp]
+        · rw [hemp]
+          intro x hx
+          cases hx
+  · rw [ite_eq_right hpn]
+    have hnp : n ≤ p := Nat.le_of_not_gt hpn
+    have hup : u ≤ p := Nat.le_trans hun hnp
+    split
+    · intro x hx
+      simp only [T.G1, hup, ite_true, List.mem_append, List.mem_singleton] at hx
+      rcases hx with (rfl | hx) | hx
+      · exact T.Z_le c
+      · cases hx
+      · exact support_arg hup x hx
+    · exact support_arg hup
+
 theorem card_times_good (n : Nat) (s : T) (hs : T.isNF1 s)
     (hg : ∀ x ∈ T.G1 n s, x < s) :
     ∀ x ∈ T.G1 n (T.card_times n s), x < T.card_times n s := by
