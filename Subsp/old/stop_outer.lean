@@ -111,7 +111,7 @@ theorem compareVec_countable_succ {lam k : Nat}
           cases w with
           | snoc _ ys b =>
               cases ys
-              rfl
+              simp [new.compareVec, new.Vec.idx]
   | succ k ih =>
       cases v with
       | snoc _ xs a =>
@@ -133,7 +133,8 @@ theorem compareVec_countable_succ {lam k : Nat}
                 intro i hi
                 have h := hw i.castSucc hi
                 simpa [new.Vec.idx, i.isLt] using h
-              simpa [new.compareVec, new.Vec.idx] using ih xs ys hxs hys
+              simpa [new.compareVec, new.Vec.idx, new.T_refl] using
+                ih xs ys hxs hys
 
 theorem trans_ofNat {lam : Nat} (n : Nat) :
     trans (new.T.ofNat (lam := lam) n) = T.ofNat n := by
