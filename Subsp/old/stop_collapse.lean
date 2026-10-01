@@ -76,6 +76,17 @@ theorem isNF1_add_left (a b : T) (h : T.isNF1 (T.add a b)) : T.isNF1 a := by
       | Z => exact T.Z_le _
       | P q d e => simpa only [T.head_add_ne_Z] using hh
 
+theorem add_right_le_of_NF (a b : T)
+    (h : T.isNF1 (T.add a b)) : b ≤ T.add a b := by
+  induction a with
+  | Z => exact Or.inr rfl
+  | P p c d _ ih =>
+      rw [T.P_add_eq] at h ⊢
+      have htailNF := (T.isNF1_P_inv p c (T.add d b) h).2.1
+      exact partial_order.trans _ _ _
+        (ih htailNF)
+        (T.isNF1_tail_le _ h p c (T.add d b) rfl)
+
 theorem part_NF (n : Nat) (s : T) (hs : T.isNF1 s) :
     T.isNF1 (T.part n s).1 ∧ T.isNF1 (T.part n s).2 := by
   have h : T.isNF1 (T.add (T.part n s).1 (T.part n s).2) :=
