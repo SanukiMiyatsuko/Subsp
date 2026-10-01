@@ -164,6 +164,20 @@ theorem early_collapse_support_le (u n : Nat) (s : T)
       · exact Or.inl (hmem x (List.mem_append_right _ hx))
     · exact Or.inl (hmem x (List.mem_append_right _ hx))
 
+theorem stand_zero_support_le (u p : Nat) (b c : T)
+    (hup : u ≤ p) (hb : T.isNF1 b)
+    (hbc : ∀ x : T, x ∈ T.G1 u b → x ≤ c) :
+    ∀ x : T, x ∈ T.G1 u (T.stand (T.P p T.Z b)) → x ≤ c := by
+  intro x hx
+  rw [T.stand, stand_eq_self b hb] at hx
+  split at hx
+  · simp only [T.G1, hup, ite_true, List.append_nil, List.mem_append,
+      List.mem_singleton] at hx
+    rcases hx with rfl | hx
+    · exact T.Z_le c
+    · exact hbc x hx
+  · exact hbc x hx
+
 theorem early_collapse_ne_zero (n : Nat) (s : T) (hs : T.isNF1 s) (hne : s ≠ T.Z) :
     T.early_collapse n s ≠ T.Z := by
   have he := part_add n s hs
