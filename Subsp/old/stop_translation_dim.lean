@@ -32,7 +32,7 @@ theorem GoodAt_dim_of_NF {lam : Nat} (s : new.T lam) (hlam : 0 < lam)
 
 theorem trans_zero_isNF (s : new.T 0) :
     T.isNF1 (trans s) := by
-  rw [ZeroLevel.eq_ofNat s, trans_ofNat]
+  rw [LegacyZero.eq_ofNat s, trans_ofNat]
   exact IsN_isNF1 _ (ofNat_IsN _)
 
 theorem GoodAt_zero (s : new.T 0) :
@@ -40,7 +40,7 @@ theorem GoodAt_zero (s : new.T 0) :
   refine ⟨trans_zero_isNF s, ?_⟩
   intro x hx
   have hN : T.IsN (trans s) := by
-    rw [ZeroLevel.eq_ofNat s, trans_ofNat]
+    rw [LegacyZero.eq_ofNat s, trans_ofNat]
     exact ofNat_IsN _
   have hxz := IsN_G1_eq_Z (trans s) hN 0 x hx
   subst x
