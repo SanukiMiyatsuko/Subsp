@@ -174,3 +174,42 @@ theorem SubNF_fund1_closed (lam : Nat) (t : T.SubNF lam) (z : T)
     lt_trans_thm _ _ _ (T.fund1_fall t.val z hv) t.property.2⟩
 
 end LegacyTranslation
+
+
+namespace LegacyTranslation
+
+def sourceUnit (lam : Nat) : new.T lam :=
+  new.T.P (new.Vec.ofFn lam (fun _ => new.T.Z)) new.T.Z
+
+theorem trans_sourceUnit (lam : Nat) :
+    trans (sourceUnit lam) = T.P 0 T.Z T.Z := by
+  rw [trans_as_add, transAux_zeros]
+  rfl
+
+theorem transAux_otBound (k : Nat) :
+    transAux
+      (new.Vec.ofFn (k + 2)
+        (fun i => if i.val = 1 then sourceUnit (k + 2) else new.T.Z)) =
+      (T.P 1 T.Z T.Z, T.P 1 T.Z T.Z) := by
+  induction k with
+  | zero =>
+      change transAux
+        (new.Vec.snoc 1
+          (new.Vec.snoc 0 new.Vec.nil new.T.Z)
+          (sourceUnit 2)) = _
+      simp [transAux, trans_sourceUnit, sourceUnit, T.early_collapse,
+        T.part, T.card_times, T.one_del]
+  | succ k =>
+      rw [new.Vec.ofFn]
+      simp only [Fin.val_last, Fin.val_castSucc,
+        show k + 2 ≠ 1 by omega, ite_false]
+      rw [transAux_snoc_zero]
+      simpa only using ih
+
+theorem trans_otBound (k : Nat) :
+    trans (new.T.otBound (k + 2)) = T.P 1 T.Z T.Z := by
+  unfold new.T.otBound
+  rw [trans_as_add, transAux_otBound]
+  rfl
+
+end LegacyTranslation
