@@ -749,6 +749,32 @@ theorem source_tail_support_lt_of_comp {lam : Nat} (u : Nat)
     z < new.T.P v a := by
   exact hs.2 z (source_tail_support_mem_Gi u v a z hz)
 
+theorem GoodAt_of_direct_component_bounds {lam : Nat} (u : Nat)
+    (v : new.Vec (new.T lam) lam) (a : new.T lam)
+    (hs : new.T.isNFComp u (new.T.P v a))
+    (ht : T.isNF1 (trans (new.T.P v a)))
+    (hvg : VecGood v)
+    (hcoord : ∀ i : Fin lam, u ≤ i.val →
+      trans (v.idx i) < trans (new.T.P v a))
+    (hcoordSupport : ∀ i : Fin lam, u ≤ i.val →
+      ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) →
+        y < trans (new.T.P v a))
+    (htailSupport : ∀ y : T, y ∈ T.G1 u (trans a) →
+      y < trans (new.T.P v a)) :
+    GoodAt u (new.T.P v a) := by
+  have hheadSupport :
+      ∀ y : T, y ∈ T.G1 u (transAux v).1 →
+        y < trans (new.T.P v a) := by
+    exact aux_head_support_below u v hvg
+      (trans (new.T.P v a)) (trans_P_head v a)
+      hcoord hcoordSupport
+  refine ⟨ht, ?_⟩
+  intro y hy
+  rw [trans_as_add, G1_add] at hy
+  rcases hy with hy | hy
+  · exact hheadSupport y hy
+  · exact htailSupport y hy
+
 theorem GoodAt_of_component_bounds {lam : Nat} (u : Nat)
     (v : new.Vec (new.T lam) lam) (a : new.T lam)
     (hs : new.T.isNFComp u (new.T.P v a))
