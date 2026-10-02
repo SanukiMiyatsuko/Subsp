@@ -203,7 +203,8 @@ theorem transAux_otBound {lam : Nat} (k : Nat) (u : new.T lam)
       | Z => cases hu
       | P ls add =>
           simp [transAux, hu, _root_.trans.eq_1, T.early_collapse,
-            T.part, T.card_times, T.one_del, T.add_Z]
+            T.part, T.card_times, T.one_del]
+          constructor <;> rfl
   | succ k ih =>
       rw [new.Vec.ofFn]
       simp only [Fin.val_last, Fin.val_castSucc,
