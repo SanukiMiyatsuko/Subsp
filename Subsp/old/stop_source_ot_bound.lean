@@ -22,9 +22,9 @@ theorem T.base_succ_lt_otBound (k n : Nat) (hk : 1 < k + 1) :
   apply Vec.compare_lt_of_pivot _ _ ⟨1, hk⟩
   · intro j hj
     change 1 < j.val at hj
-    simp only [T.otBound, Vec.ofFn_idx, show j.val ≠ 0 by omega,
+    simp only [Vec.ofFn_idx, show j.val ≠ 0 by omega,
       show j.val ≠ 1 by omega, ite_false]
-  · simp only [T.otBound, Vec.ofFn_idx, Nat.one_ne_zero, ite_false, ite_true]
+  · simp only [Vec.ofFn_idx, Nat.one_ne_zero, ite_false, ite_true]
     rfl
 
 theorem T.isOT_sound_bound (lam : Nat) (s : T lam)
