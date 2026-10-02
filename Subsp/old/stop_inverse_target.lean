@@ -209,7 +209,7 @@ def degree : T → Nat
 theorem degree_add (a b : T) : degree (T.add a b) = max (degree a) (degree b) := by
   induction a with
   | Z => simp [T.add, degree]
-  | P p x r _ ih => rw [T.P_add_eq]; simp only [degree, ih]; omega
+  | P p x r _ ih => rw [T.P_add_eq]; simp only [degree, ih, Nat.max_assoc]
 
 theorem degree_part (n : Nat) : ∀ t : T,
     degree (T.part n t).1 ≤ degree t ∧ degree (T.part n t).2 ≤ degree t
@@ -217,8 +217,12 @@ theorem degree_part (n : Nat) : ∀ t : T,
   | .P p a r => by
       have ih := degree_part n r
       by_cases hpn : p ≤ n
-      · simp only [T.part, hpn, ite_true, degree]; omega
-      · simp only [T.part, hpn, ite_false, degree]; omega
+      · simp only [T.part, hpn, ite_true, degree]
+        exact ⟨Nat.le_trans ih.1 (Nat.le_max_right _ _),
+          Nat.max_le.mpr ⟨Nat.le_max_left _ _, Nat.le_trans ih.2 (Nat.le_max_right _ _)⟩⟩
+      · simp only [T.part, hpn, ite_false, degree]
+        exact ⟨Nat.max_le.mpr ⟨Nat.le_max_left _ _, Nat.le_trans ih.1 (Nat.le_max_right _ _)⟩,
+          Nat.le_trans ih.2 (Nat.le_max_right _ _)⟩
 
 theorem UE_degree (q : Nat) (e : T) : degree (UE q e) ≤ degree e := by
   cases e with
@@ -230,10 +234,15 @@ theorem UE_degree (q : Nat) (e : T) : degree (UE q e) ≤ degree e := by
       · split
         · exact Nat.le_refl _
         · split
-          · rw [degree_add]; simp only [degree]; omega
-          · rw [degree_add]; simp only [degree]; omega
+          · rw [degree_add]
+            simp only [degree]
+            exact Nat.max_le.mpr ⟨Nat.le_trans (Nat.le_succ _) (Nat.le_max_left _ _),
+              Nat.le_max_right _ _⟩
+          · rw [degree_add]
+            simp only [degree]
+            exact Nat.max_le.mpr ⟨Nat.le_trans (Nat.le_trans hd.1 (Nat.le_succ _))
+              (Nat.le_max_left _ _), Nat.le_refl _⟩
       · exact Nat.le_refl _
-
 /-! Goodness of uncollapsed terms. -/
 
 theorem G1_below_head (q : Nat) (h : T) (hh : ∀ x ∈ T.G1 q h, x < h) : ∀ t : T, T.isNF1 t →
@@ -463,14 +472,14 @@ theorem uncard_props (K : Nat) (hK : 0 < K) (g : T) (hg : T.isNF1 g)
             · subst hh0
               simp only [hq0, ite_true, ite_false]
               refine ⟨Nat.le_of_lt hqK, UE_NF q t ht hti, UE_good q t ht hti,
-                Nat.le_trans (UE_degree q t) (by simp only [degree]; omega),
+                Nat.le_trans (UE_degree q t) (Nat.le_max_right _ _),
                 fun l hl => DeepIdx_UE l q t hl.2.2⟩
             · simp only [hq0, hh0, ite_false]
               exact ⟨Nat.le_of_lt hqK, UE_NF q _ hg hgi, UE_good q _ hg hgi, UE_degree q _,
                 fun l hl => DeepIdx_UE l q _ hl⟩
         · simp only [ite_true]
           exact ⟨Nat.le_refl _, ht, G1_le_Z_of_head q t ht hth,
-            by simp only [degree]; omega, fun _ hl => hl.2.2⟩
+            Nat.le_max_right _ _, fun _ hl => hl.2.2⟩
 
 theorem uncard_mono (K : Nat) (hK : 0 < K) (g1 g2 : T) (hg1 : T.isNF1 g1)
     (hgg1 : ∀ x ∈ T.G1 K g1, x < g1) (hg2 : T.isNF1 g2) (hgg2 : ∀ x ∈ T.G1 K g2, x < g2)
@@ -522,12 +531,15 @@ theorem UC_degree (K : Nat) (hK : 0 < K) : ∀ d : T, T.isNF1 d → degree (UC K
       have ih := UC_degree K hK r hr
       simp only [UC]
       split
-      · simp only [degree]; omega
+      · simp only [degree]
+        exact Nat.max_le.mpr ⟨Nat.le_max_left _ _, Nat.le_trans ih (Nat.le_max_right _ _)⟩
       · rename_i hq
         have hgg' : ∀ x ∈ T.G1 K g, x < g :=
           fun x hx => hgg x (G1_antitone q K (by omega) g x hx)
         have hdeg := (uncard_props K hK g hg hgg').2.2.2.1
-        simp only [degree]; omega
+        simp only [degree]
+        exact Nat.max_le.mpr ⟨Nat.le_trans (Nat.succ_le_succ hdeg) (Nat.le_max_left _ _),
+          Nat.le_trans ih (Nat.le_max_right _ _)⟩
 
 theorem UC_DeepIdx (K l : Nat) (hK : 0 < K) (hKl : K ≤ l) : ∀ d : T, T.isNF1 d →
     DeepIdx l d → DeepIdx l (UC K d)

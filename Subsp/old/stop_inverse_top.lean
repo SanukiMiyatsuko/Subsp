@@ -21,16 +21,23 @@ theorem uncard_top_cases (K : Nat) (hK : 0 < K) (g : T) (hp : (uncardArg K g).1 
   · rw [ite_eq_right hle] at hp ⊢
     have hlt := lt_of_not_le _ _ hle
     cases g with
-    | Z => simp at hp; omega
+    | Z => exact absurd hp (show (0 : Nat) ≠ K from Nat.ne_of_lt hK)
     | P q h t =>
+        dsimp only at hp ⊢
         rcases small_head_shape K q h t hlt with hqK | ⟨rfl, rfl⟩
-        · simp only [show q ≠ K by omega, ite_false] at hp ⊢
+        · exfalso
+          have hqne : q ≠ K := Nat.ne_of_lt hqK
+          rw [ite_eq_right hqne] at hp
           by_cases hq0 : q = 0
-          · simp only [hq0, ite_true] at hp; omega
-          · by_cases hh0 : h = T.Z
-            · simp only [hq0, hh0, ite_true, ite_false] at hp; omega
-            · simp only [hq0, hh0, ite_false] at hp; omega
-        · simp only [ite_true]
+          · rw [ite_eq_left hq0] at hp
+            exact absurd hp (show (0 : Nat) ≠ K from Nat.ne_of_lt hK)
+          · rw [ite_eq_right hq0] at hp
+            by_cases hh0 : h = T.Z
+            · rw [ite_eq_left hh0] at hp
+              exact hqne hp
+            · rw [ite_eq_right hh0] at hp
+              exact hqne hp
+        · rw [ite_eq_left rfl]
           exact Or.inr ⟨t, rfl, rfl⟩
 
 theorem summands_of_part_fst (n : Nat) : ∀ c : T, ∀ p a, IsSummand p a (T.part n c).1 →
