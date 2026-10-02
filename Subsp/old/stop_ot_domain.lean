@@ -118,3 +118,37 @@ theorem T.isOT_dom1_trans {lam : Nat} {s : T lam}
   T.outerChain_dom1_trans s (T.isOT_outerChain hs)
 
 end new
+
+
+namespace LegacyTranslation
+
+theorem OT_lt_rank1_limit {lam : Nat} (s : new.T lam)
+    (hs : new.T.isOT lam s) :
+    trans s < T.P 1 T.Z T.Z := by
+  exact lt_trans_thm _ _ _ (OT_bound lam s hs)
+    (T.Lt.p_head 0 1 (T.P lam T.Z T.Z) T.Z T.Z T.Z (Nat.zero_lt_succ 0))
+
+theorem OT_dom1_not_Omega {lam : Nat} (s : new.T lam)
+    (hs : new.T.isOT lam s) (l : Nat) :
+    T.dom1 (trans s) ≠ .Ω l := by
+  intro hdom
+  cases hsdom : new.T.dom s with
+  | zero =>
+      have h := new.T.isOT_dom1_trans hs
+      rw [hsdom] at h
+      rw [h] at hdom
+      cases hdom
+  | one =>
+      have h := new.T.isOT_dom1_trans hs
+      rw [hsdom] at h
+      rw [h] at hdom
+      cases hdom
+  | omega =>
+      have h := new.T.isOT_dom1_trans hs
+      rw [hsdom] at h
+      rw [h] at hdom
+      cases hdom
+  | Omega i =>
+      exact new.T.isOT_dom_not_Omega lam s hs i hsdom
+
+end LegacyTranslation
