@@ -749,6 +749,14 @@ theorem source_tail_support_lt_of_comp {lam : Nat} (u : Nat)
     z < new.T.P v a := by
   exact hs.2 z (source_tail_support_mem_Gi u v a z hz)
 
+theorem trans_tail_lt_of_NF {lam : Nat}
+    (v : new.Vec (new.T lam) lam) (a : new.T lam)
+    (h : T.isNF1 (trans (new.T.P v a))) :
+    trans a < trans (new.T.P v a) := by
+  obtain ⟨p, b, he, _⟩ := aux_principal v
+  rw [trans_as_add, he, p_zero_add] at h ⊢
+  exact NF_tail_lt p b (trans a) h
+
 theorem GoodAt_of_direct_component_bounds {lam : Nat} (u : Nat)
     (v : new.Vec (new.T lam) lam) (a : new.T lam)
     (hs : new.T.isNFComp u (new.T.P v a))
