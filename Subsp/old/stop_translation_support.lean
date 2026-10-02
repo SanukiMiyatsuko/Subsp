@@ -94,6 +94,8 @@ theorem card_times_support_decomp (u n : Nat) (hun : u ≤ n)
       cases hx
   | p p a b ha hb hga hh _ ih =>
       have hsfull : T.isNF1 (T.P p a b) := .p p a b ha hb hga hh
+      have hcardNF := card_times_closed n _ hsfull
+      rw [card_times_P] at hcardNF
       rw [card_times_P]
       intro x hx
       have hum : u ≤ max p n := Nat.le_trans hun (Nat.le_max_right p n)
@@ -118,7 +120,8 @@ theorem card_times_support_decomp (u n : Nat) (hun : u ≤ n)
           apply hdec y
           by_cases hup : u ≤ p <;> simp [T.G1, hup, hy]
         rcases ih c hb_le_c hdec_b x hx with h | h | h
-        · exact Or.inl (T.Lt.p_tail _ _ _ _ h)
+        · exact Or.inl (lt_trans_thm _ _ _ h
+            (NF_tail_lt (max p n) (cardArg n p a) (T.card_times n b) hcardNF))
         · exact Or.inr (Or.inl h)
         · exact Or.inr (Or.inr h)
 
@@ -221,8 +224,10 @@ theorem aux_lower_support_decomp {lam k : Nat} (u : Nat)
               y < trans (v.idx i) ∨
                 ∃ z : new.T lam, z ∈ new.T.Gi u (v.idx i) ∧ y ≤ trans z := by
         intro i hui y hy
+        have hy' : y ∈ T.G1 u (trans ((new.Vec.snoc k v a).idx i.castSucc)) := by
+          simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using hy
         simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
-          hdec i.castSucc hui y hy
+          hdec i.castSucc hui y hy'
       by_cases hku : k < u
       · have hi := (aux_lower_closed (.snoc k v a) hv).2.1
         have hemp : T.G1 u (transAux (.snoc k v a)).2 = [] := by
@@ -249,7 +254,7 @@ theorem aux_lower_support_decomp {lam k : Nat} (u : Nat)
         | succ k =>
             rw [aux_lower_snoc]
             intro x hx
-            rw [G1_add] at hx
+            simp only [G1_add, List.mem_append] at hx
             rcases hx with hx | hx
             · rcases card_early_support_decomp u v a huk ha hdecLast x hx with h | h
               · exact Or.inl (lt_of_lt_of_le_thm T _ _ _ h (add_self_le _ _))
@@ -262,8 +267,14 @@ theorem aux_lower_support_decomp {lam k : Nat} (u : Nat)
               · exact Or.inr (VecWitness_prefix u v a x h)
 
 
-theorem aux_positive_middle_lt {lam k : Nat}
-    (v : new.Vec (new.T lam) (k + 1)) (a tail : new.T lam)
+theorem target_head_mono_le (a b : T) (h : a ≤ b) :
+    T.head a ≤ T.head b := by
+  rcases h with h | rfl
+  · exact T.head_mono h
+  · exact Or.inr rfl
+
+theorem aux_positive_middle_lt {k : Nat}
+    (v : new.Vec (new.T (k + 2)) (k + 1)) (a tail : new.T (k + 2))
     (hv : VecGood (.snoc (k + 1) v a))
     (hane : a ≠ new.T.Z)
     (halt : trans a < trans (new.T.P (.snoc (k + 1) v a) tail)) :
@@ -281,14 +292,15 @@ theorem aux_positive_middle_lt {lam k : Nat}
       have hhead :
           T.head (trans a) ≤
             T.head (trans (new.T.P (.snoc (k + 1) v a) tail)) :=
-        T.head_mono_le _ _ (Or.inl halt)
+        target_head_mono_le _ _ (Or.inl halt)
       rw [trans_P_head, aux_head_snoc v a hane] at hhead
-      change T.P p c T.Z ≤ T.P (k + 1) M T.Z at hhead
-      have hpk : p ≤ k + 1 := T.head_le_index p (k + 1) c M hhead
+      have hhead' : T.P p c T.Z ≤ T.P (k + 1) M T.Z := by
+        simpa only [hta, T.head, M] using hhead
+      have hpk : p ≤ k + 1 := head_le_index p (k + 1) c M hhead'
       have htaNF : T.isNF1 (T.P p c d) := by simpa [hta] using ha.1
       have hidxTa : T.index_Prop1 (k + 1) (trans a) := by
         rw [hta]
-        exact T.isNF1_index (k + 1) p c d htaNF hpk
+        exact isNF1_index (k + 1) p c d htaNF hpk
       have hdelIdx : T.index_Prop1 (k + 1) (T.one_del (trans a)) :=
         one_del_index (k + 1) _ hidxTa
       have hcardIdx :
@@ -313,7 +325,7 @@ theorem aux_positive_middle_lt {lam k : Nat}
         dsimp only [M]
         exact card_times_append_good (k + 1) k (Nat.lt_succ_self k)
           _ _ hdelNF hdelGood hlower.2.1
-      exact good_index_lt_wrap (k + 1) M T.Z hMIdx hMGood
+      simpa only [M, hta] using good_index_lt_wrap (k + 1) M T.Z hMIdx hMGood
 
 
 theorem aux_positive_middle_lt_of_head {lam k : Nat}
@@ -334,14 +346,15 @@ theorem aux_positive_middle_lt_of_head {lam k : Nat}
   | Z => exact False.elim (htrane hta)
   | P p c d =>
       have hhead : T.head (trans a) ≤ T.head C :=
-        T.head_mono_le _ _ (Or.inl halt)
+        target_head_mono_le _ _ (Or.inl halt)
       rw [hheadC, aux_head_snoc v a hane] at hhead
-      change T.P p c T.Z ≤ T.P (k + 1) M T.Z at hhead
-      have hpk : p ≤ k + 1 := T.head_le_index p (k + 1) c M hhead
+      have hhead' : T.P p c T.Z ≤ T.P (k + 1) M T.Z := by
+        simpa only [hta, T.head, M] using hhead
+      have hpk : p ≤ k + 1 := head_le_index p (k + 1) c M hhead'
       have htaNF : T.isNF1 (T.P p c d) := by simpa [hta] using ha.1
       have hidxTa : T.index_Prop1 (k + 1) (trans a) := by
         rw [hta]
-        exact T.isNF1_index (k + 1) p c d htaNF hpk
+        exact isNF1_index (k + 1) p c d htaNF hpk
       have hdelIdx : T.index_Prop1 (k + 1) (T.one_del (trans a)) :=
         one_del_index (k + 1) _ hidxTa
       have hcardIdx :
@@ -366,7 +379,7 @@ theorem aux_positive_middle_lt_of_head {lam k : Nat}
         dsimp only [M]
         exact card_times_append_good (k + 1) k (Nat.lt_succ_self k)
           _ _ hdelNF hdelGood hlower.2.1
-      exact good_index_lt_wrap (k + 1) M T.Z hMIdx hMGood
+      simpa only [M, hta] using good_index_lt_wrap (k + 1) M T.Z hMIdx hMGood
 
 theorem aux_head_support_decomp {lam k : Nat} (u : Nat)
     (v : new.Vec (new.T lam) k) (hv : VecGood v)
@@ -396,8 +409,10 @@ theorem aux_head_support_decomp {lam k : Nat} (u : Nat)
               y < trans (v.idx i) ∨
                 ∃ z : new.T lam, z ∈ new.T.Gi u (v.idx i) ∧ y ≤ trans z := by
         intro i hui y hy
+        have hy' : y ∈ T.G1 u (trans ((new.Vec.snoc k v a).idx i.castSucc)) := by
+          simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using hy
         simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
-          hdec i.castSucc hui y hy
+          hdec i.castSucc hui y hy'
       have hcoordPrefix :
           ∀ i : Fin k, u ≤ i.val → trans (v.idx i) < C := by
         intro i hui
@@ -434,7 +449,7 @@ theorem aux_head_support_decomp {lam k : Nat} (u : Nat)
               exact hheadC
             intro x hx
             rw [aux_zero_tail] at hx
-            rcases ih hp C hheadPrefix hcoordPrefix hdecPrefix x hx with h | h
+            rcases ih hp hheadPrefix hcoordPrefix hdecPrefix x hx with h | h
             · exact Or.inl h
             · exact Or.inr (VecWitness_prefix u v new.T.Z x h)
           · have htrane : trans a ≠ T.Z := trans_ne_zero_of_ne_zero a haz
@@ -460,8 +475,7 @@ theorem aux_head_support_decomp {lam k : Nat} (u : Nat)
                 List.mem_append, List.mem_singleton] at hx
               rcases hx with rfl | hx
               · exact Or.inl hMlt
-              · dsimp only [M] at hx
-                rw [G1_add] at hx
+              · simp only [G1_add, List.mem_append] at hx
                 rcases hx with hx | hx
                 · have hdelNF : T.isNF1 (T.one_del (trans a)) := one_del_NF _ ha.1
                   have hdecDel :
@@ -527,8 +541,10 @@ theorem aux_lower_support_below {lam k : Nat} (u : Nat)
           ∀ i : Fin k, u ≤ i.val →
             ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) → y < C := by
         intro i hui y hy
+        have hy' : y ∈ T.G1 u (trans ((new.Vec.snoc k v a).idx i.castSucc)) := by
+          simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using hy
         simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
-          hsupport i.castSucc hui y hy
+          hsupport i.castSucc hui y hy'
       by_cases hku : k < u
       · have hi := (aux_lower_closed (.snoc k v a) hv).2.1
         have hemp : T.G1 u (transAux (.snoc k v a)).2 = [] := by
@@ -556,7 +572,7 @@ theorem aux_lower_support_below {lam k : Nat} (u : Nat)
         | succ k =>
             rw [aux_lower_snoc]
             intro x hx
-            rw [G1_add] at hx
+            simp only [G1_add, List.mem_append] at hx
             rcases hx with hx | hx
             · have hec := early_collapse_closed (k + 1) (trans a) ha.1 ha.2
               have hdecEc :
@@ -580,7 +596,7 @@ theorem aux_lower_support_below {lam k : Nat} (u : Nat)
                   (lt_of_lt_of_le_thm T _ _ _ h (add_self_le _ _))
               · exact Or.inr h
               · cases h
-            · rcases ih hp C hcoordPrefix hsupportPrefix x hx with h | h
+            · rcases ih hp hcoordPrefix hsupportPrefix x hx with h | h
               · have hnf := (aux_lower_closed (.snoc (k + 1) v a) hv).1
                 rw [aux_lower_snoc] at hnf
                 exact Or.inl (lt_of_lt_of_le_thm T _ _ _ h
@@ -618,8 +634,10 @@ theorem aux_head_support_below {lam k : Nat} (u : Nat)
           ∀ i : Fin k, u ≤ i.val →
             ∀ y : T, y ∈ T.G1 u (trans (v.idx i)) → y < C := by
         intro i hui y hy
+        have hy' : y ∈ T.G1 u (trans ((new.Vec.snoc k v a).idx i.castSucc)) := by
+          simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using hy
         simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using
-          hsupport i.castSucc hui y hy
+          hsupport i.castSucc hui y hy'
       cases k with
       | zero =>
           cases v
@@ -647,9 +665,12 @@ theorem aux_head_support_below {lam k : Nat} (u : Nat)
             have hheadPrefix : T.head C = (transAux v).1 := by
               rw [← aux_zero_tail v]
               exact hheadC
+            have hheadLePrefix : (transAux v).1 ≤ C := by
+              rw [← hheadPrefix]
+              exact head_le_self C
             intro x hx
             rw [aux_zero_tail] at hx
-            exact ih hp C hheadPrefix hcoordPrefix hsupportPrefix x hx
+            exact ih hp hheadPrefix hcoordPrefix hsupportPrefix hheadLePrefix x hx
           · by_cases huk : u ≤ k + 1
             · have hcoordLast : trans a < C := by
                 simpa only [new.Vec.idx, Fin.val_last, Nat.lt_irrefl, dite_false] using
@@ -671,8 +692,7 @@ theorem aux_head_support_below {lam k : Nat} (u : Nat)
                 List.mem_append, List.mem_singleton] at hx
               rcases hx with rfl | hx
               · exact lt_of_lt_of_le_thm T _ _ _ hMlt hwrapC
-              · dsimp only [M] at hx
-                rw [G1_add] at hx
+              · simp only [G1_add, List.mem_append] at hx
                 rcases hx with hx | hx
                 · have hdelNF : T.isNF1 (T.one_del (trans a)) := one_del_NF _ ha.1
                   have hdelC : T.one_del (trans a) ≤ C :=
@@ -756,7 +776,7 @@ theorem GoodAt_of_component_bounds {lam : Nat} (u : Nat)
       hcoord hcoordSupport
   refine ⟨ht, ?_⟩
   intro y hy
-  rw [trans_as_add, G1_add] at hy
+  simp only [trans_as_add, G1_add, List.mem_append] at hy
   rcases hy with hy | hy
   · exact hheadSupport y hy
   · exact htailSupport y hy
