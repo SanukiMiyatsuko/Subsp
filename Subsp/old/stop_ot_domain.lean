@@ -199,9 +199,11 @@ theorem transAux_otBound {lam : Nat} (k : Nat) (u : new.T lam)
       change transAux
         (new.Vec.snoc 1
           (new.Vec.snoc 0 new.Vec.nil new.T.Z) u) = _
-      rw [transAux]
-      simp only [hu]
-      rfl
+      cases u with
+      | Z => cases hu
+      | P ls add =>
+          simp [transAux, hu, T.early_collapse, T.part,
+            T.card_times, T.one_del, T.add]
   | succ k ih =>
       rw [new.Vec.ofFn]
       simp only [Fin.val_last, Fin.val_castSucc,
@@ -211,7 +213,11 @@ theorem transAux_otBound {lam : Nat} (k : Nat) (u : new.T lam)
 
 theorem trans_otBound (k : Nat) :
     trans (new.T.otBound (k + 2)) = T.P 1 T.Z T.Z := by
-  unfold new.T.otBound
+  change trans
+    (new.T.P
+      (new.Vec.ofFn (k + 2)
+        (fun i => if i.val = 1 then sourceUnit (k + 2) else new.T.Z))
+      new.T.Z) = _
   rw [trans_as_add,
     transAux_otBound k (sourceUnit (k + 2)) (trans_sourceUnit (k + 2))]
   rfl
