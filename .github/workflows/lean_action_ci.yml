@@ -16,3 +16,7 @@ jobs:
         run: lake build Subsp.old.stop_ot_comp0 Subsp.old.stop_trans_algebra Subsp.old.stop_translation_dim Subsp.old.stop_target_image
       - name: Audit legacy helper declarations
         run: lake env lean ProofAuditOldSupport.lean
+      - name: Build the legacy order isomorphism
+        run: lake build Subsp.old.stop
+      - name: Audit all legacy declarations
+        run: lake env lean ProofAuditOld.lean
