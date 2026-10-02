@@ -11,9 +11,9 @@ jobs:
       - uses: actions/checkout@v5
       - name: Package current source
         shell: bash
-        run: tar --zstd -cf subsp-current.tar.zst --exclude=.git .
+        run: tar --zstd -cf /tmp/subsp-current.tar.zst --exclude=.git .
       - uses: actions/upload-artifact@v4
         with:
           name: old-stop-order-iso-current-source
-          path: subsp-current.tar.zst
+          path: /tmp/subsp-current.tar.zst
           compression-level: 0
