@@ -22,9 +22,7 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
       · subst add
         cases hmin : T.domVecMinIdx ls with
         | none =>
-            have hbad : (Dom.one : Dom lam) = .Omega i := by
-              simpa [T.dom, hmin] using hd
-            cases hbad
+            simp [T.dom, hmin] at hd
         | some md =>
             obtain ⟨m, d⟩ := md
             rw [T.fund, ite_eq_left rfl, hmin]
@@ -42,9 +40,7 @@ theorem T.fund_Omega_ne_Z {lam : Nat}
                 obtain ⟨mv, mh⟩ := m
                 cases mv with
                 | zero =>
-                    have hbad : (Dom.omega : Dom lam) = .Omega i := by
-                      simpa [T.dom, hmin] using hd
-                    cases hbad
+                    simp [T.dom, hmin] at hd
                 | succ r =>
                     intro h
                     cases h
@@ -78,28 +74,20 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
           · subst add
             cases hmin : T.domVecMinIdx ls with
             | none =>
-                have hbad : (Dom.one : Dom lam) = .Omega i := by
-                  simpa [T.dom, hmin] using hd
-                cases hbad
+                simp [T.dom, hmin] at hd
             | some md =>
                 obtain ⟨m, d⟩ := md
                 have hspec := T.domVecMinIdx_some_spec ls m d hmin
                 cases d with
                 | zero =>
-                    have hbad : (Dom.omega : Dom lam) = .Omega i := by
-                      simpa [T.dom, hmin] using hd
-                    cases hbad
+                    simp [T.dom, hmin] at hd
                 | omega =>
-                    have hbad : (Dom.omega : Dom lam) = .Omega i := by
-                      simpa [T.dom, hmin] using hd
-                    cases hbad
+                    simp [T.dom, hmin] at hd
                 | one =>
                     obtain ⟨mv, mh⟩ := m
                     cases mv with
                     | zero =>
-                        have hbad : (Dom.omega : Dom lam) = .Omega i := by
-                          simpa [T.dom, hmin] using hd
-                        cases hbad
+                        simp [T.dom, hmin] at hd
                     | succ r =>
                         rw [T.fund, ite_eq_left rfl, hmin,
                           T.fund, ite_eq_left rfl, hmin]
@@ -117,9 +105,7 @@ theorem T.fund_Omega_strict_mono {lam : Nat}
                         (Vec.compare_rplc_same_index_lt ls m _ _
                           (ih (ls.idx m) (T.idx_size_lt_P ls T.Z m)
                             x y j hspec.2.1 hxy))
-                    · have hbad : (Dom.omega : Dom lam) = .Omega i := by
-                        simpa [T.dom, hmin, hjm] using hd
-                      cases hbad
+                    · simp [T.dom, hmin, hjm] at hd
           · rw [T.fund_P_tail_eq ls add x hadd,
               T.fund_P_tail_eq ls add y hadd]
             exact T.P_tail_lt _ _ _
