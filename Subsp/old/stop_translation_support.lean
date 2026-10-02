@@ -759,7 +759,7 @@ theorem trans_tail_lt_of_NF {lam : Nat}
 
 theorem GoodAt_of_direct_component_bounds {lam : Nat} (u : Nat)
     (v : new.Vec (new.T lam) lam) (a : new.T lam)
-    (hs : new.T.isNFComp u (new.T.P v a))
+    (_hs : new.T.isNFComp u (new.T.P v a))
     (ht : T.isNF1 (trans (new.T.P v a)))
     (hvg : VecGood v)
     (hcoord : ∀ i : Fin lam, u ≤ i.val →
