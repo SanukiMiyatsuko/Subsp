@@ -3,6 +3,7 @@ import Subsp
 import Subsp.old.stop_ot_comp0
 import Subsp.old.stop_trans_algebra
 import Subsp.old.stop_translation_dim
+import Subsp.old.stop_target_image
 
 /-! Audit every completed legacy theorem independently of the open theorem.
 Run `lake build Subsp.old.stop_ot_comp0 Subsp.old.stop_trans_algebra Subsp.old.stop_translation_dim`, then
