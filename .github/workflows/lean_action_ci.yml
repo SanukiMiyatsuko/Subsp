@@ -13,6 +13,6 @@ jobs:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
       - name: Build legacy proof helpers
-        run: lake build Subsp.old.stop_ot_comp0 Subsp.old.stop_trans_algebra Subsp.old.stop_translation_dim
+        run: lake build Subsp.old.stop_ot_comp0 Subsp.old.stop_trans_algebra Subsp.old.stop_translation_dim Subsp.old.stop_target_image
       - name: Audit legacy helper declarations
         run: lake env lean ProofAuditOldSupport.lean
