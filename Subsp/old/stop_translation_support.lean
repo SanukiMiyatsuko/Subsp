@@ -779,7 +779,7 @@ theorem GoodAt_of_direct_component_bounds {lam : Nat} (u : Nat)
   refine ⟨ht, ?_⟩
   intro y hy
   rw [trans_as_add, G1_add] at hy
-  rcases hy with hy | hy
+  rcases List.mem_append.mp hy with hy | hy
   · exact hheadSupport y hy
   · exact htailSupport y hy
 
