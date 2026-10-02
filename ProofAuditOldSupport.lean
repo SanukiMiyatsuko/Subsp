@@ -1,15 +1,13 @@
 import Lean
 import Subsp
-import Subsp.old.stop_low_dims
-import Subsp.old.stop_collapse
-import Subsp.old.stop_nf_core
-import Subsp.old.stop_source_fund_nf
+import Subsp.old.stop_ot_comp0
 import Subsp.old.stop_trans_algebra
+import Subsp.old.stop_translation_dim
 
-/-! Audit the completed legacy support lemmas independently of the open theorem.
-Run `lake build Subsp.old.stop_low_dims Subsp.old.stop_nf_core Subsp.old.stop_source_fund_nf Subsp.old.stop_trans_algebra`, then
+/-! Audit every completed legacy theorem independently of the open theorem.
+Run `lake build Subsp.old.stop_ot_comp0 Subsp.old.stop_trans_algebra Subsp.old.stop_translation_dim`, then
 `lake env lean ProofAuditOldSupport.lean`.
-`ProofAuditOld.lean` remains the complete audit, including `OT_SubNF_order_iso`.
+`ProofAuditOld.lean` additionally imports `Subsp.old.stop`, including `OT_SubNF_order_iso`.
 -/
 
 open Lean Elab Command in
