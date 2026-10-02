@@ -152,3 +152,25 @@ theorem OT_dom1_not_Omega {lam : Nat} (s : new.T lam)
       exact new.T.isOT_dom_not_Omega lam s hs i hsdom
 
 end LegacyTranslation
+
+
+namespace LegacyTranslation
+
+theorem SubNF_lt_rank1_limit (lam : Nat) (t : T.SubNF lam) :
+    t.val < T.P 1 T.Z T.Z := by
+  exact lt_trans_thm _ _ _ t.property.2
+    (T.Lt.p_head 0 1 (T.P lam T.Z T.Z) T.Z T.Z T.Z
+      (Nat.zero_lt_succ 0))
+
+theorem SubNF_isOT1 (lam : Nat) (t : T.SubNF lam) :
+    T.isOT1 t.val := by
+  exact (T.isOT1_iff_isNF1 t.val).2
+    ⟨t.property.1, SubNF_lt_rank1_limit lam t⟩
+
+theorem SubNF_fund1_closed (lam : Nat) (t : T.SubNF lam) (z : T)
+    (hz : T.isNF1 z) (hv : T.ValidArg1 t.val z) :
+    T.isSubNF lam (T.fund1 t.val z) := by
+  exact ⟨T.fund1_NF1_closed t.val z t.property.1 hz hv,
+    lt_trans_thm _ _ _ (T.fund1_fall t.val z hv) t.property.2⟩
+
+end LegacyTranslation
