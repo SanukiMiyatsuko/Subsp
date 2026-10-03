@@ -343,5 +343,113 @@ theorem UVec.normalize_compileVec {ambient len : Nat}
             UVec.ofVec (UVec.compileElems ambient xs).2
           rw [hc])
 
+
+mutual
+  theorem UTerm.normalize_compile_normalize :
+      (u : UTerm) → (n : Nat) →
+        UTerm.arity (UTerm.normalize u) ≤ n →
+        UTerm.normalize
+            (UTerm.ofT (UTerm.compile n (UTerm.normalize u))) =
+          UTerm.normalize u
+    | .Z, n, h => rfl
+    | .P ls add, n, h => by
+        change
+          Nat.max (UVec.length (UVec.normalize ls))
+            (Nat.max (UVec.maxArity (UVec.normalize ls))
+              (UTerm.arity (UTerm.normalize add))) ≤ n at h
+        have hlen : UVec.length (UVec.normalize ls) ≤ n :=
+          Nat.le_trans (Nat.le_max_left _ _) h
+        have hrest :
+            Nat.max (UVec.maxArity (UVec.normalize ls))
+              (UTerm.arity (UTerm.normalize add)) ≤ n :=
+          Nat.le_trans (Nat.le_max_right _ _) h
+        have hvec : UVec.maxArity (UVec.normalize ls) ≤ n :=
+          Nat.le_trans (Nat.le_max_left _ _) hrest
+        have hadd : UTerm.arity (UTerm.normalize add) ≤ n :=
+          Nat.le_trans (Nat.le_max_right _ _) hrest
+        have hv :
+            UVec.normalize
+                (UVec.ofVec
+                  (UVec.compileVec n n (UVec.normalize ls))) =
+              UVec.normalize ls := by
+          exact (UVec.normalize_compileVec
+            (ambient := n) (len := n) (UVec.normalize ls) hlen).trans
+              (UVec.normalize_compile_normalize ls n hvec)
+        have ha :
+            UTerm.normalize
+                (UTerm.ofT
+                  (UTerm.compile n (UTerm.normalize add))) =
+              UTerm.normalize add :=
+          UTerm.normalize_compile_normalize add n hadd
+        change
+          UTerm.P
+              (UVec.normalize
+                (UVec.ofVec
+                  (UVec.compileVec n n (UVec.normalize ls))))
+              (UTerm.normalize
+                (UTerm.ofT
+                  (UTerm.compile n (UTerm.normalize add)))) =
+            UTerm.P (UVec.normalize ls) (UTerm.normalize add)
+        exact congrArg₂ UTerm.P hv ha
+
+  theorem UVec.mapNormalize_compile_normalize :
+      (xs : UVec) → (n : Nat) →
+        UVec.maxArity (UVec.mapNormalize xs) ≤ n →
+        UVec.mapNormalize
+            (UVec.compiledCode n (UVec.mapNormalize xs)) =
+          UVec.mapNormalize xs
+    | .nil, n, h => rfl
+    | .snoc xs x, n, h => by
+        change
+          Nat.max (UVec.maxArity (UVec.mapNormalize xs))
+            (UTerm.arity (UTerm.normalize x)) ≤ n at h
+        have hxs : UVec.maxArity (UVec.mapNormalize xs) ≤ n :=
+          Nat.le_trans (Nat.le_max_left _ _) h
+        have hx : UTerm.arity (UTerm.normalize x) ≤ n :=
+          Nat.le_trans (Nat.le_max_right _ _) h
+        simp only [UVec.mapNormalize, UVec.compiledCode_snoc]
+        exact congrArg₂ UVec.snoc
+          (UVec.mapNormalize_compile_normalize xs n hxs)
+          (UTerm.normalize_compile_normalize x n hx)
+
+  theorem UVec.normalize_compile_normalize :
+      (xs : UVec) → (n : Nat) →
+        UVec.maxArity (UVec.normalize xs) ≤ n →
+        UVec.normalize
+            (UVec.compiledCode n (UVec.normalize xs)) =
+          UVec.normalize xs
+    | .nil, n, h => rfl
+    | .snoc xs x, n, h => by
+        cases hnx : UTerm.normalize x with
+        | Z =>
+            have hxs : UVec.maxArity (UVec.normalize xs) ≤ n := by
+              simpa [UVec.normalize, hnx] using h
+            simpa [UVec.normalize, hnx] using
+              UVec.normalize_compile_normalize xs n hxs
+        | P ls add =>
+            have h' :
+                Nat.max (UVec.maxArity (UVec.mapNormalize xs))
+                  (UTerm.arity (UTerm.P ls add)) ≤ n := by
+              simpa [UVec.normalize, hnx] using h
+            have hxs : UVec.maxArity (UVec.mapNormalize xs) ≤ n :=
+              Nat.le_trans (Nat.le_max_left _ _) h'
+            have hx : UTerm.arity (UTerm.normalize x) ≤ n := by
+              rw [hnx]
+              exact Nat.le_trans (Nat.le_max_right _ _) h'
+            have hmap :=
+              UVec.mapNormalize_compile_normalize xs n hxs
+            have hterm :
+                UTerm.normalize
+                    (UTerm.ofT
+                      (UTerm.compile n (UTerm.P ls add))) =
+                  UTerm.P ls add := by
+              simpa [hnx] using
+                UTerm.normalize_compile_normalize x n hx
+            simp only [UVec.normalize, hnx, UVec.compiledCode_snoc]
+            rw [hterm]
+            exact congrArg
+              (fun ys => UVec.snoc ys (UTerm.P ls add)) hmap
+end
+
 end Multi
 end new
