@@ -3,8 +3,8 @@ import Subsp.Base
 namespace new
 namespace Multi
 
-/-- An unindexed term used to compare fixed-arity terms across different arities. -/
 mutual
+  /-- An unindexed term used to compare fixed-arity terms across different arities. -/
   inductive UTerm where
   | Z : UTerm
   | P (ls : UVec) (add : UTerm) : UTerm
