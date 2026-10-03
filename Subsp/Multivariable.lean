@@ -390,9 +390,7 @@ mutual
                 (UTerm.ofT
                   (UTerm.compile n (UTerm.normalize add)))) =
             UTerm.P (UVec.normalize ls) (UTerm.normalize add)
-        cases hv
-        cases ha
-        rfl
+        rw [hv, ha]
 
   theorem UVec.mapNormalize_compile_normalize :
       (xs : UVec) → (n : Nat) →
@@ -412,9 +410,7 @@ mutual
         simp only [UVec.mapNormalize, UVec.compiledCode_snoc]
         have hv := UVec.mapNormalize_compile_normalize xs n hxs
         have ht := UTerm.normalize_compile_normalize x n hx
-        cases hv
-        cases ht
-        rfl
+        rw [hv, ht]
 
   theorem UVec.normalize_compile_normalize :
       (xs : UVec) → (n : Nat) →
