@@ -454,6 +454,35 @@ mutual
             rw [hterm]
             exact congrArg
               (fun ys => UVec.snoc ys (UTerm.P ls add)) hmap
+
+
+theorem Term.representative_code (s : Term) :
+    RawT.code s.representative = s.code := by
+  refine Quotient.inductionOn s ?_
+  intro a
+  rcases a with ⟨n, t⟩
+  change
+    UTerm.normalize
+        (UTerm.ofT
+          (UTerm.compile
+            (UTerm.arity (UTerm.normalize (UTerm.ofT t)))
+            (UTerm.normalize (UTerm.ofT t)))) =
+      UTerm.normalize (UTerm.ofT t)
+  exact UTerm.normalize_compile_normalize
+    (UTerm.ofT t)
+    (UTerm.arity (UTerm.normalize (UTerm.ofT t)))
+    (Nat.le_refl _)
+
+theorem Term.mk_representative (s : Term) :
+    (Quotient.mk rawSetoid s.representative : Term) = s := by
+  refine Quotient.inductionOn s ?_
+  intro a
+  apply Quotient.sound
+  exact Term.representative_code (Quotient.mk rawSetoid a)
+
+theorem Term.ofFixed_representative (s : Term) :
+    Term.ofFixed s.representative.2 = s := by
+  simpa [Term.ofFixed] using Term.mk_representative s
 end
 
 end Multi
