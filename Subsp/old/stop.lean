@@ -1,3 +1,4 @@
+import Subsp.old.multivariable
 import Subsp.old.stop_ot_char
 
 /-! The order isomorphism between legacy OT terms and Buchholz normal forms below
