@@ -339,8 +339,9 @@ theorem UVec.normalize_compileVec {ambient len : Nat}
         UVec.normalize (UVec.compiledCode ambient xs)
       exact congrArg UVec.normalize
         (by
-          change UVec.ofVec v = UVec.compiledCode ambient xs
-          simpa [UVec.compiledCode, hc])
+          change UVec.ofVec v =
+            UVec.ofVec (UVec.compileElems ambient xs).2
+          rw [hc])
 
 end Multi
 end new
