@@ -22,32 +22,32 @@ mutual
   -/
   def UTerm.normalize : UTerm → UTerm
   | .Z => .Z
-  | .P ls add => .P (UVec.normalize ls) (normalize add)
+  | .P ls add => .P (UVec.normalize ls) (UTerm.normalize add)
 
   /-- Normalize entries without changing the vector length. -/
   def UVec.mapNormalize : UVec → UVec
   | .nil => .nil
-  | .snoc xs x => .snoc (mapNormalize xs) (UTerm.normalize x)
+  | .snoc xs x => .snoc (UVec.mapNormalize xs) (UTerm.normalize x)
 
   /-- Normalize entries and discard exactly the trailing zero coordinates. -/
   def UVec.normalize : UVec → UVec
   | .nil => .nil
   | .snoc xs x =>
       match UTerm.normalize x with
-      | .Z => normalize xs
-      | x' => .snoc (mapNormalize xs) x'
+      | .Z => UVec.normalize xs
+      | x' => .snoc (UVec.mapNormalize xs) x'
 end
 
 mutual
   /-- Forget the fixed arity of an indexed term. -/
   def UTerm.ofT {n : Nat} : T n → UTerm
   | .Z => .Z
-  | .P ls add => .P (UVec.ofVec ls) (ofT add)
+  | .P ls add => .P (UVec.ofVec ls) (UTerm.ofT add)
 
   /-- Forget the length index of a vector. -/
   def UVec.ofVec {n m : Nat} : Vec (T n) m → UVec
   | .nil => .nil
-  | .snoc _ xs x => .snoc (ofVec xs) (UTerm.ofT x)
+  | .snoc _ xs x => .snoc (UVec.ofVec xs) (UTerm.ofT x)
 end
 
 def UVec.length : UVec → Nat
@@ -62,11 +62,11 @@ mutual
   def UTerm.arity : UTerm → Nat
   | .Z => 0
   | .P ls add =>
-      Nat.max (UVec.length ls) (Nat.max (UVec.maxArity ls) (arity add))
+      Nat.max (UVec.length ls) (Nat.max (UVec.maxArity ls) (UTerm.arity add))
 
   def UVec.maxArity : UVec → Nat
   | .nil => 0
-  | .snoc xs x => Nat.max (maxArity xs) (UTerm.arity x)
+  | .snoc xs x => Nat.max (UVec.maxArity xs) (UTerm.arity x)
 end
 
 def vecGetD {A : Type} {m : Nat} (v : Vec A m) (fallback : A) (i : Nat) : A :=
@@ -82,13 +82,13 @@ mutual
   | .P ls add =>
       match UVec.compileElems n ls with
       | ⟨_, v⟩ =>
-          T.P (Vec.ofFn n (fun i => vecGetD v T.Z i.val)) (compile n add)
+          T.P (Vec.ofFn n (fun i => vecGetD v T.Z i.val)) (UTerm.compile n add)
 
   /-- Compile all entries while retaining their unindexed vector length. -/
   def UVec.compileElems (n : Nat) : UVec → Sigma (Vec (T n))
   | .nil => ⟨0, Vec.nil⟩
   | .snoc xs x =>
-      match compileElems n xs with
+      match UVec.compileElems n xs with
       | ⟨m, v⟩ => ⟨m + 1, Vec.snoc m v (UTerm.compile n x)⟩
 end
 
