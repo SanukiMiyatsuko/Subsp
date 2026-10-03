@@ -288,7 +288,10 @@ theorem UVec.ofVec_compileElems (ambient : Nat) :
       | mk m v =>
           have ih := UVec.ofVec_compileElems ambient xs
           rw [h] at ih
-          simp [UVec.compileElems, h, UVec.ofVec, UVec.compiledCode, ih]
+          have hs := congrArg
+            (fun ys => UVec.snoc ys
+              (UTerm.ofT (UTerm.compile ambient x))) ih
+          simpa [UVec.compileElems, h, UVec.ofVec, UVec.compiledCode] using hs
 
 theorem UVec.normalize_ofVec_resize {ambient m k : Nat}
     (v : Vec (T ambient) m) (h : m ≤ k) :
@@ -314,7 +317,8 @@ theorem UVec.normalize_ofVec_resize {ambient m k : Nat}
       · have hmk : m ≤ k := by omega
         simp only [Vec.ofFn, UVec.ofVec, UVec.normalize]
         have hlast : ¬ k < m := Nat.not_lt_of_ge hmk
-        simp [vecGetD, hlast, ih v hmk]
+        simp only [vecGetD, hlast, dite_false, UTerm.ofT, UTerm.normalize]
+        simpa [vecGetD] using ih v hmk
 
 theorem UVec.normalize_compileVec {ambient len : Nat}
     (xs : UVec) (h : UVec.length xs ≤ len) :
@@ -329,7 +333,7 @@ theorem UVec.normalize_compileVec {ambient len : Nat}
       rw [UVec.normalize_ofVec_resize v hmv]
       have hcode := UVec.ofVec_compileElems ambient xs
       rw [hc] at hcode
-      rw [hcode]
+      exact congrArg UVec.normalize hcode
 
 end Multi
 end new
