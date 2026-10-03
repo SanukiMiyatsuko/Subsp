@@ -42,46 +42,9 @@ theorem part_card_times (n : Nat) : ∀ s : T,
         exact ⟨trivial, trivial⟩
 
 theorem part_one_del_fst (n : Nat) (t : T) : (T.part n (T.one_del t)).1 = (T.part n t).1 := by
-  cases t with
-  | Z => rfl
-  | P p a b =>
-      cases p with
-      | zero => cases a <;> simp [T.one_del, T.part]
-      | succ p => rfl
-
-theorem G1_part_snd_subset (u n : Nat) : ∀ s x : T, x ∈ T.G1 u (T.part n s).2 → x ∈ T.G1 u s
-  | .Z, x, hx => hx
-  | .P p a r, x, hx => by
-      have ih := G1_part_snd_subset u n r x
-      by_cases hp : p ≤ n
-      · simp only [T.part, hp, ite_true] at hx
-        by_cases hu : u ≤ p
-        · simp only [T.G1, hu, ite_true, List.mem_append] at hx ⊢
-          rcases hx with hx | hx
-          · exact Or.inl hx
-          · exact Or.inr (ih hx)
-        · simp only [T.G1, hu, ite_false] at hx ⊢
-          exact ih hx
-      · simp only [T.part, hp, ite_false] at hx
-        by_cases hu : u ≤ p <;> simp [T.G1, hu, ih hx]
-
-/-- The low part of a principal argument is below the principal term. -/
-theorem part_snd_lt_wrap (K : Nat) (X : T) (hg : ∀ y ∈ T.G1 K X, y < X) :
-    (T.part K X).2 < T.P K X T.Z := by
-  have hi := part_second_index K X
-  cases hp : (T.part K X).2 with
-  | Z => exact T.Lt.Z_lt_P _ _ _
-  | P q d e =>
-      rw [hp] at hi
-      cases hi with
-      | p _ _ _ hq _ =>
-          rcases Nat.eq_or_lt_of_le hq with rfl | hq
-          · apply T.Lt.p_mid
-            apply hg d
-            apply G1_part_snd_subset q q X d
-            rw [hp]
-            simp [T.G1]
-          · exact T.Lt.p_head _ _ _ _ _ _ hq
+  match t with
+  | .P 0 .Z b => simp [T.one_del, T.part]
+  | .Z | .P (_ + 1) _ _ | .P 0 (.P _ _ _) _ => rfl
 
 /-! Bounds for the auxiliary vector translation. -/
 
@@ -173,44 +136,56 @@ theorem coord_hyp_of {lam : Nat} (u : Nat) (C : T) (i : Nat) (x : new.T lam)
       intro y hy
       cases hy
 
+theorem aux_top_le {lam : Nat} : ∀ {k : Nat} (v : new.Vec (new.T lam) k),
+    ∀ p a, (transAux v).1 = T.P p a T.Z → p ≤ k - 1 := by
+  intro k v p a he
+  obtain ⟨p', a', he', hp'⟩ := aux_principal v
+  rw [he] at he'
+  cases he'
+  exact hp'
+
 /-- The high part of a principal argument is the high part of its top coordinate. -/
-theorem aux_head_high {lam : Nat} : ∀ {k : Nat} (v : new.Vec (new.T lam) k),
+theorem aux_head_high_eq {lam : Nat} : ∀ {k : Nat} (v : new.Vec (new.T lam) k),
     VecGood v →
     ∀ p a, (transAux v).1 = T.P p a T.Z →
-      (T.part p a).1 = T.Z ∨
-        ∃ i : Fin k, i.val = p ∧ (T.part p a).1 = (T.part p (trans (v.idx i))).1
-  | _, .nil, _ => by
-      intro p a he
-      change T.P 0 T.Z T.Z = T.P p a T.Z at he
-      cases he
-      exact Or.inl rfl
-  | _, .snoc k v a, hv => by
-      intro p b he
+      ∀ i : Fin k, i.val = p → (T.part p a).1 = (T.part p (trans (v.idx i))).1
+  | _, .nil, _, _, _, _, i, _ => i.elim0
+  | _, .snoc k v a, hv, p, b, he, i, hi => by
       have hpre := VecGood_prefix v a hv
-      have hlast := VecGood_last v a hv
       cases k with
       | zero =>
           cases v
           rw [aux_single] at he
           cases he
-          exact Or.inr ⟨Fin.last 0, rfl, by simp [new.Vec.idx]⟩
+          have : i = Fin.last 0 := Fin.eq_of_val_eq (by have := i.isLt; omega)
+          subst this
+          simp [new.Vec.idx]
       | succ k =>
           by_cases haz : a = new.T.Z
           · subst a
             rw [aux_zero_tail] at he
-            rcases aux_head_high v hpre p b he with h | ⟨i, hi, h⟩
-            · exact Or.inl h
-            · refine Or.inr ⟨i.castSucc, hi, ?_⟩
-              simpa only [new.Vec.idx, Fin.val_castSucc, i.isLt, dite_true] using h
+            have hp := aux_top_le v p b he
+            have hik : i.val < k + 1 := by omega
+            simp only [new.Vec.idx, hik, dite_true]
+            exact aux_head_high_eq v hpre p b he ⟨i.val, hik⟩ hi
           · rw [aux_head_snoc v a haz] at he
             cases he
-            apply Or.inr
-            refine ⟨Fin.last (k + 1), rfl, ?_⟩
+            have hil : i = Fin.last (k + 1) := Fin.eq_of_val_eq (by simp; omega)
+            subst hil
             have hlow := aux_lower_closed v hpre
             rw [part_add_distrib, part_of_index (k + 1) _
               (Rank1Termination.index_mono (by omega) _ hlow.2.1), T.add_Z,
               (part_card_times (k + 1) _).1, part_one_del_fst]
             simp [new.Vec.idx]
+
+theorem aux_head_high {lam k : Nat} (v : new.Vec (new.T lam) k) (hv : VecGood v) (p : Nat) (a : T)
+    (he : (transAux v).1 = T.P p a T.Z) : (T.part p a).1 = T.Z ∨
+      ∃ i : Fin k, i.val = p ∧ (T.part p a).1 = (T.part p (trans (v.idx i))).1 := by
+  cases k with
+  | zero => cases v; cases he; exact Or.inl rfl
+  | succ k =>
+      have hp := aux_top_le v p a he
+      exact Or.inr ⟨⟨p, by omega⟩, rfl, aux_head_high_eq v hv p a he ⟨p, by omega⟩ rfl⟩
 
 /-! Bounds for supports of principal arguments. -/
 
@@ -306,7 +281,7 @@ theorem summand_args_lt {lam : Nat} (N : Nat)
             (fun z hz => hsupp z (source_tail_support_mem_Gi u w b z hz))
             (fun p c hs => hsumm p c (Or.inr hs))⟩
           have hsum : IsSummand K X TS := hsumm K X (Or.inl ⟨rfl, rfl⟩)
-          have hlow := part_snd_lt_wrap K X hgX
+          have hlow := part_snd_lt_wrap K X T.Z hX hgX
           rcases aux_head_high w hvg K X he with h | ⟨i, hi, h⟩
           · exact summand_arg_lt K X T.Z TS hTS hX .z hsum hTSne (by rw [h]; rfl) hlow
           · subst hi
@@ -364,21 +339,16 @@ theorem trans_lt_of_lt {lam : Nat} (s t : new.T lam) (hs : new.T.isNF s) (ht : n
 theorem trans_lt_iff {lam : Nat} (s t : new.T lam) (hs : new.T.isNF s) (ht : new.T.isNF t) :
     s < t ↔ trans s < trans t := by
   refine ⟨trans_lt_of_lt s t hs ht, fun h => ?_⟩
-  rcases new.T_total s t with h' | h' | h'
+  rcases new.T_total s t with h' | h' | rfl
   · exact h'
-  · exact False.elim (lt_asymm_thm h (trans_lt_of_lt t s ht hs h'))
-  · subst h'
-    exact False.elim (lt_irrefl_thm _ h)
+  · exact absurd (trans_lt_of_lt t s ht hs h') (lt_asymm_thm h)
+  · exact absurd h (lt_irrefl_thm _)
 
 theorem trans_injective_NF {lam : Nat} (s t : new.T lam) (hs : new.T.isNF s) (ht : new.T.isNF t)
     (h : trans s = trans t) : s = t := by
   rcases new.T_total s t with h' | h' | h'
-  · have := trans_lt_of_lt s t hs ht h'
-    rw [h] at this
-    exact False.elim (lt_irrefl_thm _ this)
-  · have := trans_lt_of_lt t s ht hs h'
-    rw [h] at this
-    exact False.elim (lt_irrefl_thm _ this)
+  · exact absurd (h ▸ trans_lt_of_lt s t hs ht h') (lt_irrefl_thm _)
+  · exact absurd (h ▸ trans_lt_of_lt t s ht hs h') (lt_irrefl_thm _)
   · exact h'
 
 end LegacyTranslation

@@ -1,7 +1,4 @@
-import Subsp.old.stop_low_dims
-import Subsp.old.stop_translation
 import Subsp.old.stop_ot_char
-import Subsp.old.stop_ot_domain
 
 /-! The order isomorphism between legacy OT terms and Buchholz normal forms below
 `ψ_0(Ω_lam)`, given by the legacy translation. -/
@@ -61,37 +58,79 @@ theorem SubNF_args (k : Nat) : ∀ t : T, T.isNF1 t → t < T.P 0 (T.P (k + 1) T
       · exact lt_trans_thm _ _ _ (hgx y hy) hxl
       · exact SubNF_args k r hr hrl y hy
 
-theorem SubNF_DeepIdx (k : Nat) (t : T) (ht : T.isSubNF (k + 1) t) : DeepIdx k t := by
-  apply DeepIdx_of_args k t ht.1 (SubNF_args k t ht.1 ht.2)
-  apply Rank1Termination.index_mono (Nat.zero_le k)
-  apply index_of_lt_level 0 t ht.1
-  exact lt_trans_thm _ _ _ ht.2 (T.Lt.p_head _ _ _ _ _ _ (Nat.zero_lt_succ 0))
-
 theorem otBound_isNF (lam : Nat) : new.T.isNF (new.T.otBound lam) := by
-  apply new.T.isNF.p _ _ _ new.T.isNF.z _ (new.T.Z_le _)
-  · intro i
-    rw [new.Vec.ofFn_idx]
-    split
-    · exact (new.T.ofNat_isNFComp 0 1).1
-    · exact new.T.isNF.z
-  · intro i
-    rw [new.Vec.ofFn_idx]
-    split
-    · exact (new.T.ofNat_isNFComp i.val 1).2
-    · intro x hx; cases hx
+  refine new.T.isNF.p _ _ (fun i => ?_) new.T.isNF.z (fun i => ?_) (new.T.Z_le _) <;>
+    rw [new.Vec.ofFn_idx] <;> split
+  · exact (new.T.ofNat_isNFComp 0 1).1
+  · exact new.T.isNF.z
+  · exact (new.T.ofNat_isNFComp i.val 1).2
+  · intro x hx; cases hx
 
-theorem OT_isSubNF (lam : Nat) (s : new.T lam) (hs : new.T.isOT lam s) :
-    T.isSubNF lam (trans s) :=
-  ⟨trans_isNF1 s (new.T.isOT_isNF s hs), OT_bound lam s hs⟩
+theorem trans_otBound (k : Nat) : trans (new.T.otBound (k + 2)) = T.P 1 T.Z T.Z := by
+  have haux (j : Nat) (u : new.T (k + 2)) (hu : trans u = T.P 0 T.Z T.Z) :
+      transAux (new.Vec.ofFn (j + 2) (fun i => if i.val = 1 then u else new.T.Z)) =
+        (T.P 1 T.Z T.Z, T.P 1 T.Z T.Z) := by
+    induction j with
+    | zero =>
+        change transAux (new.Vec.snoc 1 (new.Vec.snoc 0 new.Vec.nil new.T.Z) u) = _
+        cases u with
+        | Z => cases hu
+        | P ls add =>
+            simp [transAux, hu, _root_.trans.eq_1, T.early_collapse, T.part, T.card_times,
+              T.one_del]
+            constructor <;> rfl
+    | succ j ih =>
+        rw [new.Vec.ofFn]
+        simp only [Fin.val_last, Fin.val_castSucc, show j + 2 ≠ 1 by omega, ite_false]
+        rw [transAux_snoc_zero]
+        exact ih
+  rw [new.T.otBound, trans_as_add, haux k _ (by rw [trans_as_add, transAux_zeros]; rfl)]
+  rfl
 
-theorem SubNF_preimage (k : Nat) (t : T) (ht : T.isSubNF (k + 1) t) :
-    ∃ s : new.T (k + 1), new.T.isOT (k + 1) s ∧ trans s = t := by
-  obtain ⟨s, hs, hts⟩ := trans_surj (Nat.zero_lt_succ k) t ht.1 (SubNF_DeepIdx k t ht)
-  refine ⟨s, (OT_iff_NF_src (k + 1) s).mpr ⟨hs, fun hk => ?_⟩, hts⟩
-  obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
-  apply (trans_lt_iff _ _ hs (otBound_isNF (j + 2))).mpr
-  rw [hts, trans_otBound j]
-  exact lt_trans_thm _ _ _ ht.2 (T.Lt.p_head _ _ _ _ _ _ (Nat.zero_lt_succ 0))
+theorem SubNF_preimage (lam : Nat) (t : T) (ht : T.isSubNF lam t) :
+    ∃ s : new.T lam, new.T.isOT lam s ∧ trans s = t := by
+  cases lam with
+  | zero =>
+      -- below `ψ_0(Ω_0)` all normal forms are finite
+      have hN : T.IsN t := by
+        obtain ⟨ht, hlt⟩ := ht
+        have hhead : T.head t ≤ T.P 0 T.Z T.Z := by
+          cases hlt with
+          | Z_lt_P => exact T.Z_le _
+          | p_head _ _ _ _ _ _ h => exact absurd h (Nat.not_lt_zero _)
+          | p_mid _ a _ _ _ h => rw [lt_one_eq_Z a h]; exact Or.inr rfl
+          | p_tail _ _ _ _ h => cases h
+        clear hlt
+        induction ht with
+        | z => exact .zero
+        | p p a b _ _ _ hh _ ih =>
+            rcases hhead with hh' | hh'
+            · cases hh' with
+              | p_head _ _ _ _ _ _ h => exact absurd h (Nat.not_lt_zero _)
+              | p_mid _ _ _ _ _ h | p_tail _ _ _ _ h => cases h
+            · cases hh'
+              exact .succ b (ih hh)
+      obtain ⟨n, rfl⟩ := IsN_exists_ofNat hN
+      clear hN ht
+      have h : trans (new.T.ofNat (lam := 0) n) = T.ofNat n ∧ new.T.LF 0 n = new.T.ofNat n := by
+        induction n with
+        | zero => exact ⟨rfl, rfl⟩
+        | succ n ih =>
+            exact ⟨by rw [new.T.ofNat, trans_zeros_P, ih.1]; rfl,
+              congrArg (new.T.P new.Vec.nil) ih.2⟩
+      exact ⟨new.T.ofNat n, h.2 ▸ new.T.isOT.base_0 n, h.1⟩
+  | succ k =>
+      have hD : DeepIdx k t := by
+        apply DeepIdx_of_args k t ht.1 (SubNF_args k t ht.1 ht.2)
+        apply Rank1Termination.index_mono (Nat.zero_le k)
+        apply index_of_lt_level 0 t ht.1
+        exact lt_trans_thm _ _ _ ht.2 (T.Lt.p_head _ _ _ _ _ _ (Nat.zero_lt_succ 0))
+      obtain ⟨s, hs, hts⟩ := trans_surj_aux (Nat.zero_lt_succ k) _ t (Nat.le_refl _) ht.1 hD
+      refine ⟨s, (OT_iff_NF_src k s).mpr ⟨hs, fun hk => ?_⟩, hts⟩
+      obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
+      apply (trans_lt_iff _ _ hs (otBound_isNF (j + 2))).mpr
+      rw [hts, trans_otBound j]
+      exact lt_trans_thm _ _ _ ht.2 (T.Lt.p_head _ _ _ _ _ _ (Nat.zero_lt_succ 0))
 
 end LegacyTranslation
 
@@ -100,21 +139,17 @@ theorem OT_SubNF_order_iso (lam : Nat) :
       (∀ s t, f s = f t → s = t) ∧
       (∀ t, ∃ s, f s = t) ∧
       (∀ s t, s.val < t.val ↔ (f s).val < (f t).val) := by
-  cases lam with
-  | zero => exact OT_SubNF_order_iso_zero
-  | succ k =>
-      refine ⟨fun s => ⟨trans s.val, LegacyTranslation.OT_isSubNF (k + 1) s.val s.property⟩,
-        ?_, ?_, ?_⟩
-      · intro s t h
-        exact Subtype.ext (LegacyTranslation.trans_injective_NF s.val t.val
-          (new.T.isOT_isNF _ s.property) (new.T.isOT_isNF _ t.property)
-          (congrArg Subtype.val h))
-      · intro t
-        obtain ⟨s, hs, hts⟩ := LegacyTranslation.SubNF_preimage k t.val t.property
-        exact ⟨⟨s, hs⟩, Subtype.ext hts⟩
-      · intro s t
-        exact LegacyTranslation.trans_lt_iff s.val t.val
-          (new.T.isOT_isNF _ s.property) (new.T.isOT_isNF _ t.property)
+  refine ⟨fun s => ⟨trans s.val, LegacyTranslation.trans_isNF1 _ (new.T.isOT_isNF _ s.property),
+    LegacyTranslation.OT_bound lam _ s.property⟩, ?_, ?_, ?_⟩
+  · intro s t h
+    exact Subtype.ext (LegacyTranslation.trans_injective_NF s.val t.val
+      (new.T.isOT_isNF _ s.property) (new.T.isOT_isNF _ t.property) (congrArg Subtype.val h))
+  · intro t
+    obtain ⟨s, hs, hts⟩ := LegacyTranslation.SubNF_preimage lam t.val t.property
+    exact ⟨⟨s, hs⟩, Subtype.ext hts⟩
+  · intro s t
+    exact LegacyTranslation.trans_lt_iff s.val t.val
+      (new.T.isOT_isNF _ s.property) (new.T.isOT_isNF _ t.property)
 
 theorem wellfounded_OT (lam : Nat) : WellFounded (fun s t : new.T.OT lam => s.val < t.val) :=
   InvImage.wf

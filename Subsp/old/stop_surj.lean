@@ -1,4 +1,4 @@
-import Subsp.old.stop_inverse_top
+import Subsp.old.stop_inverse_target
 
 /-! Surjectivity of the legacy translation onto Buchholz normal forms with indices below
 the dimension. -/
@@ -111,51 +111,24 @@ theorem zeros_coords {lam : Nat} (u : Nat) :
 
 /-! Pieces of a principal argument. -/
 
-theorem lpInv_NF (e : T) (he : T.isNF1 e) : T.isNF1 (lpInv e) := by
-  cases e with
-  | Z => exact .p 0 T.Z T.Z .z .z (fun _ h => by cases h) (T.Z_le _)
-  | P p h t =>
-      cases p with
-      | zero =>
-          cases h with
-          | Z => exact .p 0 T.Z _ .z he (fun _ h => by cases h) (Or.inr rfl)
-          | P _ _ _ => exact he
-      | succ p => exact he
-
 theorem lpInv_good (K : Nat) (hK : 0 < K) (e : T) (he : T.isNF1 e)
     (hg : ∀ x ∈ T.G1 K e, x < e) : ∀ x ∈ T.G1 K (lpInv e), x < lpInv e := by
-  cases e with
-  | Z => intro x hx; simp [lpInv, T.G1, show ¬ K ≤ 0 by omega] at hx
-  | P p h t =>
-      cases p with
-      | zero =>
-          cases h with
-          | Z =>
-              intro x hx
-              simp only [lpInv, T.G1, show ¬ K ≤ 0 by omega, ite_false] at hx
-              have hxe := hg x (by simp only [T.G1, show ¬ K ≤ 0 by omega, ite_false]; exact hx)
-              exact lt_trans_thm _ _ _ hxe (T.Lt.p_tail _ _ _ _ (NF_tail_lt 0 T.Z t he))
-          | P _ _ _ => exact hg
-      | succ p => exact hg
+  match e, he, hg with
+  | .Z, _, _ => intro x hx; simp [lpInv, T.G1, show ¬ K ≤ 0 by omega] at hx
+  | .P 0 .Z t, he, hg =>
+      intro x hx
+      simp only [lpInv, T.G1, show ¬ K ≤ 0 by omega, ite_false] at hx
+      exact lt_trans_thm _ _ _ (hg x (by simp only [T.G1, show ¬ K ≤ 0 by omega, ite_false]; exact hx))
+        (T.Lt.p_tail _ _ _ _ (NF_tail_lt 0 T.Z t he))
+  | .P (_ + 1) _ _, _, hg | .P 0 (.P _ _ _) _, _, hg => exact hg
 
 theorem lpInv_ne_Z (e : T) : lpInv e ≠ T.Z := by
-  cases e with
-  | Z => intro h; cases h
-  | P p h t =>
-      cases p with
-      | zero => cases h <;> intro h' <;> cases h'
-      | succ p => intro h'; cases h'
+  match e with
+  | .Z | .P 0 .Z _ | .P 0 (.P _ _ _) _ | .P (_ + 1) _ _ => intro h; cases h
 
-theorem DeepIdx_lpInv (l : Nat) (e : T) (he : DeepIdx l e) : DeepIdx l (lpInv e) := by
-  cases e with
-  | Z => exact ⟨Nat.zero_le _, trivial, trivial⟩
-  | P p h t =>
-      cases p with
-      | zero =>
-          cases h with
-          | Z => exact ⟨Nat.zero_le _, trivial, he⟩
-          | P _ _ _ => exact he
-      | succ p => exact he
+theorem PZ_isNF {lam : Nat} (v : new.Vec (new.T lam) lam)
+    (hv : ∀ i : Fin lam, new.T.isNFComp i.val (v.idx i)) : new.T.isNF (new.T.P v new.T.Z) :=
+  new.T.isNF.p v _ (fun i => (hv i).1) .z (fun i => (hv i).2) (new.T.Z_le _)
 
 theorem idxPart_props (i : Nat) (hi : 0 < i) (c : T) (hc : T.isNF1 c) :
     T.isNF1 (idxPart i c) ∧ (∀ p a, IsSummand p a (idxPart i c) → p = i) ∧
@@ -167,9 +140,8 @@ theorem idxPart_props (i : Nat) (hi : 0 < i) (c : T) (hc : T.isNF1 c) :
     have h1 := part_fst_summand_gt (i - 1) _ p a hs
     have h2 := (summands_of_part_snd i c p a (summands_of_part_fst (i - 1) _ p a hs)).2
     omega
-  · exact Nat.le_trans (degree_part (i - 1) _).1 (degree_part i c).2
-  · intro l hl
-    exact (DeepIdx_part l (i - 1) _ (DeepIdx_part l i c hl).2).1
+  · exact Nat.le_trans (part_props 0 (i - 1) _).1 (part_props 0 i c).2.1
+  · exact fun l hl => ((part_props l (i - 1) _).2.2 ((part_props l i c).2.2 hl).2).1
 
 /-- The contribution of a coordinate translation at a lower index. -/
 def TContr (i : Nat) (t : T) : T :=
@@ -189,24 +161,19 @@ theorem lowPiece_props (c : T) (hc : T.isNF1 c) (i : Nat) :
     have hL := (part_NF 0 c hc).2
     have hLi := part_second_index 0 c
     simp only [lowPiece, TContr, ite_true]
-    exact ⟨UE_NF 0 _ hL hLi, UE_good 0 _ hL hLi,
-      Nat.le_trans (UE_degree 0 _) (degree_part 0 c).2,
-      fun l _ hl => DeepIdx_UE l 0 _ (DeepIdx_part l 0 c hl).2, UE_spec 0 _ hL hLi⟩
+    obtain ⟨h1, h2, h3, h4, h5⟩ := UE_props 0 _ hL hLi
+    exact ⟨h2, h3, Nat.le_trans h4 (part_props 0 0 c).2.1,
+      fun l _ hl => h5 l ((part_props l 0 c).2.2 hl).2, h1⟩
   · have hip : 0 < i := Nat.pos_of_ne_zero hi
     obtain ⟨hIn, hIi, hId, hIl⟩ := idxPart_props i hip c hc
     have hUn := UC_NF i hip _ hIn (fun p a hs => (hIi p a hs).symm ▸ Nat.le_refl i)
     have hUi := UC_index i hip _ hIn hIi
     simp only [lowPiece, TContr, hi, ite_false]
-    refine ⟨UE_NF i _ hUn hUi, UE_good i _ hUn hUi,
-      Nat.le_trans (UE_degree i _) (Nat.le_trans (UC_degree i hip _ hIn) hId),
-      fun l hil hl => DeepIdx_UE l i _ (UC_DeepIdx i l hip hil _ hIn (hIl l hl)), ?_⟩
-    rw [UE_spec i _ hUn hUi, UC_spec i hip _ hIn (fun p a hs => (hIi p a hs).symm ▸ Nat.le_refl i)]
-
-theorem DeepIdx_P_inv (l p : Nat) (c r : T) (h : DeepIdx l (T.P p c r)) :
-    p ≤ l ∧ DeepIdx l c ∧ DeepIdx l r := h
-
-theorem degree_P (p : Nat) (c r : T) : degree c < degree (T.P p c r) ∧ degree r ≤ degree (T.P p c r) :=
-  ⟨Nat.lt_of_lt_of_le (Nat.lt_succ_self _) (Nat.le_max_left _ _), Nat.le_max_right _ _⟩
+    obtain ⟨h1, h2, h3, h4, h5⟩ := UE_props i _ hUn hUi
+    obtain ⟨hd, hdi⟩ := UC_props i hip _ hIn
+    refine ⟨h2, h3, Nat.le_trans h4 (Nat.le_trans hd hId),
+      fun l hil hl => h5 l (hdi l hil (hIl l hl)), ?_⟩
+    rw [h1, UC_spec i hip _ hIn (fun p a hs => (hIi p a hs).symm ▸ Nat.le_refl i)]
 
 /-! Preimages of principal terms. -/
 
@@ -217,7 +184,7 @@ theorem principal_preimage {lam : Nat} (hlam : 0 < lam) (K : Nat) (c : T)
     ∃ w : new.Vec (new.T lam) lam, (∀ i : Fin lam, new.T.isNFComp i.val (w.idx i)) ∧
       (transAux w).1 = T.P K c T.Z := by
   obtain ⟨hc, _, hgc, _⟩ := T.isNF1_P_inv K c T.Z hy
-  obtain ⟨hKl, hcl, _⟩ := DeepIdx_P_inv _ _ _ _ hidx
+  obtain ⟨hKl, hcl, _⟩ := hidx
   have hKlam : K < lam := by omega
   by_cases hK : K = 0
   · subst hK
@@ -248,9 +215,9 @@ theorem principal_preimage {lam : Nat} (hlam : 0 < lam) (K : Nat) (c : T)
     have heNF := UC_NF K hKp _ hdNF hdidx
     have hegood := UC_top_good K hKp c hc hgc
     have hedeg : degree (UC K (T.part (K - 1) c).1) ≤ degree c :=
-      Nat.le_trans (UC_degree K hKp _ hdNF) (degree_part (K - 1) c).1
+      Nat.le_trans (UC_props K hKp _ hdNF).1 (part_props 0 (K - 1) c).1
     have heidx : DeepIdx (lam - 1) (UC K (T.part (K - 1) c).1) :=
-      UC_DeepIdx K (lam - 1) hKp hKl _ hdNF (DeepIdx_part _ (K - 1) c hcl).1
+      (UC_props K hKp _ hdNF).2 (lam - 1) hKl ((part_props _ (K - 1) c).2.2 hcl).1
     obtain ⟨ae, hae, htae⟩ := IH _ hedeg heNF heidx
     -- the top coordinate
     have htop : ∃ aK : new.T lam, new.T.isNF aK ∧ new.T.isNFComp K aK ∧
@@ -258,8 +225,7 @@ theorem principal_preimage {lam : Nat} (hlam : 0 < lam) (K : Nat) (c : T)
       have hlg := lpInv_good K hKp _ heNF hegood
       have hlne := lpInv_ne_Z (UC K (T.part (K - 1) c).1)
       have hzNF : new.T.isNF (new.T.P (new.Vec.ofFn lam (fun _ => (new.T.Z : new.T lam))) new.T.Z) :=
-        new.T.isNF.p _ _ (fun i => (zeros_coords 0 i).1) .z (fun i => (zeros_coords i.val i).2)
-          (new.T.Z_le _)
+        PZ_isNF _ fun i => zeros_coords i.val i
       have hpre : ∃ aK : new.T lam, new.T.isNF aK ∧
           trans aK = lpInv (UC K (T.part (K - 1) c).1) := by
         cases hE : UC K (T.part (K - 1) c).1 with
@@ -285,10 +251,7 @@ theorem principal_preimage {lam : Nat} (hlam : 0 < lam) (K : Nat) (c : T)
                           injection htae with h1 h2 _
                           subst h1; subst h2
                           obtain ⟨hw', _, _⟩ := new.T.isNF_P_inv w' b' hae
-                          have hw'NF : new.T.isNF (new.T.P w' new.T.Z) :=
-                            new.T.isNF.p w' _ (fun i => (hw' i).1) .z (fun i => (hw' i).2)
-                              (new.T.Z_le _)
-                          have heq := trans_injective_NF _ _ hw'NF hzNF
+                          have heq := trans_injective_NF _ _ (PZ_isNF w' hw') hzNF
                             (by rw [trans_as_add, he', trans_zeros_P]; rfl)
                           show new.T.P w' new.T.Z ≤ _
                           rw [heq]
@@ -344,10 +307,6 @@ theorem trans_PZ_eq {lam : Nat} (v : new.Vec (new.T lam) lam) :
   rw [trans_as_add, he, p_zero_add]
   rfl
 
-theorem PZ_isNF {lam : Nat} (v : new.Vec (new.T lam) lam)
-    (hv : ∀ i : Fin lam, new.T.isNFComp i.val (v.idx i)) : new.T.isNF (new.T.P v new.T.Z) :=
-  new.T.isNF.p v _ (fun i => (hv i).1) .z (fun i => (hv i).2) (new.T.Z_le _)
-
 theorem trans_surj_aux {lam : Nat} (hlam : 0 < lam) : ∀ (n : Nat) (y : T), degree y ≤ n →
     T.isNF1 y → DeepIdx (lam - 1) y → ∃ a : new.T lam, new.T.isNF a ∧ trans a = y
   | 0, y, hd, _, _ => by
@@ -359,7 +318,7 @@ theorem trans_surj_aux {lam : Nat} (hlam : 0 < lam) : ∀ (n : Nat) (y : T), deg
       | Z => exact ⟨new.T.Z, new.T.isNF.z, rfl⟩
       | P K c r _ ihr =>
           obtain ⟨hc, hr, hgc, hrh⟩ := T.isNF1_P_inv K c r hy
-          obtain ⟨hKl, hcl, hrl⟩ := DeepIdx_P_inv _ _ _ _ hi
+          obtain ⟨hKl, hcl, hrl⟩ := hi
           have hdeg : degree c ≤ n := Nat.le_of_succ_le_succ (Nat.le_trans (Nat.le_max_left _ _) hd)
           have hdr : degree r ≤ n + 1 := Nat.le_trans (Nat.le_max_right _ _) hd
           obtain ⟨w, hw, hwe⟩ := principal_preimage hlam K c
@@ -383,10 +342,5 @@ theorem trans_surj_aux {lam : Nat} (hlam : 0 < lam) : ∀ (n : Nat) (y : T), deg
                 · rw [trans_injective_NF _ _ hw'NF hwNF heq]
                   exact new.T.le_refl _
           · rw [trans_as_add, hwe, p_zero_add, htar]
-
-/-- Every Buchholz normal form with indices below the dimension is a translation. -/
-theorem trans_surj {lam : Nat} (hlam : 0 < lam) (y : T) (hy : T.isNF1 y)
-    (hi : DeepIdx (lam - 1) y) : ∃ a : new.T lam, new.T.isNF a ∧ trans a = y :=
-  trans_surj_aux hlam (degree y) y (Nat.le_refl _) hy hi
 
 end LegacyTranslation

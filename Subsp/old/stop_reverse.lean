@@ -84,47 +84,6 @@ theorem aux_above_zero {lam : Nat} : ∀ {k : Nat} (v : new.Vec (new.T lam) k),
             have := i.isLt
             omega
 
-theorem aux_top_le {lam : Nat} : ∀ {k : Nat} (v : new.Vec (new.T lam) k),
-    ∀ p a, (transAux v).1 = T.P p a T.Z → p ≤ k - 1 := by
-  intro k v p a he
-  obtain ⟨p', a', he', hp'⟩ := aux_principal v
-  rw [he] at he'
-  cases he'
-  exact hp'
-
-theorem aux_head_high_eq {lam : Nat} : ∀ {k : Nat} (v : new.Vec (new.T lam) k),
-    VecGood v →
-    ∀ p a, (transAux v).1 = T.P p a T.Z →
-      ∀ i : Fin k, i.val = p → (T.part p a).1 = (T.part p (trans (v.idx i))).1
-  | _, .nil, _, _, _, _, i, _ => i.elim0
-  | _, .snoc k v a, hv, p, b, he, i, hi => by
-      have hpre := VecGood_prefix v a hv
-      cases k with
-      | zero =>
-          cases v
-          rw [aux_single] at he
-          cases he
-          have : i = Fin.last 0 := Fin.eq_of_val_eq (by have := i.isLt; omega)
-          subst this
-          simp [new.Vec.idx]
-      | succ k =>
-          by_cases haz : a = new.T.Z
-          · subst a
-            rw [aux_zero_tail] at he
-            have hp := aux_top_le v p b he
-            have hik : i.val < k + 1 := by omega
-            simp only [new.Vec.idx, hik, dite_true]
-            exact aux_head_high_eq v hpre p b he ⟨i.val, hik⟩ hi
-          · rw [aux_head_snoc v a haz] at he
-            cases he
-            have hil : i = Fin.last (k + 1) := Fin.eq_of_val_eq (by simp; omega)
-            subst hil
-            have hlow := aux_lower_closed v hpre
-            rw [part_add_distrib, part_of_index (k + 1) _
-              (Rank1Termination.index_mono (by omega) _ hlow.2.1), T.add_Z,
-              (part_card_times (k + 1) _).1, part_one_del_fst]
-            simp [new.Vec.idx]
-
 def Contr {lam : Nat} (i : Nat) (x : new.T lam) : T :=
   if i = 0 then T.early_collapse 0 (trans x) else T.card_times i (T.early_collapse i (trans x))
 
@@ -204,8 +163,7 @@ theorem aux_contr_G1 {lam : Nat} (u : Nat) : ∀ {k : Nat} (v : new.Vec (new.T l
 theorem aux_head_countable {lam : Nat} {k : Nat} (v : new.Vec (new.T lam) (k + 1))
     (a : T) (he : (transAux v).1 = T.P 0 a T.Z) :
     a = trans (v.idx ⟨0, Nat.zero_lt_succ k⟩) := by
-  have hz := aux_above_zero v 0 a he
-  rw [transAux_countable_head_exact v (fun i hi => hz i hi)] at he
+  rw [transAux_countable_head_exact v (aux_above_zero v 0 a he)] at he
   cases he
   rfl
 

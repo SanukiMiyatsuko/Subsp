@@ -1,5 +1,4 @@
 import Subsp.old.stop_reverse
-import Subsp.old.stop_source_dim
 
 /-! Reverse transfer, assembled by downward induction on the support level. -/
 
@@ -36,9 +35,7 @@ theorem SInv_of_summands {lam : Nat} (u : Nat) (V : List T) : ∀ x : new.T lam,
       refine ⟨fun p a he' hup => ?_,
         SInv_of_summands u V b (fun p a hs hup => h p a (by rw [htr]; exact Or.inr hs) hup)⟩
       rw [he] at he'
-      injection he' with h1 h2 _
-      subst h1
-      subst h2
+      cases he'
       exact h _ _ (by rw [htr]; exact Or.inl ⟨rfl, rfl⟩) hup
 
 theorem SInv_top {lam : Nat} (u : Nat) (A : new.T lam) (hA : new.T.isNF A) :
@@ -88,10 +85,7 @@ theorem deepDom {lam : Nat} (u : Nat) (V : List T) {q c : new.T lam} (hr : Reach
       obtain ⟨hw, _, _⟩ := new.T.isNF_P_inv w b hq
       obtain ⟨p, a, he, _⟩ := aux_principal w
       have hne' : w.idx i ≠ new.T.Z := Reach_ne_Z u hr
-      have hip : i.val ≤ p := by
-        rcases Nat.lt_or_ge p i.val with h | h
-        · exact False.elim (hne' (aux_above_zero w p a he i h))
-        · exact h
+      have hip : i.val ≤ p := Nat.le_of_not_gt fun h => hne' (aux_above_zero w p a he i h)
       have hg := trans_good i.val (w.idx i) (hw i)
       have hcon := (aux_contr_G1 u w).2 p a he
       have hdomA := hinv.1 p a he (by omega)
@@ -279,10 +273,7 @@ theorem reach_lt {lam : Nat} (u : Nat) (A : new.T lam) (hA : new.T.isNF A)
         obtain ⟨p, a, he, _⟩ := aux_principal w
         have hhp := headIdx_eq w p a he
         have hne' : w.idx i ≠ new.T.Z := Reach_ne_Z u hr
-        have hip : i.val ≤ p := by
-          rcases Nat.lt_or_ge p i.val with h | h
-          · exact False.elim (hne' (aux_above_zero w p a he i h))
-          · exact h
+        have hip : i.val ≤ p := Nat.le_of_not_gt fun h => hne' (aux_above_zero w p a he i h)
         have hsz := Reach_size u hr
         have hj : u < headIdx w := by rw [hhp]; omega
         apply prefixArg (new.T.P w b) hsx w b rfl hj
@@ -291,31 +282,21 @@ theorem reach_lt {lam : Nat} (u : Nat) (A : new.T lam) (hA : new.T.isNF A)
         omega
   exact main A c hc rfl (.refl A)
 
-theorem rt_step {lam : Nat} (u : Nat) (A : new.T lam) (hA : new.T.isNF A)
-    (hgood : ∀ y ∈ T.G1 u (trans A), y < trans A) (h1 : new.T.isNFComp (u + 1) A) :
-    new.T.isNFComp u A := by
-  refine ⟨hA, fun z hz => ?_⟩
-  rcases Gi_split u A z hz with h | ⟨c, hc, hzc⟩
-  · exact h1.2 z h
-  · have hclt := reach_lt u A hA hgood c hc
-    obtain ⟨hcc, _⟩ := Reach_comp u hc hA
-    rcases hzc with rfl | hzc
-    · exact hclt
-    · exact strict_partial_order.trans _ _ _ (hcc.2 z hzc) hclt
-
-theorem reverse_transfer_aux {lam : Nat} : ∀ (k u : Nat), u + k = lam →
-    ∀ A : new.T lam, new.T.isNF A →
-      (∀ y ∈ T.G1 u (trans A), y < trans A) → new.T.isNFComp u A
-  | 0, u, h, A, hA, _ => new.T.isNFComp_above_dim u (by omega) A hA
-  | k + 1, u, h, A, hA, hg =>
-      rt_step u A hA hg (reverse_transfer_aux k (u + 1) (by omega) A hA
-        (fun y hy => hg y (G1_antitone u (u + 1) (Nat.le_succ u) _ y hy)))
-
 /-- Buchholz goodness of the translation implies indexed goodness of the source. -/
 theorem reverse_transfer {lam : Nat} (u : Nat) (A : new.T lam) (hA : new.T.isNF A)
     (hg : ∀ y ∈ T.G1 u (trans A), y < trans A) : new.T.isNFComp u A := by
-  by_cases hu : lam ≤ u
-  · exact new.T.isNFComp_above_dim u hu A hA
-  · exact reverse_transfer_aux (lam - u) u (by omega) A hA hg
+  obtain ⟨k, hk⟩ : ∃ k, lam - u = k := ⟨_, rfl⟩
+  induction k generalizing u with
+  | zero => exact new.T.isNFComp_above_dim u (by omega) A hA
+  | succ k ih =>
+      have h1 := ih (u + 1) (fun y hy => hg y (G1_antitone u (u + 1) (Nat.le_succ u) _ y hy))
+        (by omega)
+      refine ⟨hA, fun z hz => ?_⟩
+      rcases Gi_split u A z hz with h | ⟨c, hc, hzc⟩
+      · exact h1.2 z h
+      · have hclt := reach_lt u A hA hg c hc
+        rcases hzc with rfl | hzc
+        · exact hclt
+        · exact strict_partial_order.trans _ _ _ ((Reach_comp u hc hA).1.2 z hzc) hclt
 
 end LegacyTranslation

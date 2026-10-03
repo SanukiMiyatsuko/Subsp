@@ -11,18 +11,6 @@ theorem stand_eq_self (s : T) (hs : T.isNF1 s) : T.stand s = s := by
   | z => rfl
   | p p a b _ _ _ hh _ ih => rw [T.stand, ih, ite_eq_left hh]
 
-theorem stand_ne_zero (s : T) (hs : s ≠ T.Z) : T.stand s ≠ T.Z := by
-  induction s with
-  | Z => exact False.elim (hs rfl)
-  | P p a b _ ih =>
-      rw [T.stand]
-      split
-      · intro h; cases h
-      · apply ih
-        intro h
-        subst b
-        exact ‹¬ T.head (T.stand T.Z) ≤ T.P p a T.Z› (T.Z_le _)
-
 theorem part_of_index (n : Nat) (s : T) (hs : T.index_Prop1 n s) :
     T.part n s = (T.Z, s) := by
   induction hs with
@@ -48,30 +36,13 @@ theorem part_second_index (n : Nat) (s : T) : T.index_Prop1 n (T.part n s).2 := 
       · exact .p p a _ ‹p ≤ n› ih
       · exact ih
 
-theorem part_first_index (n u : Nat) (s : T) (hs : T.index_Prop1 u s) :
-    T.index_Prop1 u (T.part n s).1 := by
-  induction hs with
-  | z => exact .z
-  | p p a b hp _ ih =>
-      rw [T.part]
-      split
-      · exact ih
-      · exact .p p a _ hp ih
-
-theorem isNF1_add_right (a b : T) (h : T.isNF1 (T.add a b)) : T.isNF1 b := by
+theorem isNF1_add_inv (a b : T) (h : T.isNF1 (T.add a b)) : T.isNF1 a ∧ T.isNF1 b := by
   induction a with
-  | Z => exact h
-  | P p a c _ ih =>
-      rw [T.P_add_eq] at h
-      exact ih (T.isNF1_P_inv p a _ h).2.1
-
-theorem isNF1_add_left (a b : T) (h : T.isNF1 (T.add a b)) : T.isNF1 a := by
-  induction a with
-  | Z => exact .z
+  | Z => exact ⟨.z, h⟩
   | P p a c _ ih =>
       rw [T.P_add_eq] at h
       obtain ⟨ha, hc, hg, hh⟩ := T.isNF1_P_inv p a _ h
-      refine .p p a c ha (ih hc) hg ?_
+      refine ⟨.p p a c ha (ih hc).1 hg ?_, (ih hc).2⟩
       cases c with
       | Z => exact T.Z_le _
       | P q d e => simpa only [T.head_add_ne_Z] using hh
@@ -88,10 +59,8 @@ theorem add_right_le_of_NF (a b : T)
         (T.isNF1_tail_le _ h p c (T.add d b) rfl)
 
 theorem part_NF (n : Nat) (s : T) (hs : T.isNF1 s) :
-    T.isNF1 (T.part n s).1 ∧ T.isNF1 (T.part n s).2 := by
-  have h : T.isNF1 (T.add (T.part n s).1 (T.part n s).2) :=
-    (part_add n s hs).symm ▸ hs
-  exact ⟨isNF1_add_left _ _ h, isNF1_add_right _ _ h⟩
+    T.isNF1 (T.part n s).1 ∧ T.isNF1 (T.part n s).2 :=
+  isNF1_add_inv _ _ ((part_add n s hs).symm ▸ hs)
 
 theorem G1_add (n : Nat) (a b : T) :
     T.G1 n (T.add a b) = T.G1 n a ++ T.G1 n b := by
@@ -118,12 +87,8 @@ theorem lt_prefix_of_size_lt (a b x : T) (ha : a ≠ T.Z)
 
 theorem support_prefix (n : Nat) (a b : T) (ha : a ≠ T.Z)
     (hg : ∀ x ∈ T.G1 n (T.add a b), x < T.add a b) :
-    ∀ x ∈ T.G1 n a, x < a := by
-  intro x hx
-  apply lt_prefix_of_size_lt a b x ha (G1_size_lt n a x hx)
-  apply hg x
-  rw [G1_add]
-  exact List.mem_append_left _ hx
+    ∀ x ∈ T.G1 n a, x < a := fun x hx =>
+  lt_prefix_of_size_lt a b x ha (G1_size_lt n a x hx) (hg x ((G1_add n a b).symm ▸ List.mem_append_left _ hx))
 
 theorem early_collapse_of_index (n : Nat) (s : T) (hs : T.index_Prop1 n s) :
     T.early_collapse n s = s := by
@@ -155,109 +120,6 @@ theorem add_self_le (a b : T) : a ≤ T.add a b := by
 theorem part_first_le (n : Nat) (s : T) (hs : T.isNF1 s) : (T.part n s).1 ≤ s := by
   have h := add_self_le (T.part n s).1 (T.part n s).2
   rwa [part_add n s hs] at h
-
-theorem early_collapse_support_above (n u : Nat) (s : T) (hs : T.isNF1 s)
-    (hg : ∀ x ∈ T.G1 n s, x < s) (hu : n < u) :
-    T.G1 u (T.early_collapse n s) = [] :=
-  index_Prop1_G1_empty n _ (early_collapse_closed n s hs hg).2 u hu
-
-theorem early_collapse_support_le (u n : Nat) (s : T)
-    (hun : u ≤ n) (hs : T.isNF1 s)
-    (hg : ∀ x : T, x ∈ T.G1 u s → x < s) :
-    ∀ x : T, x ∈ T.G1 u (T.early_collapse n s) → x ≤ s := by
-  intro x hx
-  rcases hp : T.part n s with ⟨a, b⟩
-  have hb : T.isNF1 b := by
-    simpa [hp] using (part_NF n s hs).2
-  have hmem : ∀ y : T, y ∈ T.G1 u a ++ T.G1 u b → y < s := by
-    intro y hy
-    apply hg y
-    rw [← part_add n s hs, hp, G1_add]
-    exact hy
-  simp only [T.early_collapse, hp] at hx
-  split at hx
-  · exact Or.inl (hmem x (List.mem_append_right _ hx))
-  · rw [T.stand, stand_eq_self b hb] at hx
-    split at hx
-    · simp only [T.G1, hun, ite_true, List.mem_append, List.mem_singleton] at hx
-      rcases hx with (rfl | hx) | hx
-      · simpa [hp] using part_first_le n s hs
-      · exact Or.inl (hmem x (List.mem_append_left _ hx))
-      · exact Or.inl (hmem x (List.mem_append_right _ hx))
-    · exact Or.inl (hmem x (List.mem_append_right _ hx))
-
-theorem stand_zero_support_le (u p : Nat) (b c : T)
-    (hup : u ≤ p) (hb : T.isNF1 b)
-    (hbc : ∀ x : T, x ∈ T.G1 u b → x ≤ c) :
-    ∀ x : T, x ∈ T.G1 u (T.stand (T.P p T.Z b)) → x ≤ c := by
-  intro x hx
-  rw [T.stand, stand_eq_self b hb] at hx
-  split at hx
-  · simp only [T.G1, hup, ite_true, List.append_nil, List.mem_append,
-      List.mem_singleton] at hx
-    rcases hx with rfl | hx
-    · exact T.Z_le c
-    · exact hbc x hx
-  · exact hbc x hx
-
-theorem early_collapse_support_source (u n : Nat) (s : T)
-    (hun : u ≤ n) (hs : T.isNF1 s) :
-    ∀ x : T, x ∈ T.G1 u (T.early_collapse n s) →
-      x ≤ s ∨ x ∈ T.G1 u s := by
-  intro x hx
-  rcases hp : T.part n s with ⟨a, b⟩
-  have hb : T.isNF1 b := by
-    simpa [hp] using (part_NF n s hs).2
-  have hmem : ∀ y : T, y ∈ T.G1 u a ++ T.G1 u b → y ∈ T.G1 u s := by
-    intro y hy
-    rw [← part_add n s hs, hp, G1_add]
-    exact hy
-  simp only [T.early_collapse, hp] at hx
-  split at hx
-  · exact Or.inr (hmem x (List.mem_append_right _ hx))
-  · rw [T.stand, stand_eq_self b hb] at hx
-    split at hx
-    · simp only [T.G1, hun, ite_true, List.mem_append, List.mem_singleton] at hx
-      rcases hx with (rfl | hx) | hx
-      · exact Or.inl (by simpa [hp] using part_first_le n s hs)
-      · exact Or.inr (hmem x (List.mem_append_left _ hx))
-      · exact Or.inr (hmem x (List.mem_append_right _ hx))
-    · exact Or.inr (hmem x (List.mem_append_right _ hx))
-
-theorem early_collapse_support_bound (u n : Nat) (s c : T)
-    (hun : u ≤ n) (hs : T.isNF1 s) (hsc : s ≤ c)
-    (hg : ∀ x : T, x ∈ T.G1 u s → x ≤ c) :
-    ∀ x : T, x ∈ T.G1 u (T.early_collapse n s) → x ≤ c := by
-  intro x hx
-  rcases hp : T.part n s with ⟨a, b⟩
-  have hb : T.isNF1 b := by
-    simpa [hp] using (part_NF n s hs).2
-  have hmem : ∀ y : T, y ∈ T.G1 u a ++ T.G1 u b → y ≤ c := by
-    intro y hy
-    apply hg y
-    rw [← part_add n s hs, hp, G1_add]
-    exact hy
-  simp only [T.early_collapse, hp] at hx
-  split at hx
-  · exact hmem x (List.mem_append_right _ hx)
-  · rw [T.stand, stand_eq_self b hb] at hx
-    split at hx
-    · simp only [T.G1, hun, ite_true, List.mem_append, List.mem_singleton] at hx
-      rcases hx with (rfl | hx) | hx
-      · exact partial_order.trans _ _ _ (by simpa [hp] using part_first_le n s hs) hsc
-      · exact hmem x (List.mem_append_left _ hx)
-      · exact hmem x (List.mem_append_right _ hx)
-    · exact hmem x (List.mem_append_right _ hx)
-
-theorem early_collapse_ne_zero (n : Nat) (s : T) (hs : T.isNF1 s) (hne : s ≠ T.Z) :
-    T.early_collapse n s ≠ T.Z := by
-  have he := part_add n s hs
-  dsimp only [T.early_collapse]
-  split
-  · intro h
-    rw [‹(T.part n s).1 = T.Z›, h] at he
-    exact hne he.symm
-  · exact stand_ne_zero _ (fun h => by cases h)
 
 theorem part_first_head_gt (n p : Nat) (s a b : T)
     (h : (T.part n s).1 = T.P p a b) : n < p := by
@@ -327,12 +189,6 @@ theorem lt_of_part_lt_cases (n : Nat) (s t : T) (hs : T.isNF1 s) (ht : T.isNF1 t
       simp_all [show ∀ x : T, ¬ x < x from lt_irrefl_thm, lt_asymm_thm]
   · rcases h with h | ⟨_, h⟩ <;> exact False.elim (lt_irrefl_thm _ h)
 
-theorem part_prefix_upper (n : Nat) (s t : T) (hs : T.isNF1 s) (ht : T.isNF1 t)
-    (h : (T.part n s).1 < (T.part n t).1) : s < (T.part n t).1 := by
-  apply lt_of_part_lt_cases n s _ hs (part_NF n t ht).1
-  rw [part_first_fixed]
-  exact Or.inl h
-
 theorem head_le_self (s : T) : T.head s ≤ s := by
   cases s with
   | Z => exact Or.inr rfl
@@ -363,24 +219,29 @@ theorem stand_insert_lt (n : Nat) (a b d : T) (hb : T.isNF1 b) (hd : T.isNF1 d)
       fun h => hba (partial_order.trans _ _ _ (T.head_mono hbd) h)
     simpa only [hba, hda, ite_false] using hbd
 
+/-- The low part of a good term is below the principal term it wraps. -/
+theorem part_snd_lt_wrap (K : Nat) (X b : T) (hX : T.isNF1 X) (hg : ∀ y ∈ T.G1 K X, y < X) :
+    (T.part K X).2 < T.P K X b := by
+  have hi := part_second_index K X
+  cases hp : (T.part K X).2 with
+  | Z => exact T.Lt.Z_lt_P _ _ _
+  | P q d e =>
+      rw [hp] at hi
+      cases hi with
+      | p _ _ _ hq _ =>
+          rcases Nat.eq_or_lt_of_le hq with rfl | hq
+          · apply T.Lt.p_mid
+            apply hg d
+            rw [← part_add q X hX, G1_add, hp]
+            exact List.mem_append_right _ (by simp [T.G1])
+          · exact T.Lt.p_head _ _ _ _ _ _ hq
+
 theorem early_collapse_upper (n : Nat) (s c : T) (hs : T.isNF1 s)
     (hg : ∀ x ∈ T.G1 n s, x < s) (hsc : s < c) :
     T.early_collapse n s < T.P n c T.Z := by
   have hb := (part_NF n s hs).2
-  have hbc : (T.part n s).2 < T.P n c T.Z := by
-    cases he : (T.part n s).2 with
-    | Z => exact .Z_lt_P _ _ _
-    | P p a b =>
-        have hi := part_second_index n s
-        rw [he] at hi
-        cases hi with
-        | p _ _ _ hp _ =>
-            rcases Nat.eq_or_lt_of_le hp with rfl | hp
-            · apply T.Lt.p_mid
-              apply lt_trans_thm _ _ _ (hg a ?_) hsc
-              rw [← part_add p s hs, G1_add, he]
-              exact List.mem_append_right _ (by simp [T.G1])
-            · exact .p_head _ _ _ _ _ _ hp
+  have hbc : (T.part n s).2 < T.P n c T.Z :=
+    lt_trans_thm _ _ _ (part_snd_lt_wrap n s T.Z hs hg) (.p_mid _ _ _ _ _ hsc)
   dsimp only [T.early_collapse]
   split
   · exact hbc
@@ -404,41 +265,13 @@ theorem early_collapse_lt (n : Nat) (s t : T) (hs : T.isNF1 s)
   · have hne : (T.part n t).1 ≠ T.Z := by
       intro hz; rw [hz] at h; exact lt_Z_inv h
     exact lt_of_lt_of_le_thm T _ _ _
-      (early_collapse_upper n s _ hs hg (part_prefix_upper n s t hs ht h))
+      (early_collapse_upper n s _ hs hg (lt_of_part_lt_cases n s _ hs (part_NF n t ht).1
+        (by rw [part_first_fixed]; exact Or.inl h)))
       (part_base_le_early_collapse n t ht hne)
   · by_cases hz : (T.part n s).1 = T.Z
     · rw [T.early_collapse, ite_eq_left hz, T.early_collapse, ite_eq_left (he ▸ hz)]
       exact h
     · rw [T.early_collapse, ite_eq_right hz, T.early_collapse, ← he, ite_eq_right hz]
       exact stand_insert_lt n _ _ _ (part_NF n s hs).2 (part_NF n t ht).2 h
-
-theorem early_collapse_le_self (n : Nat) (s : T) (hs : T.isNF1 s) :
-    T.early_collapse n s ≤ s := by
-  rcases hp : T.part n s with ⟨a, b⟩
-  have he : T.add a b = s := by
-    simpa [hp] using part_add n s hs
-  have hbNF : T.isNF1 b := by
-    simpa [hp] using (part_NF n s hs).2
-  have hb_le : b ≤ s := by
-    have h := add_right_le_of_NF a b (he.symm ▸ hs)
-    rwa [he] at h
-  simp only [T.early_collapse, hp]
-  split
-  · simpa [‹a = T.Z›] using hb_le
-  · cases a with
-    | Z => exact False.elim (‹T.Z ≠ T.Z› rfl)
-    | P p c d =>
-        have hnp : n < p := part_first_head_gt n p s c d (by simp [hp])
-        rw [T.stand, stand_eq_self b hbNF]
-        split
-        · apply Or.inl
-          rw [← he, T.P_add_eq]
-          exact T.Lt.p_head _ _ _ _ _ _ hnp
-        · exact hb_le
-
-theorem early_collapse_le (n : Nat) (s t : T) (hs : T.isNF1 s)
-    (hg : ∀ x ∈ T.G1 n s, x < s) (ht : T.isNF1 t) (hst : s ≤ t) :
-    T.early_collapse n s ≤ T.early_collapse n t :=
-  hst.imp (early_collapse_lt n s t hs hg ht) (congrArg (T.early_collapse n))
 
 end LegacyTranslation

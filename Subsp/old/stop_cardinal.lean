@@ -1,10 +1,21 @@
-import Subsp.old.stop_card
+import Subsp.old.stop_collapse
 
 /-! Normal forms and order comparison for the legacy cardinal multiplier. -/
 
 namespace LegacyTranslation
 
 open T
+
+theorem one_del_NF (s : T) (hs : T.isNF1 s) : T.isNF1 (T.one_del s) := by
+  match s, hs with
+  | .P 0 .Z b, hs => exact (T.isNF1_P_inv 0 T.Z b hs).2.1
+  | .Z, hs | .P (_ + 1) _ _, hs | .P 0 (.P _ _ _) _, hs => exact hs
+
+theorem lt_one_eq_Z (x : T) (h : x < T.P 0 T.Z T.Z) : x = T.Z := by
+  cases h with
+  | Z_lt_P => rfl
+  | p_head _ _ _ _ _ _ h => exact False.elim (Nat.not_lt_zero _ h)
+  | p_mid _ _ _ _ _ h | p_tail _ _ _ _ h => cases h
 
 def cardArg (n p : Nat) (a : T) : T :=
   if p < n then
@@ -63,14 +74,7 @@ theorem head_le_card_of_lt (n : Nat) (a : T)
   cases ha with
   | Z_lt_P => exact T.Z_le _
   | p_head _ _ _ _ _ _ h => exact Or.inl (.p_head _ _ _ _ _ _ h)
-  | p_mid _ a _ _ _ h =>
-      have haz : a = T.Z := by
-        cases h with
-        | Z_lt_P => rfl
-        | p_head _ _ _ _ _ _ h => exact False.elim (Nat.not_lt_zero _ h)
-        | p_mid _ _ _ _ _ h | p_tail _ _ _ _ h => cases h
-      subst a
-      exact Or.inr rfl
+  | p_mid _ a _ _ _ h => rw [lt_one_eq_Z a h]; exact Or.inr rfl
   | p_tail _ _ _ _ h => cases h
 
 theorem NF_tail_lt (p : Nat) (a b : T) (hs : T.isNF1 (T.P p a b)) : b < T.P p a b := by
@@ -219,24 +223,6 @@ theorem card_times_lt (n : Nat) (s t : T) (hs : T.isNF1 s) (ht : T.isNF1 t)
       rw [card_times_P, card_times_P]
       exact .p_tail _ _ _ _ (ih (T.isNF1_P_inv _ _ _ hs).2.1 (T.isNF1_P_inv _ _ _ ht).2.1)
 
-theorem card_times_le (n : Nat) (s t : T) (hs : T.isNF1 s) (ht : T.isNF1 t)
-    (h : s ≤ t) : T.card_times n s ≤ T.card_times n t :=
-  h.imp (card_times_lt n s t hs ht) (congrArg (T.card_times n))
-
-theorem card_times_head (n : Nat) (s : T) :
-    T.card_times n (T.head s) = T.head (T.card_times n s) := by
-  cases s with
-  | Z => rfl
-  | P p a b =>
-      change T.card_times n (T.P p a T.Z) = _
-      rw [card_times_P, card_times_P]
-      rfl
-
-theorem NF_head (s : T) (hs : T.isNF1 s) : T.isNF1 (T.head s) := by
-  cases hs with
-  | z => exact .z
-  | p p a b ha _ hg _ => exact .p p a T.Z ha .z hg (T.Z_le _)
-
 theorem card_times_closed (n : Nat) (s : T) (hs : T.isNF1 s) :
     T.isNF1 (T.card_times n s) := by
   induction hs with
@@ -245,10 +231,15 @@ theorem card_times_closed (n : Nat) (s : T) (hs : T.isNF1 s) :
       obtain ⟨harg, hsupport⟩ := cardArg_closed n p a ha hg
       rw [card_times_P]
       refine .p _ _ _ harg ih hsupport ?_
-      have h := card_times_le n (T.head b) (T.P p a T.Z) (NF_head b hb)
-        (.p p a T.Z ha .z hg (T.Z_le _)) hh
-      rw [card_times_head, card_times_P] at h
-      exact h
+      cases hb with
+      | z => exact T.Z_le _
+      | p q c d hc _ hgc _ =>
+          change T.P q c T.Z ≤ T.P p a T.Z at hh
+          have h := hh.imp (card_times_lt n _ _ (.p q c T.Z hc .z hgc (T.Z_le _))
+            (.p p a T.Z ha .z hg (T.Z_le _))) (congrArg (T.card_times n))
+          rw [card_times_P, card_times_P] at h
+          rw [card_times_P]
+          exact h
 
 theorem card_times_index (n u : Nat) (s : T) (hs : T.index_Prop1 u s) :
     T.index_Prop1 (max u n) (T.card_times n s) := by
@@ -258,25 +249,112 @@ theorem card_times_index (n u : Nat) (s : T) (hs : T.index_Prop1 u s) :
       rw [card_times_P]
       exact .p _ _ _ (by omega) ih
 
-theorem card_times_lt_iff (n : Nat) (s t : T) (hs : T.isNF1 s) (ht : T.isNF1 t) :
-    T.card_times n s < T.card_times n t ↔ s < t := by
-  refine ⟨?_, card_times_lt n s t hs ht⟩
-  intro h
-  rcases lt_total_thm s t with hst | hts | he
-  · exact hst
-  · exact False.elim (lt_asymm_thm h (card_times_lt n t s ht hs hts))
-  · subst t
-    exact False.elim (lt_irrefl_thm _ h)
+/-! Support bounds for cardinal multiplication and lower-index remainders. -/
 
-theorem card_times_injective (n : Nat) (s t : T) (hs : T.isNF1 s) (ht : T.isNF1 t)
-    (h : T.card_times n s = T.card_times n t) : s = t := by
-  rcases lt_total_thm s t with hst | hts | he
-  · have hlt := card_times_lt n s t hs ht hst
-    rw [h] at hlt
-    exact False.elim (lt_irrefl_thm _ hlt)
-  · have hlt := card_times_lt n t s ht hs hts
-    rw [h] at hlt
-    exact False.elim (lt_irrefl_thm _ hlt)
-  · exact he
+theorem head_base_le (n p : Nat) (a : T) (hnp : n ≤ p) : T.P n T.Z T.Z ≤ T.P p a T.Z := by
+  rcases Nat.eq_or_lt_of_le hnp with rfl | hnp
+  · exact (T.Z_le a).imp (T.Lt.p_mid _ _ _ _ _) (congrArg (fun x => T.P n x T.Z))
+  · exact Or.inl (.p_head _ _ _ _ _ _ hnp)
+
+theorem card_times_self_le (n : Nat) (s : T) (hs : T.isNF1 s) : s ≤ T.card_times n s := by
+  induction hs with
+  | z => exact Or.inr rfl
+  | p p a b ha _ _ _ _ ih =>
+      rw [card_times_P]
+      by_cases hpn : p < n
+      · exact Or.inl (.p_head _ _ _ _ _ _ (by omega))
+      · rw [cardArg, ite_eq_right hpn]
+        split
+        · obtain ⟨rfl, halt⟩ := ‹p = n ∧ _›
+          rw [Nat.max_self]
+          exact Or.inl (.p_mid _ _ _ _ _ (card_prefix_lt p a ha (head_le_card_of_lt p a halt)))
+        · rw [Nat.max_eq_left (Nat.le_of_not_gt hpn)]
+          exact ih.imp (T.Lt.p_tail _ _ _ _) (congrArg (T.P p a))
+
+theorem card_times_support (n : Nat) (s : T) (hs : T.isNF1 s) :
+    ∀ x ∈ T.G1 n (T.card_times n s), x < T.card_times n s ∨ x ∈ T.G1 n s := by
+  induction hs with
+  | z => intro x hx; cases hx
+  | p p a b ha hb hg hh _ ih =>
+      have hnf := card_times_closed n _ (.p p a b ha hb hg hh)
+      rw [card_times_P] at hnf ⊢
+      have htail := NF_tail_lt _ _ _ hnf
+      intro x hx
+      have hnp : n ≤ max p n := Nat.le_max_right p n
+      simp only [T.G1, hnp, ite_true, List.mem_append, List.mem_singleton] at hx
+      rcases hx with (rfl | hx) | hx
+      · by_cases hpn : p < n
+        · apply Or.inl
+          have hi := cardArg_index_of_lt n p a ha hg hpn
+          exact lt_of_lt_of_le_thm T _ _ _ (index_lt_level p n _ hi hpn)
+            (partial_order.trans _ _ _ (head_base_le n (max p n) _ (Nat.le_max_right p n))
+              (head_le_self (T.P (max p n) (cardArg n p a) (T.card_times n b))))
+        · rw [cardArg, ite_eq_right hpn]
+          split
+          · obtain ⟨rfl, _⟩ := ‹p = n ∧ _›
+            rw [Nat.max_self]
+            exact Or.inl (.p_mid _ _ _ _ _ (.Z_lt_P _ _ _))
+          · exact Or.inr (by simp [T.G1, Nat.le_of_not_gt hpn])
+      · by_cases hpn : p < n
+        · rw [index_Prop1_G1_empty p _ (cardArg_index_of_lt n p a ha hg hpn) n hpn] at hx
+          cases hx
+        · have hnp' : n ≤ p := Nat.le_of_not_gt hpn
+          unfold cardArg at hx
+          rw [ite_eq_right hpn] at hx
+          split at hx
+          · obtain ⟨rfl, _⟩ := ‹p = n ∧ _›
+            simp only [T.G1, Nat.le_refl, ite_true, List.mem_append,
+              List.mem_singleton, List.not_mem_nil, or_false] at hx
+            rcases hx with rfl | hx
+            · exact Or.inl (.Z_lt_P _ _ _)
+            · exact Or.inr (by simp [T.G1, hx])
+          · exact Or.inr (by simp [T.G1, hnp', hx])
+      · rcases ih x hx with h | h
+        · exact Or.inl (lt_trans_thm _ _ _ h htail)
+        · apply Or.inr
+          by_cases hnp' : n ≤ p <;> simp [T.G1, hnp', h]
+
+theorem one_del_good_pos (n : Nat) (hn : 0 < n) (s : T) (hs : T.isNF1 s)
+    (hg : ∀ x ∈ T.G1 n s, x < s) :
+    ∀ x ∈ T.G1 n (T.one_del s), x < T.one_del s := by
+  match s, hs, hg with
+  | .P 0 .Z b, hs, _ =>
+      cases isNF1_index 0 0 T.Z b hs (Nat.le_refl 0) with
+      | p _ _ _ _ hb =>
+          intro x hx
+          change x ∈ T.G1 n b at hx
+          rw [index_Prop1_G1_empty 0 b hb n hn] at hx
+          cases hx
+  | .Z, _, hg | .P (_ + 1) _ _, _, hg | .P 0 (.P _ _ _) _, _, hg => exact hg
+
+theorem card_times_append_closed (n : Nat) (s b : T) (hs : T.isNF1 s)
+    (hb : T.isNF1 b) (hbound : b < T.P n T.Z T.Z) :
+    T.isNF1 (T.add (T.card_times n s) b) := by
+  induction hs with
+  | z => exact hb
+  | p p a c ha hc hg hh _ ih =>
+      rw [card_times_P, T.P_add_eq]
+      obtain ⟨harg, hsupport⟩ := cardArg_closed n p a ha hg
+      refine .p _ _ _ harg ih hsupport ?_
+      cases c with
+      | Z =>
+          exact partial_order.trans _ _ _ (T.head_mono hbound)
+            (head_base_le n (max p n) _ (Nat.le_max_right p n))
+      | P q d e =>
+          have hnf := card_times_closed n _ (.p p a (T.P q d e) ha hc hg hh)
+          rw [card_times_P] at hnf
+          have hhead := (T.isNF1_P_inv _ _ _ hnf).2.2.2
+          rw [card_times_P, T.head_add_ne_Z]
+          simpa only [card_times_P, T.head] using hhead
+
+theorem card_times_append_good (n u : Nat) (hun : u < n) (s b : T) (hs : T.isNF1 s)
+    (hg : ∀ x ∈ T.G1 n s, x < s) (hb : T.index_Prop1 u b) :
+    ∀ x ∈ T.G1 n (T.add (T.card_times n s) b), x < T.add (T.card_times n s) b := by
+  intro x hx
+  rw [G1_add, index_Prop1_G1_empty u b hb n hun, List.append_nil] at hx
+  refine lt_of_lt_of_le_thm T _ _ _ ?_ (add_self_le _ _)
+  rcases card_times_support n s hs x hx with h | h
+  · exact h
+  · exact lt_of_lt_of_le_thm T _ _ _ (hg x h) (card_times_self_le n s hs)
 
 end LegacyTranslation

@@ -1,4 +1,4 @@
-import Subsp.old.stop_translation_support
+import Subsp.old.stop_principal
 
 /-! Target-side support bounds for cardinal multiplication and early collapse. -/
 
@@ -41,12 +41,9 @@ theorem SumAll_part (Pr : Nat → T → Prop) (n : Nat) : ∀ t, SumAll Pr t →
 
 theorem SumAll_one_del (Pr : Nat → T → Prop) (t : T) (h : SumAll Pr t) :
     SumAll Pr (T.one_del t) := by
-  cases t with
-  | Z => exact h
-  | P p a b =>
-      cases p with
-      | zero => cases a <;> first | exact h.2 | exact h
-      | succ p => exact h
+  match t, h with
+  | .P 0 .Z _, h => exact h.2
+  | .Z, h | .P (_ + 1) _ _, h | .P 0 (.P _ _ _) _, h => exact h
 
 theorem SumAll_G1_self (n : Nat) : ∀ t : T, SumAll (fun p c => n ≤ p → c ∈ T.G1 n t) t
   | .Z => trivial
@@ -168,42 +165,20 @@ theorem early_collapse_support_exact (u n : Nat) (s : T)
 theorem early_collapse_le_wrap (n : Nat) (a : T) (ha : T.isNF1 a)
     (hg : ∀ x ∈ T.G1 n a, x < a) :
     T.early_collapse n a ≤ T.P n a T.Z := by
-  have he := part_add n a ha
-  have hbNF := (part_NF n a ha).2
-  have hi := part_second_index n a
+  have hlow := part_snd_lt_wrap n a T.Z ha hg
   dsimp only [T.early_collapse]
   split
-  · rename_i hz
-    rw [hz, zero_add] at he
-    rw [he] at hi ⊢
-    exact Or.inl (good_index_lt_wrap n _ T.Z hi hg)
-  · rename_i hz
-    rw [T.stand, stand_eq_self _ hbNF]
+  · exact Or.inl hlow
+  · rw [T.stand, stand_eq_self _ (part_NF n a ha).2]
     split
-    · cases hb : (T.part n a).2 with
-      | Z =>
-          rw [hb, T.add_Z] at he
-          rw [he]
-          exact Or.inr rfl
+    · have he := part_add n a ha
+      cases hb : (T.part n a).2 with
+      | Z => rw [hb, T.add_Z] at he; rw [he]; exact Or.inr rfl
       | P q d e =>
-          apply Or.inl
-          apply T.Lt.p_mid
+          refine Or.inl (T.Lt.p_mid _ _ _ _ _ ?_)
           have hlt := add_lt_add_of_ne_Z (T.part n a).1 (T.part n a).2 (by rw [hb]; intro h; cases h)
           rwa [he] at hlt
-    · rename_i hnot
-      cases hb : (T.part n a).2 with
-      | Z => exact Or.inl (T.Lt.Z_lt_P _ _ _)
-      | P q d e =>
-          rw [hb] at hi
-          cases hi with
-          | p _ _ _ hq _ =>
-              rcases Nat.eq_or_lt_of_le hq with rfl | hq
-              · apply Or.inl
-                apply T.Lt.p_mid
-                apply hg d
-                rw [← he, G1_add, hb]
-                exact List.mem_append_right _ (by simp [T.G1])
-              · exact Or.inl (T.Lt.p_head _ _ _ _ _ _ hq)
+    · exact Or.inl hlow
 
 theorem cardArg_le_head (n p : Nat) (a b : T) (hs : T.isNF1 (T.P p a b))
     (hcase : p < n ∨ (p = n ∧ a < T.P n (T.P 0 T.Z T.Z) T.Z)) :
@@ -251,16 +226,10 @@ theorem card_times_support_bounded (n u : Nat) (hun : u ≤ n) (R : T → Prop)
       rcases hy with (rfl | hy) | hy
       · by_cases hcase : p < n ∨ (p = n ∧ a < T.P n (T.P 0 T.Z T.Z) T.Z)
         · exact hR _ _ (cardArg_le_head n p a b hsfull hcase) hRhead
-        · have hnp : n ≤ p := by
-            rcases Nat.lt_or_ge p n with h | h
-            · exact False.elim (hcase (Or.inl h))
-            · exact h
-          have hca : cardArg n p a = a := by
+        · rw [show cardArg n p a = a by
             unfold cardArg
-            rw [ite_eq_right (fun h => hcase (Or.inl h)),
-              ite_eq_right (fun h => hcase (Or.inr h))]
-          rw [hca]
-          exact hc1 hnp
+            rw [ite_eq_right (fun h => hcase (Or.inl h)), ite_eq_right (fun h => hcase (Or.inr h))]]
+          exact hc1 (Nat.le_of_not_gt fun h => hcase (Or.inl h))
       · by_cases hpn : p < n
         · by_cases hp : p = 0
           · subst p
@@ -295,10 +264,8 @@ theorem card_times_support_bounded (n u : Nat) (hun : u ≤ n) (R : T → Prop)
             rcases hy with rfl | hy
             · exact hRZ
             · exact hc2 hun y hy
-          · have hca : cardArg n p a = a := by
-              unfold cardArg
-              rw [ite_eq_right hpn, ite_eq_right hcase]
-            rw [hca] at hy
+          · rw [show cardArg n p a = a by unfold cardArg; rw [ite_eq_right hpn, ite_eq_right hcase]]
+              at hy
             exact hc2 (Nat.le_trans hun (Nat.le_of_not_gt hpn)) y hy
       · exact ihb hRb hsb y hy
 
@@ -327,12 +294,9 @@ theorem early_card_support_bounded (n u : Nat) (hun : u ≤ n) (R : T → Prop)
       cases hH : (T.part n t).1 with
       | Z => exact False.elim (hne hH)
       | P q d e =>
-          have hq := part_first_head_gt n q t d e hH
           unfold cardArg
-          rw [ite_eq_right (Nat.lt_irrefl n)]
-          rw [ite_eq_right]
-          intro ⟨_, hlt⟩
-          exact lt_asymm_thm hlt (T.Lt.p_head _ _ _ _ _ _ hq)
+          rw [ite_eq_right (Nat.lt_irrefl n), ite_eq_right fun ⟨_, hlt⟩ =>
+            lt_asymm_thm hlt (T.Lt.p_head _ _ _ _ _ _ (part_first_head_gt n q t d e hH))]
     rw [hca] at hy'
     simp only [T.G1, hun, ite_true, List.mem_append, List.mem_singleton] at hy'
     rcases hy' with (rfl | hy') | hy'

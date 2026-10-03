@@ -1,13 +1,9 @@
 import Lean
 import Subsp
 import Subsp.old.stop
-import Subsp.old.stop_ot_comp0
-import Subsp.old.stop_trans_algebra
-import Subsp.old.stop_translation_dim
 
 /-! Audit every definition and theorem in the project, including generated proofs.
-Run `lake build Subsp.old.stop Subsp.old.stop_ot_comp0 Subsp.old.stop_trans_algebra Subsp.old.stop_translation_dim`, then
-`lake env lean ProofAuditOld.lean`.
+Run `lake build Subsp.old.stop`, then `lake env lean ProofAuditOld.lean`.
 -/
 
 open Lean Elab Command in
