@@ -235,5 +235,101 @@ theorem Term.support_le_fixed {n : Nat} (s : T n) :
     (Term.ofFixed s).support ≤ n := by
   exact RawT.code_arity_le n s
 
+
+theorem Term.support_minimal {s : Term} {n : Nat} (t : T n)
+    (h : Term.ofFixed t = s) :
+    s.support ≤ n := by
+  rw [← h]
+  exact Term.support_le_fixed t
+
+/-- Forgetting an `ofFn` reconstruction gives back the original vector. -/
+theorem Vec.ofFn_eta {A : Type} {n : Nat} (v : Vec A n) :
+    Vec.ofFn n (fun i => v.idx i) = v := by
+  induction v with
+  | nil => rfl
+  | snoc k xs x ih =>
+      simp only [Vec.ofFn]
+      congr
+      · simpa [Vec.idx] using ih
+      · simp [Vec.idx]
+
+/-- Compile an unindexed vector into a vector of any requested output length. -/
+def UVec.compileVec (ambient len : Nat) (xs : UVec) : Vec (T ambient) len :=
+  match UVec.compileElems ambient xs with
+  | ⟨_, v⟩ =>
+      Vec.ofFn len (fun i => vecGetD v T.Z i.val)
+
+/-- The unindexed code obtained by compiling every entry without resizing. -/
+def UVec.compiledCode (ambient : Nat) : UVec → UVec
+| .nil => .nil
+| .snoc xs x =>
+    .snoc (UVec.compiledCode ambient xs)
+      (UTerm.ofT (UTerm.compile ambient x))
+
+theorem UVec.compileElems_length (ambient : Nat) :
+    (xs : UVec) →
+      (UVec.compileElems ambient xs).1 = UVec.length xs
+  | .nil => rfl
+  | .snoc xs x => by
+      cases h : UVec.compileElems ambient xs with
+      | mk m v =>
+          have ih := UVec.compileElems_length ambient xs
+          rw [h] at ih
+          simp [UVec.compileElems, h, UVec.length, ih]
+
+theorem UVec.ofVec_compileElems (ambient : Nat) :
+    (xs : UVec) →
+      (match UVec.compileElems ambient xs with
+       | ⟨_, v⟩ => UVec.ofVec v) =
+        UVec.compiledCode ambient xs
+  | .nil => rfl
+  | .snoc xs x => by
+      cases h : UVec.compileElems ambient xs with
+      | mk m v =>
+          have ih := UVec.ofVec_compileElems ambient xs
+          rw [h] at ih
+          simp [UVec.compileElems, h, UVec.ofVec, UVec.compiledCode, ih]
+
+theorem UVec.normalize_ofVec_resize {ambient m k : Nat}
+    (v : Vec (T ambient) m) (h : m ≤ k) :
+    UVec.normalize
+        (UVec.ofVec
+          (Vec.ofFn k (fun i => vecGetD v T.Z i.val))) =
+      UVec.normalize (UVec.ofVec v) := by
+  induction k generalizing m with
+  | zero =>
+      have hm : m = 0 := Nat.eq_zero_of_le_zero h
+      subst m
+      cases v
+      rfl
+  | succ k ih =>
+      by_cases hm : m = k + 1
+      · subst m
+        have hf :
+            (fun i : Fin (k + 1) => vecGetD v T.Z i.val) =
+              (fun i => v.idx i) := by
+          funext i
+          simp [vecGetD, i.isLt]
+        rw [hf, Vec.ofFn_eta]
+      · have hmk : m ≤ k := by omega
+        simp only [Vec.ofFn, UVec.ofVec, UVec.normalize]
+        have hlast : ¬ k < m := Nat.not_lt_of_ge hmk
+        simp [vecGetD, hlast, ih v hmk]
+
+theorem UVec.normalize_compileVec {ambient len : Nat}
+    (xs : UVec) (h : UVec.length xs ≤ len) :
+    UVec.normalize (UVec.ofVec (UVec.compileVec ambient len xs)) =
+      UVec.normalize (UVec.compiledCode ambient xs) := by
+  unfold UVec.compileVec
+  cases hc : UVec.compileElems ambient xs with
+  | mk m v =>
+      have hm : m = UVec.length xs := by
+        simpa [hc] using UVec.compileElems_length ambient xs
+      have hmv : m ≤ len := hm ▸ h
+      rw [UVec.normalize_ofVec_resize v hmv]
+      have hcode := UVec.ofVec_compileElems ambient xs
+      rw [hc] at hcode
+      rw [hcode]
+
 end Multi
 end new
