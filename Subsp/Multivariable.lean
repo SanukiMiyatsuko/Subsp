@@ -144,12 +144,11 @@ theorem Term.code_ofFixed {n : Nat} (s : T n) :
   rfl
 
 
-theorem UVec.length_mapNormalize (xs : UVec) :
-    UVec.length (UVec.mapNormalize xs) = UVec.length xs := by
-  induction xs with
-  | nil => rfl
-  | snoc xs x ih =>
-      simp only [UVec.mapNormalize, UVec.length, ih]
+theorem UVec.length_mapNormalize :
+    (xs : UVec) → UVec.length (UVec.mapNormalize xs) = UVec.length xs
+  | .nil => rfl
+  | .snoc xs x => by
+      simp only [UVec.mapNormalize, UVec.length, UVec.length_mapNormalize xs]
 
 theorem UVec.length_ofVec {n m : Nat} (v : Vec (T n) m) :
     UVec.length (UVec.ofVec v) = m := by
@@ -176,7 +175,7 @@ theorem UVec.maxArity_mapNormalize_ofVec_le {n m : Nat}
         simpa [Vec.idx] using h (Fin.last k)
       have hih := ih hxs
       simp only [UVec.ofVec, UVec.mapNormalize, UVec.maxArity]
-      omega
+      exact Nat.max_le hih hx
 
 theorem UVec.normalize_ofVec_bounds {n m : Nat}
     (v : Vec (T n) m)
@@ -206,8 +205,11 @@ theorem UVec.normalize_ofVec_bounds {n m : Nat}
           have hlen :
               UVec.length (UVec.mapNormalize (UVec.ofVec xs)) = k := by
             rw [UVec.length_mapNormalize, UVec.length_ofVec]
+          rw [hnx] at hx
           simp only [hnx, UVec.length, UVec.maxArity]
-          constructor <;> omega
+          constructor
+          · omega
+          · exact Nat.max_le hmap hx
 
 theorem RawT.code_arity_le (n : Nat) (s : T n) :
     UTerm.arity (RawT.code ⟨n, s⟩) ≤ n := by
@@ -227,7 +229,7 @@ theorem RawT.code_arity_le (n : Nat) (s : T n) :
             exact ih (ls.idx i) (T.idx_size_lt_P ls add i)
           have hv := UVec.normalize_ofVec_bounds ls hcoords
           simp only [RawT.code, UTerm.ofT, UTerm.normalize, UTerm.arity]
-          omega
+          exact Nat.max_le hv.1 (Nat.max_le hv.2 hadd)
 
 theorem Term.support_le_fixed {n : Nat} (s : T n) :
     (Term.ofFixed s).support ≤ n := by
