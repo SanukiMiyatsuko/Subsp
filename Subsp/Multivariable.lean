@@ -390,7 +390,9 @@ mutual
                 (UTerm.ofT
                   (UTerm.compile n (UTerm.normalize add)))) =
             UTerm.P (UVec.normalize ls) (UTerm.normalize add)
-        exact congrArg₂ UTerm.P hv ha
+        cases hv
+        cases ha
+        rfl
 
   theorem UVec.mapNormalize_compile_normalize :
       (xs : UVec) → (n : Nat) →
@@ -408,9 +410,11 @@ mutual
         have hx : UTerm.arity (UTerm.normalize x) ≤ n :=
           Nat.le_trans (Nat.le_max_right _ _) h
         simp only [UVec.mapNormalize, UVec.compiledCode_snoc]
-        exact congrArg₂ UVec.snoc
-          (UVec.mapNormalize_compile_normalize xs n hxs)
-          (UTerm.normalize_compile_normalize x n hx)
+        have hv := UVec.mapNormalize_compile_normalize xs n hxs
+        have ht := UTerm.normalize_compile_normalize x n hx
+        cases hv
+        cases ht
+        rfl
 
   theorem UVec.normalize_compile_normalize :
       (xs : UVec) → (n : Nat) →
@@ -430,7 +434,12 @@ mutual
             have h' :
                 Nat.max (UVec.maxArity (UVec.mapNormalize xs))
                   (UTerm.arity (UTerm.P ls add)) ≤ n := by
-              simpa [UVec.normalize, hnx] using h
+              have hh := h
+              rw [UVec.normalize, hnx] at hh
+              change
+                Nat.max (UVec.maxArity (UVec.mapNormalize xs))
+                  (UTerm.arity (UTerm.P ls add)) ≤ n at hh
+              exact hh
             have hxs : UVec.maxArity (UVec.mapNormalize xs) ≤ n :=
               Nat.le_trans (Nat.le_max_left _ _) h'
             have hx : UTerm.arity (UTerm.normalize x) ≤ n := by
