@@ -115,3 +115,58 @@ theorem OT_SubNF_order_iso (lam : Nat) :
       · intro s t
         exact LegacyTranslation.trans_lt_iff s.val t.val
           (new.T.isOT_isNF _ s.property) (new.T.isOT_isNF _ t.property)
+
+theorem wellfounded_OT (lam : Nat) : WellFounded (fun s t : new.T.OT lam => s.val < t.val) :=
+  InvImage.wf
+    (fun s : new.T.OT lam =>
+      (⟨s.val, new.T.isOT_isNF s.val s.property⟩ : LegacyTranslation.NFsrc lam))
+    (LegacyTranslation.wf_NFsrc lam)
+
+def new.T.OTStep {lam : Nat} (a b : new.T.OT lam) : Prop :=
+  b.val ≠ new.T.Z ∧
+    ∃ n : Nat, a.val = new.T.fund b.val (new.T.ofNat n)
+
+abbrev new.T.OTFundLt {lam : Nat} : new.T.OT lam → new.T.OT lam → Prop :=
+  FundOrder.TransClosure new.T.OTStep
+
+theorem new.T.OTStep_lt {lam : Nat} {a b : new.T.OT lam}
+    (h : new.T.OTStep a b) :
+    a.val < b.val := by
+  rcases h with ⟨hbne, n, ha⟩
+  rw [ha]
+  exact new.T.fund_lt_self b.val (new.T.ofNat n) hbne
+
+theorem new.T.OTFundLt_lt {lam : Nat} {a b : new.T.OT lam}
+    (h : new.T.OTFundLt a b) :
+    a.val < b.val := by
+  induction h with
+  | single hstep => exact new.T.OTStep_lt hstep
+  | tail _ hstep ih =>
+      exact strict_partial_order.trans _ _ _ ih (new.T.OTStep_lt hstep)
+
+theorem new.T.OTFundLt_of_lt {lam : Nat} (a b : new.T.OT lam)
+    (hab : a.val < b.val) :
+    new.T.OTFundLt a b := by
+  induction b using (wellfounded_OT lam).induction generalizing a with
+  | h b ih =>
+      obtain ⟨n, hfall, hupper⟩ :=
+        LegacyTranslation.fund_countable_cofinal_src b.val a.val
+          (new.T.isOT_isNF b.val b.property) (new.T.isOT_isNF a.val a.property)
+          (new.T.isOT_dom_not_Omega lam b.val b.property) hab
+      let c : new.T.OT lam :=
+        ⟨new.T.fund b.val (new.T.ofNat n),
+          new.T.isOT.step lam b.val b.property n⟩
+      have hbne : b.val ≠ new.T.Z := by
+        intro hbz
+        rw [hbz] at hab
+        exact new.T.lt_Z_false a.val hab
+      have hstep : new.T.OTStep c b := ⟨hbne, n, rfl⟩
+      rcases hupper with hlt | heq
+      · exact FundOrder.TransClosure.tail (ih c hfall a hlt) hstep
+      · have hac : a = c := Subtype.ext (new.T_eq_sound _ _ heq)
+        subst a
+        exact FundOrder.TransClosure.single hstep
+
+theorem new.T.OTFundLt_iff_lt {lam : Nat} (a b : new.T.OT lam) :
+    new.T.OTFundLt a b ↔ a.val < b.val :=
+  ⟨new.T.OTFundLt_lt, new.T.OTFundLt_of_lt a b⟩
