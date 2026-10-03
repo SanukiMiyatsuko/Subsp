@@ -143,5 +143,95 @@ theorem Term.code_ofFixed {n : Nat} (s : T n) :
     (Term.ofFixed s).code = RawT.code ⟨n, s⟩ := by
   rfl
 
+
+theorem UVec.length_mapNormalize (xs : UVec) :
+    UVec.length (UVec.mapNormalize xs) = UVec.length xs := by
+  induction xs with
+  | nil => rfl
+  | snoc xs x ih =>
+      simp only [UVec.mapNormalize, UVec.length, ih]
+
+theorem UVec.length_ofVec {n m : Nat} (v : Vec (T n) m) :
+    UVec.length (UVec.ofVec v) = m := by
+  induction v with
+  | nil => rfl
+  | snoc k xs x ih =>
+      simp only [UVec.ofVec, UVec.length, ih]
+
+theorem UVec.maxArity_mapNormalize_ofVec_le {n m : Nat}
+    (v : Vec (T n) m)
+    (h : ∀ i : Fin m,
+      UTerm.arity (UTerm.normalize (UTerm.ofT (v.idx i))) ≤ n) :
+    UVec.maxArity (UVec.mapNormalize (UVec.ofVec v)) ≤ n := by
+  induction v with
+  | nil =>
+      simp [UVec.ofVec, UVec.mapNormalize, UVec.maxArity]
+  | snoc k xs x ih =>
+      have hxs : ∀ i : Fin k,
+          UTerm.arity (UTerm.normalize (UTerm.ofT (xs.idx i))) ≤ n := by
+        intro i
+        simpa [Vec.idx, i.isLt] using h i.castSucc
+      have hx :
+          UTerm.arity (UTerm.normalize (UTerm.ofT x)) ≤ n := by
+        simpa [Vec.idx] using h (Fin.last k)
+      have hih := ih hxs
+      simp only [UVec.ofVec, UVec.mapNormalize, UVec.maxArity]
+      omega
+
+theorem UVec.normalize_ofVec_bounds {n m : Nat}
+    (v : Vec (T n) m)
+    (h : ∀ i : Fin m,
+      UTerm.arity (UTerm.normalize (UTerm.ofT (v.idx i))) ≤ n) :
+    UVec.length (UVec.normalize (UVec.ofVec v)) ≤ m ∧
+      UVec.maxArity (UVec.normalize (UVec.ofVec v)) ≤ n := by
+  induction v with
+  | nil =>
+      simp [UVec.ofVec, UVec.normalize, UVec.length, UVec.maxArity]
+  | snoc k xs x ih =>
+      have hxs : ∀ i : Fin k,
+          UTerm.arity (UTerm.normalize (UTerm.ofT (xs.idx i))) ≤ n := by
+        intro i
+        simpa [Vec.idx, i.isLt] using h i.castSucc
+      have hx :
+          UTerm.arity (UTerm.normalize (UTerm.ofT x)) ≤ n := by
+        simpa [Vec.idx] using h (Fin.last k)
+      have hih := ih hxs
+      simp only [UVec.ofVec, UVec.normalize]
+      cases hnx : UTerm.normalize (UTerm.ofT x) with
+      | Z =>
+          simpa [hnx] using ⟨Nat.le_trans hih.1 (Nat.le_succ k), hih.2⟩
+      | P ls add =>
+          have hmap :=
+            UVec.maxArity_mapNormalize_ofVec_le xs hxs
+          have hlen :
+              UVec.length (UVec.mapNormalize (UVec.ofVec xs)) = k := by
+            rw [UVec.length_mapNormalize, UVec.length_ofVec]
+          simp only [hnx, UVec.length, UVec.maxArity]
+          constructor <;> omega
+
+theorem RawT.code_arity_le (n : Nat) (s : T n) :
+    UTerm.arity (RawT.code ⟨n, s⟩) ≤ n := by
+  induction s using (measure T.size).wf.induction with
+  | h s ih =>
+      cases s with
+      | Z =>
+          simp [RawT.code, UTerm.ofT, UTerm.normalize, UTerm.arity]
+      | P ls add =>
+          have hadd :
+              UTerm.arity (UTerm.normalize (UTerm.ofT add)) ≤ n :=
+            ih add (T.add_size_lt_P ls add)
+          have hcoords : ∀ i : Fin n,
+              UTerm.arity
+                (UTerm.normalize (UTerm.ofT (ls.idx i))) ≤ n := by
+            intro i
+            exact ih (ls.idx i) (T.idx_size_lt_P ls add i)
+          have hv := UVec.normalize_ofVec_bounds ls hcoords
+          simp only [RawT.code, UTerm.ofT, UTerm.normalize, UTerm.arity]
+          omega
+
+theorem Term.support_le_fixed {n : Nat} (s : T n) :
+    (Term.ofFixed s).support ≤ n := by
+  exact RawT.code_arity_le n s
+
 end Multi
 end new
