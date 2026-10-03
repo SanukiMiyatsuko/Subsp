@@ -454,7 +454,7 @@ mutual
             rw [hterm]
             exact congrArg
               (fun ys => UVec.snoc ys (UTerm.P ls add)) hmap
-
+end
 
 theorem Term.representative_code (s : Term) :
     RawT.code s.representative = s.code := by
@@ -483,7 +483,6 @@ theorem Term.mk_representative (s : Term) :
 theorem Term.ofFixed_representative (s : Term) :
     Term.ofFixed s.representative.2 = s := by
   simpa [Term.ofFixed] using Term.mk_representative s
-end
 
 end Multi
 end new
