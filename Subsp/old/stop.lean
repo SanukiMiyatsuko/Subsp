@@ -1,4 +1,4 @@
-import Subsp.old.stop_ot_char
+import Subsp.old.stop_ot
 
 /-! The order isomorphism between legacy OT terms and Buchholz normal forms below
 `ψ_0(Ω_lam)`, given by the legacy translation. -/

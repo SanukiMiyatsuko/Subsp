@@ -1,5 +1,10 @@
-import Subsp.old.stop_surj
+import Subsp.old.stop_surjectivity
 
+/-! Legacy ordinal-term characterization and cofinality results.
+This corresponds to `Subsp.new.stop_ot`.
+-/
+
+-- Merged from Subsp/old/stop_ot_char.lean
 /-! Source cofinality: legacy OT terms are exactly the countable indexed normal forms. -/
 
 namespace LegacyTranslation

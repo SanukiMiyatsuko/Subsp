@@ -1,5 +1,16 @@
-import Subsp.old.stop_inverse_target
+import Subsp.old.stop_inverse
 
+/-! Legacy SubNF types and surjectivity construction.
+The grouping follows the role of `Subsp.new.stop_surjectivity`.
+-/
+
+-- Merged from Subsp/old/stop_types.lean
+def T.isSubNF (n : Nat) (s : T) :=
+  isNF1 s ∧ s < P 0 (P n Z Z) Z
+
+def T.SubNF (lam : Nat) := { s : T // T.isSubNF lam s }
+
+-- Merged from Subsp/old/stop_surj.lean
 /-! Surjectivity of the legacy translation onto Buchholz normal forms with indices below
 the dimension. -/
 
