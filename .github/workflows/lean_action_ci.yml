@@ -12,7 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
-      - name: Build the legacy order isomorphism
-        run: lake build Subsp.old.stop
+      - name: Build all project modules
+        run: lake build subsp Subsp.old.stop Subsp.new.stop
       - name: Audit all legacy declarations
         run: lake env lean ProofAuditOld.lean
+      - name: Audit all new declarations
+        run: lake env lean ProofAuditNew.lean
