@@ -1,3 +1,5 @@
+import Subsp.order
+
 namespace multi
 
 inductive V (A : Type) where
@@ -1134,5 +1136,70 @@ theorem FundSys.NIsOT.exists {S : FundSys} (hS : S.Cong) {a : NT} (h : S.NIsOT a
     exact ⟨_, .step t ht n, FundSys.rep_fund hS t (T.ofNat n)⟩
 
 def FundSys.NOT {S : FundSys} := { s : NT // FundSys.NIsOT S s }
+
+
+/-! ### 基本列による順序（4変種共通） -/
+
+theorem NT.lt_or_eq_of_le {a b : NT} (h : a ≤ b) : a < b ∨ a = b := by
+  rcases h with h | h
+  · exact Or.inl h
+  · exact Or.inr ((NT.compare_eq_iff a b).1 h)
+
+theorem NT.not_lt_of_eq_Z (a : NT) {b : NT} (hb : b.1 = Z) : ¬ a < b := by
+  intro h
+  have h' : compareT a.1 b.1 = .lt := h
+  rw [hb] at h'
+  cases ha : a.1 with
+  | Z => rw [ha, compareT_ZZ] at h'; cases h'
+  | P vs as => rw [ha, compareT_PZ] at h'; cases h'
+
+/-- 基本列の 1 ステップ: `a` は `b` の基本列の項。 -/
+def FundSys.NOTStep (S : FundSys) (a b : @FundSys.NOT S) : Prop :=
+  b.val.1 ≠ Z ∧ ∃ n : Nat, a.val = S.ntFund b.val (T.rep (T.ofNat n))
+
+/-- 基本列のステップの推移閉包。 -/
+abbrev FundSys.NOTFundLt (S : FundSys) : @FundSys.NOT S → @FundSys.NOT S → Prop :=
+  FundOrder.TransClosure S.NOTStep
+
+/-- 基本列の項がもとの項より小さいこと。 -/
+def FundSys.FundDesc (S : FundSys) : Prop :=
+  ∀ (b : @FundSys.NOT S) (n : Nat), b.val.1 ≠ Z → S.ntFund b.val (T.rep (T.ofNat n)) < b.val
+
+/-- 基本列が下から共終であること。 -/
+def FundSys.FundCofinal (S : FundSys) : Prop :=
+  ∀ a b : @FundSys.NOT S, b.val < a.val → ∃ n : Nat, b.val ≤ S.ntFund a.val (T.rep (T.ofNat n))
+
+theorem FundSys.NOTStep_lt {S : FundSys} (hlt : S.FundDesc) {a b : @FundSys.NOT S}
+    (h : S.NOTStep a b) : a.val < b.val := by
+  obtain ⟨hbne, n, ha⟩ := h
+  rw [ha]
+  exact hlt b n hbne
+
+theorem FundSys.NOTFundLt_lt {S : FundSys} (hlt : S.FundDesc) {a b : @FundSys.NOT S}
+    (h : S.NOTFundLt a b) : a.val < b.val := by
+  induction h with
+  | single hstep => exact FundSys.NOTStep_lt hlt hstep
+  | tail _ hstep ih => exact NT.lt_trans ih (FundSys.NOTStep_lt hlt hstep)
+
+theorem FundSys.NOTFundLt_of_lt {S : FundSys} (hlt : S.FundDesc) (hcof : S.FundCofinal)
+    (hwf : WellFounded (fun a b : @FundSys.NOT S => a.val < b.val)) (a b : @FundSys.NOT S)
+    (hab : a.val < b.val) : S.NOTFundLt a b := by
+  induction b using hwf.induction generalizing a with
+  | h b ih =>
+    obtain ⟨n, hn⟩ := hcof b a hab
+    let c : @FundSys.NOT S := ⟨S.ntFund b.val (T.rep (T.ofNat n)), .step _ b.2 n⟩
+    have hbne : b.val.1 ≠ Z := fun hz => NT.not_lt_of_eq_Z a.val hz hab
+    have hstep : S.NOTStep c b := ⟨hbne, n, rfl⟩
+    rcases NT.lt_or_eq_of_le hn with h | h
+    · exact FundOrder.TransClosure.tail (ih c (hlt b n hbne) a h) hstep
+    · have hac : a = c := Subtype.ext h
+      subst hac
+      exact FundOrder.TransClosure.single hstep
+
+/-- 基本列の推移閉包による順序と項の順序の一致。 -/
+theorem FundSys.NOTFundLt_iff_lt {S : FundSys} (hlt : S.FundDesc) (hcof : S.FundCofinal)
+    (hwf : WellFounded (fun a b : @FundSys.NOT S => a.val < b.val)) (a b : @FundSys.NOT S) :
+    S.NOTFundLt a b ↔ a.val < b.val :=
+  ⟨FundSys.NOTFundLt_lt hlt, FundSys.NOTFundLt_of_lt hlt hcof hwf a b⟩
 
 end multi
