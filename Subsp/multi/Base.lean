@@ -374,9 +374,9 @@ theorem lenCmp_swap (m n : Nat) : lenCmp m n = (lenCmp n m).swap := by
 
 theorem lenCmp_cons (m n p : Nat) : Cons (lenCmp m n) (lenCmp n p) (lenCmp m p) :=
   ⟨fun h1 h2 => lenCmp_eq_lt.2 (Nat.lt_trans (lenCmp_eq_lt.1 h1) (lenCmp_eq_lt.1 h2)),
-   fun h1 h2 => lenCmp_eq_lt.2 (Nat.lt_of_lt_of_eq (lenCmp_eq_lt.1 h1) (lenCmp_eq_eq.1 h2)),
-   fun h1 h2 => lenCmp_eq_lt.2 (Nat.lt_of_le_of_lt (Nat.le_of_eq (lenCmp_eq_eq.1 h1)) (lenCmp_eq_lt.1 h2)),
-   fun h1 h2 => lenCmp_eq_eq.2 ((lenCmp_eq_eq.1 h1).trans (lenCmp_eq_eq.1 h2))⟩
+    fun h1 h2 => lenCmp_eq_lt.2 (Nat.lt_of_lt_of_eq (lenCmp_eq_lt.1 h1) (lenCmp_eq_eq.1 h2)),
+    fun h1 h2 => lenCmp_eq_lt.2 (Nat.lt_of_le_of_lt (Nat.le_of_eq (lenCmp_eq_eq.1 h1)) (lenCmp_eq_lt.1 h2)),
+    fun h1 h2 => lenCmp_eq_eq.2 ((lenCmp_eq_eq.1 h1).trans (lenCmp_eq_eq.1 h2))⟩
 
 theorem compareT_ZZ : compareT Z Z = .eq := by rw [compareT]
 theorem compareT_ZP (vs : V T) (as : T) : compareT Z (P vs as) = .lt := by rw [compareT]
