@@ -1,5 +1,7 @@
 import Subsp.Buchholz.Rank1
 import Subsp.multi.emp.nt
+import Subsp.multi.Assembly
+import Subsp.multi.emp.surj
 
 def T.SubNF := { s : T // T.isNF1 s ∧ s < P 0 (P 1 (P 1 (P 0 Z Z) Z) Z) Z }
 
@@ -8,4 +10,8 @@ theorem NOT_SubNF_order_iso :
       (∀ s t, f s = f t → s = t) ∧
       (∀ t, ∃ s, f s = t) ∧
       (∀ s t, s.val < t.val ↔ (f s).val < (f t).val) := by
-  sorry
+  exact MultiAssembly.order_iso emp.sys emp.NF emp.tr emp.bound
+    emp.NF_base (fun s hs n => emp.NF_fund s hs n) (fun _ hs => emp.NF_norm hs) emp.tr_norm
+    (fun _ hs => ⟨emp.NF_good hs, emp.tr_lt_bound hs⟩) (fun _ _ hs ht h => emp.tr_mono hs ht h)
+    (fun s _ hs => emp.fund_lt_self s hs _) (fun a b ha hb h => emp.cofinal a b ha hb h)
+    emp.surj (fun s _ => emp.le_base s)
