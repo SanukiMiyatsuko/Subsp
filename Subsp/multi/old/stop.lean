@@ -16,3 +16,9 @@ theorem NOT_SubNF_order_iso :
     (fun _ _ hs ht h => old.tr_mono hs.1 ht.1 h)
     (fun s _ hs => old.fund_lt_self s hs _) (fun a b ha hb h => old.cofinal a b ha hb h)
     old.surj (fun s hs => old.le_base s hs.2)
+
+theorem old.NOTFundLt_iff_lt (a b : old.sys.NOT) : old.sys.NOTFundLt a b ↔ a.val < b.val :=
+  MultiAssembly.fundLt_iff_lt old.sys (fun s => old.NF s ∧ s < old.otb) old.tr
+    old.Inv_base (fun s hs n => old.Inv_fund s hs n) (fun s hs => old.Inv_norm s hs)
+    (fun _ hs => old.NF_good hs.1) (fun _ _ hs ht h => old.tr_mono hs.1 ht.1 h)
+    (fun s _ hs => old.fund_lt_self s hs _) (fun a b ha hb h => old.cofinal a b ha hb h) a b
