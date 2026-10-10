@@ -652,7 +652,7 @@ private theorem high_psi_not_below_collapse {n k : Nat} (hn : k ≤ n) (a b : Te
   simp only [high_inacc_not_below_inacc hn, Bool.false_and,
     CountableTarget.lt_zero, Bool.and_false, Bool.false_or, hp]
   by_cases he : (.inacc n a : Term) = .inacc k .zero
-  · rw [he, TargetArithmetic.lt_self]; simp
+  · rw [he, OCF.Jaeger.Term.lt_irrefl]; simp
   · simp [he]
 
 private theorem lower_psi_below_collapse_subscript
@@ -669,7 +669,7 @@ private theorem lower_psi_below_collapse_subscript
         Nat.le_of_lt hn, Nat.ne_of_lt hn] using hlt.2
     have hkw : Term.wf (.inacc k .zero) = true := by simp [Term.wf, Term.fT]
     have hself := Term.lt_trans hkw hw hkw hlt.1 hl
-    rw [TargetArithmetic.lt_self] at hself
+    rw [OCF.Jaeger.Term.lt_irrefl] at hself
     cases hself
 
 private theorem H_omega_inacc_psi (n : Nat) (a b : Term) :

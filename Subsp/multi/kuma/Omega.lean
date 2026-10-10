@@ -1286,7 +1286,7 @@ theorem H_psi_successor_support (v w b : Term)
     have hbs : Term.lt b (succTerm b) = true := by
       rw [lt_succTerm_eq_le hb hb]; simp [Term.le]
     rw [Term.lt]
-    simp only [lt_self, decide_true, Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_false, hbs]
+    simp only [Term.lt_irrefl, decide_true, Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_false, hbs]
   by_cases hskip : Term.le (.psi w (succTerm b)) (Term.predR v) = true
   · have hnew : Term.le (.psi w b) (Term.predR v) = true :=
       Term.le_trans hn hw hp.1 (by simp [Term.le, hlt]) hskip
@@ -1928,7 +1928,7 @@ theorem layerCut_H_context_empty (n : Nat) (a : Term)
       simp only [layerCut, ha0, ↓reduceIte, Term.predR, succTerm_ne_zero,
         predT_succTerm hwa, show ¬Term.fT a ≤ n from Nat.not_le.mpr (ha.resolve_left ha0)]
     exact kumakuma.JaegerFacts.H_nil_of_le_predR (layerCut_wf n a ha hwa) (layerCut_regular n a) a hwa
-      (by rw [hp]; simp [Term.le, lt_self])
+      (by rw [hp]; simp [Term.le, Term.lt_irrefl])
 
 theorem step_positive_nonzero (n : Nat) (hn : 0 < n) (a c : Term) (hc : c ≠ .zero) :
     step n a c ≠ .zero := by

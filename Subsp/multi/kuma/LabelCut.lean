@@ -174,7 +174,7 @@ theorem diagonal_parent_relative_above (k : Nat)
       · exact ⟨hw, heOld ▸ ho⟩
       · have hback := (Term.allLt_iff _ _).mp hH _ (heOld ▸ hroot)
         have hfalse := Term.lt_trans (hcoords i).wf hs.wf (hcoords i).wf hback hparentLtChild
-        rw [lt_self] at hfalse; cases hfalse
+        rw [Term.lt_irrefl] at hfalse; cases hfalse
     by_cases hex : ∃ j, i ≠ j ∧ V.get0 xs j ≠ .Z
     · obtain ⟨j, hij, hj⟩ := hex
       have ht : ofNatD (k + 3) n ≠ .Z := by
@@ -1145,7 +1145,7 @@ theorem Omega_label_coefficient_lift (k : Nat) (s : multi.T)
         | false => rfl
         | true =>
           have hh := Term.lt_trans hw hv hw he hVw
-          rw [lt_self] at hh; cases hh
+          rw [Term.lt_irrefl] at hh; cases hh
       by_cases hskip : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = true
       · have hLpred := Term.le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
           (cofinality_image_le k _ hsD hr hs hdParent) hskip

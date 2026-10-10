@@ -43,7 +43,7 @@ theorem topPair_predecessor_lt (n : Nat) (h b : Term)
     (hh : Term.wf h = true) (hb : Term.wf b = true) :
     Term.lt (topPair n h b) (topPair n h (succTerm b)) = true := by
   rw [topPair_order n hh hb hh (succTerm_wf hb)]
-  simp only [lt_self, decide_true, Bool.true_and, Bool.false_or]
+  simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or]
   rw [lt_succTerm_eq_le hb hb]
   simp [Term.le]
 
@@ -432,7 +432,7 @@ theorem step_predecessor_cut_lt (n : Nat) (a c : Term)
   have hwa := step_context_wf ha hw
   have hlt : Term.lt (step (n + 1) a c) (step (n + 1) a (succTerm c)) = true := by
     rw [step_order ha ha hwa hwa hc (succTerm_wf hc) hn hw]
-    simp only [lt_self, decide_true, Bool.true_and, Bool.false_or]
+    simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or]
     rw [lt_succTerm_eq_le hc hc]; simp [Term.le]
   have hf : Term.fT (step (n + 1) a (succTerm c)) = n + 1 := by
     by_cases ha0 : a = .zero <;> simp [step, ha0, succTerm_ne_zero, Term.fT, regular]
@@ -959,7 +959,7 @@ theorem step_replace_cofinal_wf (n : Nat)
     have hnew : step n a t = .psi (layerCut n a) (dropOne t) := by
       by_cases ha0 : a = .zero
       · by_cases hn : n = 0
-        · simp [layerCut, ha0, hn, Term.bigOmega, lt_self] at hcut
+        · simp [layerCut, ha0, hn, Term.bigOmega, Term.lt_irrefl] at hcut
         · simp [step, layerCut, ha0, hn, ht0]
       · simp [step, layerCut, regular, ha0, ht0]
     rw [hnew]
@@ -1644,7 +1644,7 @@ theorem H_topPair_zero_support (v : Term)
     · simpa only [topPair, hh0, ↓reduceIte] using hi
   have hl : Term.lt (topPair n h .zero) (topPair n h c) = true := by
     rw [topPair_order n hh (show Term.wf .zero = true from rfl) hh hc]
-    simp [lt_self, hc0, zero_lt_iff]
+    simp [Term.lt_irrefl, hc0, zero_lt_iff]
   have heOld : topPair n h c = .psi (pairCut n h) (dropOne c) := by
     by_cases hh0 : h = .zero <;> simp [topPair, pairCut, hh0, hc0]
   by_cases hs : Term.le (topPair n h c) (Term.predR v) = true

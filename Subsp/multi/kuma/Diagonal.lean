@@ -1259,7 +1259,7 @@ theorem middle_cut_le_zero_of_le_label (k : Nat)
   · simp only [topPair, hh0, hb0, ↓reduceIte, Term.le, decide_true, Bool.true_or]
   · have hlt := topPair_order (k + 1) hhw Term.wf_zero hhw hbw
     have hZero : Term.lt .zero (convert (k + 3) (code b)) = true := (zero_lt_iff _).mpr hb0
-    simp only [lt_self, decide_true, Bool.true_and, Bool.false_or, hZero] at hlt
+    simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or, hZero] at hlt
     have hBaseLt : Term.lt (.inacc (k + 1) (dropOne h))
         (topPair (k + 1) h (convert (k + 3) (code b))) = true := by
       simpa only [topPair, hh0, ↓reduceIte] using hlt
@@ -1337,7 +1337,7 @@ theorem higher_source_closed (k m : Nat)
   have hParentLt := (convert_order k _ _ hsD hAD hs hA).mp hbound
   have ha0 : a ≠ .zero := by
     intro he
-    rw [heOld, heA, he, ite_eq_left rfl, principal_not_lt_one (by rfl) hPsi] at hParentLt
+    rw [heOld, heA, he, ite_eq_left rfl, Term.not_prin_lt_one hPsi (by rfl)] at hParentLt
     cases hParentLt
   rw [ite_eq_right ha0] at heA
   have hPA : Term.lt (.psi w (convert (k + 3) (code (V.get0 xs i)))) a = true := by
@@ -1369,7 +1369,7 @@ theorem higher_source_closed (k m : Nat)
       exact (convert_order k _ _ hsD hlD hs hlw).mp
         (T.lt_trans hbound (fund_lt _ .Z (by intro he; cases he)))
     have hbad := Term.lt_trans hlw.wf hPsi hlw.wf hLP hPL
-    rw [lt_self] at hbad; cases hbad
+    rw [Term.lt_irrefl] at hbad; cases hbad
   have hAV : Term.lt a (layerCut m a) = true := by
     simp only [layerCut, ha0, ↓reduceIte]
     change Term.lt a (regular m a) = true

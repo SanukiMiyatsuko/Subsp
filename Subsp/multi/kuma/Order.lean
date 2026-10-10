@@ -156,7 +156,7 @@ theorem wf_not_lt_reverse {a c : Term}
   | false => rfl
   | true =>
     have h := Term.lt_trans ha hc ha hac hca
-    rw [lt_self] at h
+    rw [Term.lt_irrefl] at h
     cases h
 
 theorem psi_same_lt (n : Nat) (a b c d : Term)
@@ -166,7 +166,7 @@ theorem psi_same_lt (n : Nat) (a b c d : Term)
   rw [psi_same_lt_raw]
   have hbad : (Term.lt c a && Term.le a c) = false := by
     by_cases he : a = c
-    · subst c; simp [lt_self]
+    · subst c; simp [Term.lt_irrefl]
     · rw [Term.le]
       simp only [he, decide_false, Bool.false_or]
       cases hac : Term.lt a c with
@@ -213,7 +213,7 @@ theorem topPair_order (n : Nat) {h m h' m' : Term}
   · by_cases hh0 : h = .zero <;> by_cases hh'0 : h' = .zero
     · subst h; subst h'
       simp only [topPair, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _ Term.wf_zero Term.wf_zero,
-        lt_self, decide_true, Bool.true_and, Bool.false_or,
+        Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or,
         dropOne_order hm hm' hm0 hm'0]
     · subst h
       simp only [topPair, hh'0, hm0, hm'0, ↓reduceIte,
@@ -246,8 +246,8 @@ theorem topPair_eq_iff (n : Nat) {h m h' m' : Term}
   · intro he
     have hf := topPair_order n hh hm hh' hm'
     have hr := topPair_order n hh' hm' hh hm
-    rw [he, lt_self] at hf
-    rw [he, lt_self] at hr
+    rw [he, Term.lt_irrefl] at hf
+    rw [he, Term.lt_irrefl] at hr
     have heh : h = h' := by
       rcases Term.lt_trichotomy hh hh' with hl | he | hl
       · rw [hl, Bool.true_or] at hf; cases hf
@@ -255,7 +255,7 @@ theorem topPair_eq_iff (n : Nat) {h m h' m' : Term}
       · rw [hl, Bool.true_or] at hr; cases hr
     refine ⟨heh, ?_⟩
     subst h'
-    simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
+    simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or] at hf hr
     rcases Term.lt_trichotomy hm hm' with hl | he | hl
     · rw [hl] at hf; cases hf
     · exact he
@@ -316,13 +316,13 @@ theorem context_lt_regular {n : Nat} {a b : Term}
   | inacc m c =>
     simp only [Term.fT] at ha
     simp only [regular, Term.lt, show ¬m < n by omega, show ¬m = n by omega, ↓reduceIte, hs]
-    by_cases he : Term.inacc m c = b <;> simp [Term.le, he, lt_self]
+    by_cases he : Term.inacc m c = b <;> simp [Term.le, he, Term.lt_irrefl]
   | psi v c =>
     simp only [Term.fT] at ha
     simp only [regular, Term.lt, ha, show ¬ Term.fT v ≤ n by omega,
       decide_true, decide_false, Bool.true_and, Bool.false_and, Bool.or_false, hs]
     simp only [reduceCtorEq, decide_false, Bool.false_or]
-    by_cases he : Term.psi v c = b <;> simp [Term.le, he, lt_self]
+    by_cases he : Term.psi v c = b <;> simp [Term.le, he, Term.lt_irrefl]
 
 theorem wf_le_iff_reverse_false {a b : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) :
@@ -330,7 +330,7 @@ theorem wf_le_iff_reverse_false {a b : Term}
   simp only [Term.le, Bool.or_eq_true, decide_eq_true_eq]
   constructor
   · rintro (rfl | h)
-    · exact lt_self a
+    · exact Term.lt_irrefl a
     · exact wf_not_lt_reverse ha hb h
   · intro h
     rcases Term.lt_trichotomy ha hb with hl | he | hl
@@ -455,7 +455,7 @@ theorem zero_step_order (n : Nat) {c d : Term} (hc : Term.wf c = true) (hd : Ter
     · subst c; simp [step, hn0, hd0, Term.lt, (zero_lt_iff d).mpr hd0]
     · subst d; simp [step, hn0, hc0, kumakuma.CountableTarget.lt_zero]
     · simp only [step, hn0, hc0, hd0, ↓reduceIte, psi_same_lt_raw,
-        lt_self, decide_true, Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_false,
+        Term.lt_irrefl, decide_true, Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_false,
         dropOne_order hc hd hc0 hd0]
 
 theorem zero_step_lt_context {n : Nat} (c : Term) {b : Term}
@@ -512,7 +512,7 @@ theorem step_order {n : Nat} {a b c d : Term}
       (Term.lt a b || (decide (a = b) && Term.lt c d)) := by
   by_cases ha0 : a = .zero <;> by_cases hb0 : b = .zero
   · subst a; subst b
-    simp only [zero_step_order n hc hd, lt_self, decide_true, Bool.true_and, Bool.false_or]
+    simp only [zero_step_order n hc hd, Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or]
   · subst a
     have hbf := hba.resolve_left hb0
     rw [zero_step_lt_positive_step c d hb hbf, (zero_lt_iff b).mpr hb0, Bool.true_or]
@@ -553,8 +553,8 @@ theorem step_injective {n : Nat} {a b c d : Term}
     (he : step n a c = step n b d) : a = b ∧ c = d := by
   have hf := step_order haa hba ha hb hc hd hwac hwbd
   have hr := step_order hba haa hb ha hd hc hwbd hwac
-  rw [he, lt_self] at hf
-  rw [he, lt_self] at hr
+  rw [he, Term.lt_irrefl] at hf
+  rw [he, Term.lt_irrefl] at hr
   have hab : a = b := by
     rcases Term.lt_trichotomy ha hb with hl | he | hl
     · rw [hl, Bool.true_or] at hf; cases hf
@@ -562,7 +562,7 @@ theorem step_injective {n : Nat} {a b c d : Term}
     · rw [hl, Bool.true_or] at hr; cases hr
   refine ⟨hab, ?_⟩
   subst b
-  simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
+  simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or] at hf hr
   rcases Term.lt_trichotomy hc hd with hl | he | hl
   · rw [hl] at hf; cases hf
   · exact he
@@ -825,8 +825,8 @@ theorem lex_equal_of_false (k : Nat) (xs ys : List Term)
       · simp [lexArgs, hl] at hf
       · exact he
       · simp [lexArgs, hl] at hr
-    have hf' : lexArgs k xs ys = false := by simpa [lexArgs, he, kumakuma.TargetArithmetic.lt_self] using hf
-    have hr' : lexArgs k ys xs = false := by simpa [lexArgs, he, kumakuma.TargetArithmetic.lt_self] using hr
+    have hf' : lexArgs k xs ys = false := by simpa [lexArgs, he, OCF.Jaeger.Term.lt_irrefl] using hf
+    have hr' : lexArgs k ys xs = false := by simpa [lexArgs, he, OCF.Jaeger.Term.lt_irrefl] using hr
     intro i hi
     by_cases hik : i < k
     · exact ih (fun j hj => hxs j (by omega)) (fun j hj => hys j (by omega)) hf' hr' i hik
@@ -844,7 +844,7 @@ theorem principal_eq_iff (k : Nat) (xs ys : List Term)
   · intro he
     have hf := principal_order k xs ys hxs hys hwx hwy
     have hr := principal_order k ys xs hys hxs hwy hwx
-    rw [he, kumakuma.TargetArithmetic.lt_self] at hf hr
+    rw [he, OCF.Jaeger.Term.lt_irrefl] at hf hr
     exact lex_equal_of_false (k + 3) xs ys hxs hys hf.symm hr.symm
   · exact principal_congr k xs ys
 
@@ -986,7 +986,7 @@ theorem convert_lt (k : Nat) :
       RecursiveWF (k + 3) s → RecursiveWF (k + 3) t →
       Term.lt (convert (k + 3) (code s)) (convert (k + 3) (code t)) = decide (s < t)
   | .Z, .Z, _, _, _, _ => by
-    rw [convert_Z, kumakuma.TargetArithmetic.lt_self]
+    rw [convert_Z, OCF.Jaeger.Term.lt_irrefl]
     exact (decide_eq_false (T.lt_irrefl _)).symm
   | .Z, .P ys c, _, _, _, _ => by
     rw [convert_Z, (kumakuma.TargetArithmetic.zero_lt_iff _).mpr (convert_ne_zero ys c)]

@@ -80,13 +80,13 @@ theorem context_lt_of_image_lt {r s : Nat} {a b : Term}
   · exfalso
     rw [ite_eq_left hb0] at h
     by_cases ha0 : a = .zero
-    · rw [ite_eq_left ha0, lt_self] at h; cases h
+    · rw [ite_eq_left ha0, Term.lt_irrefl] at h; cases h
     · rw [ite_eq_right ha0] at h
-      have hle := one_le_principal (above_principal (ha.resolve_left ha0)) haw
+      have hle := Term.one_le_prin haw (above_principal (ha.resolve_left ha0))
       rcases (Term.le_iff_eq_or_lt _ _).mp hle with he | hl
-      · rw [← he, lt_self] at h; cases h
+      · rw [← he, Term.lt_irrefl] at h; cases h
       · have := Term.lt_trans Term.wf_one haw Term.wf_one hl h
-        rw [lt_self] at this; cases this
+        rw [Term.lt_irrefl] at this; cases this
   · refine ⟨?_, hb0⟩
     by_cases ha0 : a = .zero
     · subst a; exact (zero_lt_iff _).mpr hb0
@@ -147,9 +147,9 @@ theorem H_lower_visible (n : Nat) (zz : Term)
         cases he : Term.le (.psi (regular j h) (dropOne (args[j]?.getD .zero))) (Term.predR (.inacc n zz))
         · rfl
         · rcases (Term.le_iff_eq_or_lt _ _).mp he with he' | hl
-          · rw [he', lt_self] at hpredPsi; cases hpredPsi
+          · rw [he', Term.lt_irrefl] at hpredPsi; cases hpredPsi
           · have := Term.lt_trans hpw hpsiW hpw hpredPsi hl
-            rw [lt_self] at this; cases this
+            rw [Term.lt_irrefl] at this; cases this
       apply ih (by omega) args _ (step_shape _ habove)
         (step_lt_inacc j n (by omega) h _ zz habove hlt)
         (by rw [hstep]; exact hpredPsi) hwf z
@@ -180,11 +180,11 @@ theorem psi_self_visible (w Q : Term) (hw : Term.wf (.psi w Q) = true) :
     cases he : Term.le (.psi w Q) (Term.predR w)
     · rfl
     · rcases (Term.le_iff_eq_or_lt _ _).mp he with he' | hl
-      · rw [he', lt_self] at hpr; cases hpr
+      · rw [he', Term.lt_irrefl] at hpr; cases hpr
       · have := Term.lt_trans hpw hw hpw hpr hl
-        rw [lt_self] at this; cases this
+        rw [Term.lt_irrefl] at this; cases this
   rw [Term.H, hnotLe]
-  simp [lt_self]
+  simp [Term.lt_irrefl]
 
 theorem higher_equal_context_false (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
@@ -260,7 +260,7 @@ theorem higher_equal_context_false (k : Nat)
   have hdo := dropOne_order (hqcoords i).wf hcw.wf hqy hcy
   rw [hdrop, hQ] at hdo
   have hself := Term.lt_trans hcw.wf (hqcoords i).wf hcw.wf hcq hdo.symm
-  rw [lt_self] at hself; cases hself
+  rw [Term.lt_irrefl] at hself; cases hself
 
 theorem succ_le_of_lt_source (lam : Nat) {x y : multi.T} (h : x < y) :
     kumakuma.SourceSuccessor.succ lam x ≤ y := by
