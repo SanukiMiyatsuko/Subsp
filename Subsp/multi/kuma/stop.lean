@@ -165,7 +165,7 @@ theorem NOT_order_embedding :
       (∀ s t, f s = f t → s = t) ∧
       (∀ s t, s.val < t.val ↔ Term.lt (f s).val (f t).val = true) :=
   ⟨embed, injective_of_lt_iff embed (fun x y => Term.lt x.val y.val = true)
-    (fun x => by simp [kumakuma.TargetArithmetic.lt_self]) embed_lt_iff, embed_lt_iff⟩
+    (fun x => by simp [OCF.Jaeger.Term.lt_irrefl]) embed_lt_iff, embed_lt_iff⟩
 
 /-- The order `<` on the OT terms of the `multi` kumakuma system is well-founded. -/
 theorem NOT_lt_wellFounded : WellFounded (fun a b : sys.NOT => a.val < b.val) :=

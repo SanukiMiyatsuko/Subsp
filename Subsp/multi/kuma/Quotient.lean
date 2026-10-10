@@ -20,7 +20,6 @@ open multi
 inductive Code where
   | zero : Code
   | p (args : List Code) (tail : Code) : Code
-  deriving Repr
 
 def Code.isZero : Code → Bool
   | .zero => true
@@ -58,11 +57,6 @@ theorem codes_length (v : V multi.T) : (codes v).length = v.length := by
   | emp => rw [codes_emp]; rfl
   | snoc x xs ih => rw [codes_snoc, List.length_append, ih]; rfl
 
-theorem code_isZero_iff (s : multi.T) : (code s).isZero = true ↔ s = multi.T.Z := by
-  cases s with
-  | Z => simp [code_Z, Code.isZero]
-  | P v a => simp [code_P, Code.isZero]
-
 theorem code_eq_zero_iff (s : multi.T) : code s = .zero ↔ s = multi.T.Z := by
   cases s with
   | Z => simp [code_Z]
@@ -70,12 +64,6 @@ theorem code_eq_zero_iff (s : multi.T) : code s = .zero ↔ s = multi.T.Z := by
 
 /-- The coordinate of a list of codes, padded with zeros. -/
 def cget (xs : List Code) (i : Nat) : Code := (xs[i]?).getD .zero
-
-theorem cget_nil (i : Nat) : cget [] i = .zero := rfl
-
-theorem cget_cons_zero (x : Code) (xs : List Code) : cget (x :: xs) 0 = x := rfl
-
-theorem cget_cons_succ (x : Code) (xs : List Code) (i : Nat) : cget (x :: xs) (i + 1) = cget xs i := rfl
 
 theorem cget_append_singleton (xs : List Code) (x : Code) (i : Nat) :
     cget (xs ++ [x]) i = if i < xs.length then cget xs i else if i = xs.length then x else .zero := by
@@ -89,10 +77,6 @@ theorem cget_append_singleton (xs : List Code) (x : Code) (i : Nat) :
       have : i - xs.length ≠ 0 := by omega
       obtain ⟨m, hm⟩ : ∃ m, i - xs.length = m + 1 := ⟨i - xs.length - 1, by omega⟩
       rw [hm]; rfl
-
-theorem cget_ge (xs : List Code) (i : Nat) (h : xs.length ≤ i) : cget xs i = .zero := by
-  unfold cget
-  rw [List.getElem?_eq_none h]; rfl
 
 theorem codes_get (v : V multi.T) (i : Nat) : cget (codes v) i = code (V.get0 v i) := by
   induction v with
@@ -526,8 +510,6 @@ decreasing_by
   · exact multi.T.size_get0_lt_P _ _ _
   · exact multi.T.size_lt_P_right _ _
 
-theorem tWidth_norm_le_code (s : multi.T) : tWidth (multi.T.norm s) = tWidth (multi.T.norm s) := rfl
-
 mutual
   theorem code_padN (d : Nat) : ∀ s : multi.T, code (padN d s) = code s
     | .Z => by rw [padN_Z]
@@ -552,20 +534,6 @@ end
 
 theorem code_padTo (d : Nat) (s : multi.T) : code (padTo d s) = code s := by
   rw [padTo, code_padN, code_norm]
-
-theorem padN_of_Dim (d : Nat) : ∀ s : multi.T, Dim d s → padN d s = s
-  | .Z, _ => padN_Z d
-  | .P v a, h => by
-    rw [padN_P, h.length, Nat.sub_self, padN_of_Dim d a h.tail]
-    show multi.T.P (padMap d v) a = multi.T.P v a
-    congr 1
-    apply V.eq_of_get0 _ _ (length_padMap d v)
-    intro i
-    rw [get0_padMap, padN_of_Dim d _ (h.coord i)]
-termination_by s => s.size
-decreasing_by
-  · exact multi.T.size_lt_P_right _ _
-  · exact multi.T.size_get0_lt_P _ _ _
 
 /-- Padding the normal form of a fixed-dimension term recovers it. -/
 theorem padN_norm_of_Dim (d : Nat) : ∀ s : multi.T, Dim d s → padN d (multi.T.norm s) = s
@@ -625,14 +593,6 @@ theorem get0_vOf (f : Nat → multi.T) :
       by_cases hj : j < n
       · rw [ite_eq_left hj, ite_eq_left (by omega)]
       · rw [ite_eq_right hj, ite_eq_right (by omega)]
-
-theorem vOf_get0 (v : V multi.T) : vOf (V.get0 v) v.length = v := by
-  apply V.eq_of_get0 _ _ (vOf_length _ _)
-  intro j
-  rw [get0_vOf]
-  by_cases hj : j < v.length
-  · rw [ite_eq_left hj]
-  · rw [ite_eq_right hj, V.get0_ge v j (Nat.le_of_not_lt hj)]
 
 theorem vOf_ext {f g : Nat → multi.T} {n : Nat} (h : ∀ j, j < n → f j = g j) : vOf f n = vOf g n := by
   apply V.eq_of_get0 _ _ (by rw [vOf_length, vOf_length])
@@ -732,13 +692,6 @@ def classCode : Classes → Code :=
 
 abbrev representative := classCode
 
-theorem classCode_injective : Function.Injective classCode := by
-  intro q r
-  induction q using Quotient.inductionOn with
-  | h s =>
-    induction r using Quotient.inductionOn with
-    | h t => exact fun h => Quotient.sound (s := equivalentSetoid) h
-
 theorem exists_rep (q : Classes) : ∃ s : AllOT, classOf s = q := by
   induction q using Quotient.inductionOn with
   | h s => exact ⟨s, rfl⟩
@@ -747,20 +700,6 @@ theorem exists_dimension (q : Classes) :
     ∃ lam, ∃ s : OTD lam, classOf ⟨lam, s⟩ = q := by
   obtain ⟨⟨lam, s⟩, h⟩ := exists_rep q
   exact ⟨lam, s, h⟩
-
-def noTrailingZero : List Code → Bool
-  | [] => true
-  | [x] => !x.isZero
-  | _ :: y :: ys => noTrailingZero (y :: ys)
-
-theorem trim_noTrailingZero (xs : List Code) : noTrailingZero (trim xs) = true := by
-  induction xs with
-  | nil => rfl
-  | cons x xs ih =>
-    cases h : trim xs with
-    | nil =>
-      cases hx : x.isZero <;> simp [trim, h, hx, noTrailingZero]
-    | cons y ys => simpa [trim, h, noTrailingZero] using ih
 
 theorem mem_trim {x : Code} {xs : List Code} (h : x ∈ trim xs) : x ∈ xs := by
   induction xs with
@@ -773,36 +712,6 @@ theorem mem_trim {x : Code} {xs : List Code} (h : x ∈ trim xs) : x ∈ xs := b
     | cons z zs =>
       have hm : x = y ∨ x ∈ trim ys := by simpa [trim, ht] using h
       exact List.mem_cons.mpr (hm.imp_right ih)
-
-def Code.normal : Code → Prop
-  | .zero => True
-  | .p args tail => noTrailingZero args = true ∧ (∀ x ∈ args, x.normal) ∧ tail.normal
-
-theorem code_normal_aux : ∀ (n : Nat) (s : multi.T), s.size < n → (code s).normal
-  | 0, _, h => absurd h (Nat.not_lt_zero _)
-  | n + 1, s, h => by
-    cases s with
-    | Z => rw [code_Z, Code.normal]; trivial
-    | P v a =>
-      rw [code_P, Code.normal]
-      have hsz : (multi.T.P v a).size = multi.V.size v + a.size + 1 := rfl
-      refine ⟨trim_noTrailingZero _, fun x hx => ?_, code_normal_aux n a (by omega)⟩
-      have hx' := mem_trim hx
-      obtain ⟨i, hi, he⟩ := List.getElem_of_mem hx'
-      have hci := codes_get v i
-      unfold cget at hci
-      rw [List.getElem?_eq_getElem hi] at hci
-      simp only [Option.getD_some] at hci
-      rw [← he, hci]
-      apply code_normal_aux n
-      have := multi.V.size_get0_le v i
-      omega
-
-theorem code_normal (s : multi.T) : (code s).normal := code_normal_aux _ s (Nat.lt_succ_self _)
-
-theorem representative_normal (q : Classes) : (representative q).normal := by
-  induction q using Quotient.inductionOn with
-  | h s => exact code_normal s.2.val
 
 end kumakuma.OTQuotient
 
@@ -903,9 +812,6 @@ open multi
 def classCompare (q r : Classes) : Ordering := compareCode (representative q) (representative r)
 
 def ClassLT (q r : Classes) : Prop := classCompare q r = .lt
-
-theorem compareCode_mixed (s t : multi.T) : compareCode (code s) (code t) = compareT s t :=
-  compareCode_code s t
 
 theorem classCompare_eq_iff (q r : Classes) : classCompare q r = .eq ↔ q = r := by
   induction q using Quotient.inductionOn with

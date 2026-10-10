@@ -149,30 +149,13 @@ theorem psi_same_lt_raw (n : Nat) (a b c d : Term) :
   rw [Term.lt]
   simp [inacc_same_lt, inacc_same_lt_psi, psi_same_lt_inacc]
 
-theorem wf_not_lt_reverse {a c : Term}
-    (ha : Term.wf a = true) (hc : Term.wf c = true) (hac : Term.lt a c = true) :
-    Term.lt c a = false := by
-  cases hca : Term.lt c a with
-  | false => rfl
-  | true =>
-    have h := kumakuma.JaegerFacts.jaeger_order.2.1 a c a ha hc ha hac hca
-    rw [lt_self] at h
-    cases h
-
-theorem psi_same_lt (n : Nat) (a b c d : Term)
-    (ha : Term.wf a = true) (hc : Term.wf c = true) :
+theorem psi_same_lt (n : Nat) (a b c d : Term) :
     Term.lt (.psi (.inacc n a) b) (.psi (.inacc n c) d) =
       (Term.lt a c || (decide (a = c) && Term.lt b d)) := by
   rw [psi_same_lt_raw]
-  have hbad : (Term.lt c a && Term.le a c) = false := by
-    by_cases he : a = c
-    · subst c; simp [lt_self]
-    · rw [Term.le]
-      simp only [he, decide_false, Bool.false_or]
-      cases hac : Term.lt a c with
-      | false => simp
-      | true => simp [wf_not_lt_reverse ha hc hac]
-  rw [hbad, Bool.or_false]
+  cases h : Term.le a c
+  · simp
+  · simp [Term.not_lt_of_le h]
 
 theorem topPair_order (n : Nat) {h m h' m' : Term}
     (hh : Term.wf h = true) (hm : Term.wf m = true)
@@ -212,23 +195,21 @@ theorem topPair_order (n : Nat) {h m h' m' : Term}
         Bool.and_false, Bool.or_false]
   · by_cases hh0 : h = .zero <;> by_cases hh'0 : h' = .zero
     · subst h; subst h'
-      simp only [topPair, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _ Term.wf_zero Term.wf_zero,
-        lt_self, decide_true, Bool.true_and, Bool.false_or,
+      simp only [topPair, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _,
+        Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or,
         dropOne_order hm hm' hm0 hm'0]
     · subst h
-      simp only [topPair, hh'0, hm0, hm'0, ↓reduceIte,
-        psi_same_lt n _ _ _ _ Term.wf_zero (succTerm_wf (dropOne_wf hh'))]
+      simp only [topPair, hh'0, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _]
       simp [(zero_lt_iff _).mpr (succTerm_ne_zero _), (zero_lt_iff h').mpr hh'0]
     · subst h'
-      simp only [topPair, hh0, hm0, hm'0, ↓reduceIte,
-        psi_same_lt n _ _ _ _ (succTerm_wf (dropOne_wf hh)) Term.wf_zero]
+      simp only [topPair, hh0, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _]
       simp [kumakuma.CountableTarget.lt_zero, succTerm_ne_zero]
     · have hseq : succTerm (dropOne h) = succTerm (dropOne h') ↔ h = h' :=
         ⟨fun he => dropOne_injective hh hh' hh0 hh'0
             (succTerm_injective (dropOne_wf hh) (dropOne_wf hh') he),
           congrArg (fun a => succTerm (dropOne a))⟩
       simp only [topPair, hh0, hh'0, hm0, hm'0, ↓reduceIte,
-        psi_same_lt n _ _ _ _ (succTerm_wf (dropOne_wf hh)) (succTerm_wf (dropOne_wf hh')),
+        psi_same_lt n _ _ _ _,
         succTerm_order (dropOne_wf hh) (dropOne_wf hh'),
         dropOne_order hh hh' hh0 hh'0, dropOne_order hm hm' hm0 hm'0]
       simp only [hseq]
@@ -246,17 +227,17 @@ theorem topPair_eq_iff (n : Nat) {h m h' m' : Term}
   · intro he
     have hf := topPair_order n hh hm hh' hm'
     have hr := topPair_order n hh' hm' hh hm
-    rw [he, lt_self] at hf
-    rw [he, lt_self] at hr
+    rw [he, Term.lt_irrefl] at hf
+    rw [he, Term.lt_irrefl] at hr
     have heh : h = h' := by
-      rcases kumakuma.JaegerFacts.jaeger_order.2.2 h h' hh hh' with hl | he | hl
+      rcases Term.lt_trichotomy hh hh' with hl | he | hl
       · rw [hl, Bool.true_or] at hf; cases hf
       · exact he
       · rw [hl, Bool.true_or] at hr; cases hr
     refine ⟨heh, ?_⟩
     subst h'
-    simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 m m' hm hm' with hl | he | hl
+    simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or] at hf hr
+    rcases Term.lt_trichotomy hm hm' with hl | he | hl
     · rw [hl] at hf; cases hf
     · exact he
     · rw [hl] at hr; cases hr
@@ -316,38 +297,22 @@ theorem context_lt_regular {n : Nat} {a b : Term}
   | inacc m c =>
     simp only [Term.fT] at ha
     simp only [regular, Term.lt, show ¬m < n by omega, show ¬m = n by omega, ↓reduceIte, hs]
-    by_cases he : Term.inacc m c = b <;> simp [Term.le, he, lt_self]
+    by_cases he : Term.inacc m c = b <;> simp [Term.le, he, Term.lt_irrefl]
   | psi v c =>
     simp only [Term.fT] at ha
     simp only [regular, Term.lt, ha, show ¬ Term.fT v ≤ n by omega,
       decide_true, decide_false, Bool.true_and, Bool.false_and, Bool.or_false, hs]
     simp only [reduceCtorEq, decide_false, Bool.false_or]
-    by_cases he : Term.psi v c = b <;> simp [Term.le, he, lt_self]
+    by_cases he : Term.psi v c = b <;> simp [Term.le, he, Term.lt_irrefl]
 
 theorem wf_le_iff_reverse_false {a b : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) :
-    Term.le a b = true ↔ Term.lt b a = false := by
-  simp only [Term.le, Bool.or_eq_true, decide_eq_true_eq]
-  constructor
-  · rintro (rfl | h)
-    · exact lt_self a
-    · exact wf_not_lt_reverse ha hb h
-  · intro h
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
-    · exact Or.inr hl
-    · exact Or.inl he
-    · rw [h] at hl; cases hl
+    Term.le a b = true ↔ Term.lt b a = false := ⟨Term.not_lt_of_le, Term.le_of_not_lt ha hb⟩
 
 theorem wf_lt_iff_reverse_false_of_ne {a b : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) (hne : a ≠ b) :
-    Term.lt a b = true ↔ Term.lt b a = false := by
-  constructor
-  · exact wf_not_lt_reverse ha hb
-  · intro h
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
-    · exact hl
-    · exact False.elim (hne he)
-    · rw [h] at hl; cases hl
+    Term.lt a b = true ↔ Term.lt b a = false :=
+  ⟨Term.not_lt_of_lt, fun h => ((Term.le_iff _ _).mp (Term.le_of_not_lt ha hb h)).resolve_left hne⟩
 
 theorem psi_regular_lt_context {n : Nat} {a b : Term} (x : Term)
     (ha : Term.wf a = true) (hap : Term.isPrin a = true)
@@ -385,23 +350,15 @@ theorem psi_regular_lt_context {n : Nat} {a b : Term} (x : Term)
       rw [Term.lt, hrv, hrb, hvr, hpv]
       simp only [hne, decide_false, Bool.false_and, Bool.or_false]
       have hbad : (Term.le (.inacc m d) a && Term.lt a (.inacc m d)) = false := by
-        cases h : Term.lt a (.inacc m d) with
-        | false => simp
-        | true =>
-          have hle : Term.le (.inacc m d) a = false := by
-            cases hl : Term.le (.inacc m d) a with
-            | false => rfl
-            | true =>
-              have bad := (wf_le_iff_reverse_false hv.2.1 ha).mp hl
-              rw [h] at bad
-              cases bad
-          simp [hle]
+        cases h : Term.le (.inacc m d) a
+        · rfl
+        · simp [Term.not_lt_of_le h]
       rw [hbad, Bool.or_false]
       cases hab : Term.lt a (.psi (.inacc m d) c) with
       | false => simp
       | true =>
         have hβv : Term.lt (.psi (.inacc m d) c) (.inacc m d) = true := by simp [Term.lt, Term.fT]
-        have hav := kumakuma.JaegerFacts.jaeger_order.2.1 a (.psi (.inacc m d) c) (.inacc m d) ha hb hv.2.1 hab hβv
+        have hav := Term.lt_trans ha hb hv.2.1 hab hβv
         simp [hav]
 
 theorem context_lt_psi_regular {n : Nat} {a b : Term} (x : Term)
@@ -455,7 +412,7 @@ theorem zero_step_order (n : Nat) {c d : Term} (hc : Term.wf c = true) (hd : Ter
     · subst c; simp [step, hn0, hd0, Term.lt, (zero_lt_iff d).mpr hd0]
     · subst d; simp [step, hn0, hc0, kumakuma.CountableTarget.lt_zero]
     · simp only [step, hn0, hc0, hd0, ↓reduceIte, psi_same_lt_raw,
-        lt_self, decide_true, Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_false,
+        Term.lt_irrefl, decide_true, Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_false,
         dropOne_order hc hd hc0 hd0]
 
 theorem zero_step_lt_context {n : Nat} (c : Term) {b : Term}
@@ -512,14 +469,14 @@ theorem step_order {n : Nat} {a b c d : Term}
       (Term.lt a b || (decide (a = b) && Term.lt c d)) := by
   by_cases ha0 : a = .zero <;> by_cases hb0 : b = .zero
   · subst a; subst b
-    simp only [zero_step_order n hc hd, lt_self, decide_true, Bool.true_and, Bool.false_or]
+    simp only [zero_step_order n hc hd, Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or]
   · subst a
     have hbf := hba.resolve_left hb0
     rw [zero_step_lt_positive_step c d hb hbf, (zero_lt_iff b).mpr hb0, Bool.true_or]
   · subst b
     have haf := haa.resolve_left ha0
     have hforward := zero_step_lt_positive_step d c ha haf
-    have hreverse := wf_not_lt_reverse hwbd hwac hforward
+    have hreverse := Term.not_lt_of_lt hforward
     simp only [hreverse, kumakuma.CountableTarget.lt_zero, ha0, decide_false, Bool.false_and, Bool.false_or]
   · have haf := haa.resolve_left ha0
     have hbf := hba.resolve_left hb0
@@ -542,7 +499,7 @@ theorem step_order {n : Nat} {a b c d : Term}
     · have hseq : succTerm a = succTerm b ↔ a = b :=
         ⟨succTerm_injective ha hb, congrArg succTerm⟩
       simp only [step, ha0, hb0, hc0, hd0, ↓reduceIte, regular,
-        psi_same_lt n _ _ _ _ (succTerm_wf ha) (succTerm_wf hb),
+        psi_same_lt n _ _ _ _,
         succTerm_order ha hb, dropOne_order hc hd hc0 hd0, hseq]
 
 theorem step_injective {n : Nat} {a b c d : Term}
@@ -553,17 +510,17 @@ theorem step_injective {n : Nat} {a b c d : Term}
     (he : step n a c = step n b d) : a = b ∧ c = d := by
   have hf := step_order haa hba ha hb hc hd hwac hwbd
   have hr := step_order hba haa hb ha hd hc hwbd hwac
-  rw [he, lt_self] at hf
-  rw [he, lt_self] at hr
+  rw [he, Term.lt_irrefl] at hf
+  rw [he, Term.lt_irrefl] at hr
   have hab : a = b := by
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
+    rcases Term.lt_trichotomy ha hb with hl | he | hl
     · rw [hl, Bool.true_or] at hf; cases hf
     · exact he
     · rw [hl, Bool.true_or] at hr; cases hr
   refine ⟨hab, ?_⟩
   subst b
-  simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
-  rcases kumakuma.JaegerFacts.jaeger_order.2.2 c d hc hd with hl | he | hl
+  simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or] at hf hr
+  rcases Term.lt_trichotomy hc hd with hl | he | hl
   · rw [hl] at hf; cases hf
   · exact he
   · rw [hl] at hr; cases hr
@@ -821,12 +778,12 @@ theorem lex_equal_of_false (k : Nat) (xs ys : List Term)
   | zero => intro i hi; omega
   | succ k ih =>
     have he : xs[k]?.getD .zero = ys[k]?.getD .zero := by
-      rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ (hxs k (by omega)) (hys k (by omega)) with hl | he | hl
+      rcases Term.lt_trichotomy (hxs k (by omega)) (hys k (by omega)) with hl | he | hl
       · simp [lexArgs, hl] at hf
       · exact he
       · simp [lexArgs, hl] at hr
-    have hf' : lexArgs k xs ys = false := by simpa [lexArgs, he, kumakuma.TargetArithmetic.lt_self] using hf
-    have hr' : lexArgs k ys xs = false := by simpa [lexArgs, he, kumakuma.TargetArithmetic.lt_self] using hr
+    have hf' : lexArgs k xs ys = false := by simpa [lexArgs, he, OCF.Jaeger.Term.lt_irrefl] using hf
+    have hr' : lexArgs k ys xs = false := by simpa [lexArgs, he, OCF.Jaeger.Term.lt_irrefl] using hr
     intro i hi
     by_cases hik : i < k
     · exact ih (fun j hj => hxs j (by omega)) (fun j hj => hys j (by omega)) hf' hr' i hik
@@ -844,7 +801,7 @@ theorem principal_eq_iff (k : Nat) (xs ys : List Term)
   · intro he
     have hf := principal_order k xs ys hxs hys hwx hwy
     have hr := principal_order k ys xs hys hxs hwy hwx
-    rw [he, kumakuma.TargetArithmetic.lt_self] at hf hr
+    rw [he, OCF.Jaeger.Term.lt_irrefl] at hf hr
     exact lex_equal_of_false (k + 3) xs ys hxs hys hf.symm hr.symm
   · exact principal_congr k xs ys
 
@@ -986,7 +943,7 @@ theorem convert_lt (k : Nat) :
       RecursiveWF (k + 3) s → RecursiveWF (k + 3) t →
       Term.lt (convert (k + 3) (code s)) (convert (k + 3) (code t)) = decide (s < t)
   | .Z, .Z, _, _, _, _ => by
-    rw [convert_Z, kumakuma.TargetArithmetic.lt_self]
+    rw [convert_Z, OCF.Jaeger.Term.lt_irrefl]
     exact (decide_eq_false (T.lt_irrefl _)).symm
   | .Z, .P ys c, _, _, _, _ => by
     rw [convert_Z, (kumakuma.TargetArithmetic.zero_lt_iff _).mpr (convert_ne_zero ys c)]
@@ -1177,9 +1134,7 @@ theorem H_step_support (u : Term) (n : Nat) (a c : Term) {z : Term}
       · exact Or.inr (Or.inr (Or.inr (Or.inr (kumakuma.OT2.mem_H_dropOne h))))
       · rcases H_inacc_support n (succTerm a) h with h | h
         · exact Or.inl h
-        · rcases H_succ_support a h with h | h
-          · exact Or.inl h
-          · exact Or.inr (Or.inl h)
+        · exact (H_succ_support a h).imp_right Or.inl
 
 theorem H_topPair_support (u : Term) (n : Nat) (a b : Term) {z : Term}
     (h : z ∈ Term.H u (topPair n a b)) :

@@ -217,16 +217,6 @@ theorem image_le_of_le (k : Nat) (s t : multi.T)
   · exact Or.inl (congrArg (fun a => DimensionImage.convert (k + 3) (code a))
       (eq_of_compare_eq hsD htD h))
 
-theorem target_le_trans {a b c : Term}
-    (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
-    (hab : Term.le a b = true) (hbc : Term.le b c = true) : Term.le a c = true := by
-  apply (Term.le_iff_eq_or_lt _ _).mpr
-  rcases (Term.le_iff_eq_or_lt _ _).mp hab with rfl | hab
-  · exact (Term.le_iff_eq_or_lt _ _).mp hbc
-  · rcases (Term.le_iff_eq_or_lt _ _).mp hbc with rfl | hbc
-    · exact Or.inr hab
-    · exact Or.inr (kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ha hb hc hab hbc)
-
 theorem replace_tail_recursiveWF (k : Nat)
     (xs : V multi.T) (b c : multi.T) (hsD : Dim (k + 3) (.P xs b)) (hcD : Dim (k + 3) c)
     (hs : RecursiveWF (k + 3) (.P xs b)) (hc : RecursiveWF (k + 3) c)
@@ -250,7 +240,7 @@ theorem replace_tail_recursiveWF (k : Nat)
     have hh := image_le_of_le k (T.hd c) (T.hd b) (Dim_hd hcD) (Dim_hd hsD.tail)
       (recursive_head c hc) (recursive_head b hs'.2.1) (T.hd_mono hcb)
     rw [← convert_head, ← convert_head] at hh
-    have hnew := target_le_trans (wf_head hc.wf) (wf_head hs'.2.1.wf) hpwf hh hbound
+    have hnew := Term.le_trans (wf_head hc.wf) (wf_head hs'.2.1.wf) hpwf hh hbound
     rw [convert_P, OT2.assemble, ite_eq_right hcnz]
     exact (Term.wf_add_iff _ _).mpr ⟨principal_isPrin _ _, hpwf, hc.wf, hcnz, hnew⟩
 
@@ -661,7 +651,6 @@ theorem assemble_indices {k : Nat} (a b : Term)
   · rw [ite_eq_right hb] at h
     exact h
 
-
 theorem argsWidth_coordinates (xs : V multi.T) (n : Nat)
     (h : ∀ i, width (code (V.get0 xs i)) ≤ n) : argsWidth (codes xs) ≤ n := by
   induction xs with
@@ -772,7 +761,7 @@ theorem target_lt_of_ambient_lt (q r : Classes)
   have hidx : IndicesBelow (k + 2) (kumakuma.GeneralImageEmbedding.classConversion q) := by
     apply (kumakuma.GeneralImageEmbedding.indices_convert (representative q)).mono
     omega
-  rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ hq hr with hl | he | hl
+  rcases Term.lt_trichotomy hq hr with hl | he | hl
   · exact hl
   · exact False.elim (hnot (he ▸ hidx))
   · exact False.elim (hnot (indicesBelow_initial (by omega : 0 < k + 2)
@@ -818,7 +807,7 @@ theorem global_certificate_of_fundClosure
       · intro h
         exact False.elim (classLT_irrefl q (classLT_trans h hs))
       · intro h
-        have hf := wf_not_lt_reverse (hw r) (hw q) ht
+        have hf := Term.not_lt_of_lt ht
         rw [h] at hf
         cases hf
 
@@ -852,7 +841,6 @@ theorem H_mul_principal_support (d : Nat) (xs : V multi.T) (lam : Nat) (u : Term
     · rw [convert_P, convert_Z]
       simpa only [OT2.assemble, ↓reduceIte] using hz
     · exact H_mul_principal_support d xs lam u n hz
-
 
 theorem H_subset_omega (u t : Term) (ht : Term.wf t = true) {z : Term}
     (hz : z ∈ Term.H u t) : z ∈ Term.H Term.bigOmega t := by
@@ -924,7 +912,6 @@ theorem H_drop_bound_of_omega (u t : Term) (ht : Term.wf t = true)
     apply (Term.allLt_iff _ _).mpr
     intro z hz
     exact (Term.allLt_iff _ _).mp hH z (H_subset_omega u t ht hz)
-
 
 def topNode (k : Nat) (a : multi.T) : multi.T := .P (lastVec (k + 2) a) .Z
 
@@ -1111,37 +1098,17 @@ theorem isOT_recursive {lam : Nat} {s : multi.T} (hs : DOT lam s) : Recursive s 
     · exact recursive_zero
   | step lam s hs n ih => exact fund_recursive s _ ih (ofNat_recursive lam n)
 
-theorem domain_principal_le_head : ∀ (s : multi.T), Recursive s → ∀ {v : V multi.T},
-    domF s = .Omega v → multi.T.P v .Z ≤ T.hd s
-  | .Z, _, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, hs, v, hd => by
-    have hs' := Recursive_P.1 hs
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hc] at hd
-            cases hd
-            exact T.le_refl _
-        | Omega ys =>
-          by_cases hv : xs < ys
-          · rw [domF_diag hf hc hv] at hd; cases hd
-          · rw [domF_nondiag hf hc hv] at hd
-            cases hd
-            rcases V.not_lt.1 hv with h | h
-            · exact Or.inl (T.P_lt_P_of_vlt _ _ h)
-            · exact Or.inr ((T.P_eqv_iff _ _ _ _).2 ⟨h, compareT_ZZ⟩)
-    · rw [domF_tail xs hb] at hd
-      exact T.le_trans (domain_principal_le_head b hs'.2.1 hd) hs'.2.2.2
-termination_by s => s.size
-decreasing_by exact multi.T.size_lt_P_right _ _
+theorem domain_principal_le_head (s : multi.T) (hs : Recursive s) {v : V multi.T}
+    (hd : domF s = .Omega v) : multi.T.P v .Z ≤ T.hd s := by
+  have hp := SourceFundOrder.OmegaLabelPath.of_domain s hd
+  clear hd
+  induction hp with
+  | regular => exact T.le_refl _
+  | inherit xs i hf hdq hnd =>
+    rcases V.not_lt.1 hnd with h | h
+    · exact Or.inl (T.P_lt_P_of_vlt _ _ h)
+    · exact Or.inr ((T.P_eqv_iff _ _ _ _).2 ⟨h, compareT_ZZ⟩)
+  | tail xs b hb _ ih => exact T.le_trans (ih (Recursive_P.1 hs).2.1) (Recursive_P.1 hs).2.2.2
 
 theorem diagonal_principal_lt_argument (xs : V multi.T)
     (a : multi.T) (ha : Recursive a) {v : V multi.T}
@@ -1317,14 +1284,6 @@ theorem fund_add_one {w : V multi.T} (hw : ∀ i, V.get0 w i = .Z) :
   | .P xs b, t => by
     show T.fund (.P xs (b + .P w .Z)) t = .P xs b
     rw [fund_tail xs (add_one_ne_zero w b), fund_add_one hw b t]
-
-theorem domF_add_one {w : V multi.T} (hw : ∀ i, V.get0 w i = .Z) :
-    ∀ c : multi.T, domF (c + .P w .Z) = .one
-  | .Z => domF_none (fnz_eq_none hw)
-  | .P xs b => by
-    show domF (.P xs (b + .P w .Z)) = .one
-    rw [domF_tail xs (add_one_ne_zero w b)]
-    exact domF_add_one hw b
 
 theorem lt_add_one_iff {w : V multi.T} (hw : ∀ i, V.get0 w i = .Z) :
     ∀ z c : multi.T, z < c + .P w .Z ↔ z ≤ c
@@ -1729,29 +1688,14 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem zeroGap_Omega : ∀ (s : multi.T) (v : V multi.T), domF s = .Omega v →
-    zeroGap s + 1 = mass s
-  | .Z, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, v, hd => by
-    by_cases hb : b = .Z
-    · subst hb
-      rw [mass_P, mass_Z]
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m => rw [zeroGap_one_succ hf hc]; omega
-        | Omega ys => rw [zeroGap_Omega_case hf hc]; omega
-    · rw [domF_tail xs hb] at hd
-      rw [zeroGap_tail xs hb, mass_P]
-      have hg := zeroGap_Omega b v hd
-      omega
-termination_by s => s.size
-decreasing_by exact multi.T.size_lt_P_right _ _
+theorem zeroGap_Omega (s : multi.T) (v : V multi.T) (hd : domF s = .Omega v) :
+    zeroGap s + 1 = mass s := by
+  have hp := SourceFundOrder.OmegaLabelPath.of_domain s hd
+  clear hd
+  induction hp with
+  | regular m hf hc => rw [zeroGap_one_succ hf hc, mass_P, mass_Z]; omega
+  | inherit xs i hf hdq => rw [zeroGap_Omega_case hf hdq, mass_P, mass_Z]; omega
+  | tail xs b hb _ ih => rw [zeroGap_tail xs hb, mass_P]; omega
 
 theorem gap_nonzero (s t : multi.T) (ht : t ≠ .Z) : gap s t = mass s - 1 := by
   rw [gap, ite_eq_right ht]
@@ -1830,6 +1774,41 @@ theorem mass_lt_of_subterm {a s : multi.T} (h : Subterm a s) : mass a < mass s :
   | tail => exact mass_tail_lt _ _
   | trans _ _ ha hb => exact Nat.lt_trans ha hb
 
+/-- A subterm of `xs ⊕ b` is no heavier than a coordinate of `xs` or than `b`. -/
+theorem mass_le_of_subterm_P {a : multi.T} {xs : V multi.T} {b : multi.T}
+    (h : Subterm a (.P xs b)) : (∃ j, mass a ≤ mass (V.get0 xs j)) ∨ mass a ≤ mass b := by
+  suffices ∀ {s}, Subterm a s → s = .P xs b →
+      (∃ j, mass a ≤ mass (V.get0 xs j)) ∨ mass a ≤ mass b from this h rfl
+  clear h
+  intro s h
+  induction h with
+  | coordinate _ _ i => intro he; cases he; exact .inl ⟨i, Nat.le_refl _⟩
+  | tail => intro he; cases he; exact .inr (Nat.le_refl _)
+  | trans hab _ _ ih =>
+    have := mass_lt_of_subterm hab
+    intro he
+    exact (ih he).imp (fun ⟨j, hj⟩ => ⟨j, Nat.le_trans (Nat.le_of_lt this) hj⟩)
+      (Nat.le_trans (Nat.le_of_lt this))
+
+theorem principal_subterm_mass {xs : V multi.T} {i j : Nat} (hij : i ≠ j)
+    (hi : V.get0 xs i ≠ .Z) (hj : V.get0 xs j ≠ .Z) {a : multi.T} (ha : Subterm a (.P xs .Z)) :
+    mass a < mass (.P xs .Z) - 1 := by
+  have := mass_positive hi; have := mass_positive hj; have := vectorMass_pair_le xs i j hij
+  rw [mass_P, mass_Z]
+  rcases mass_le_of_subterm_P ha with ⟨l, hl⟩ | hl
+  · by_cases e : l = i
+    · subst e; omega
+    · have := vectorMass_pair_le xs l i e; omega
+  · rw [mass_Z] at hl; omega
+
+theorem sum_subterm_mass {xs : V multi.T} {b : multi.T} (hb : b ≠ .Z) (hx : 0 < vectorMass xs)
+    {a : multi.T} (ha : Subterm a (.P xs b)) : mass a < mass (.P xs b) - 1 := by
+  have := mass_positive hb
+  rw [mass_P]
+  rcases mass_le_of_subterm_P ha with ⟨l, hl⟩ | hl
+  · have := vectorMass_get0_le xs l; omega
+  · omega
+
 end kumakuma.SourceCoefficientGap
 
 namespace kumakuma.GeneralImageLimitSupport
@@ -1871,7 +1850,6 @@ theorem lt_inacc_drop (n : Nat) (a : Term)
   · rw [dropOne_of_head_ne hh] at hi ⊢
     exact OCF.Jaeger.Term.lt_inacc_self hi
 
-
 theorem no_diagonal_highest (k : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1902,7 +1880,7 @@ theorem no_diagonal_highest (k : Nat)
       (convert (k + 3) (code (.P xs .Z))) = true := by
     rw [he]
     exact lt_inacc_drop _ _ ha.wf (he ▸ hs.wf)
-  have hf' := kumakuma.GeneralImageTopPair.wf_not_lt_reverse hs.wf ha.wf hlt
+  have hf' := OCF.Jaeger.Term.not_lt_of_lt hlt
   rw [hf'] at hrev
   cases hrev
 
@@ -2027,7 +2005,6 @@ theorem lower_zero_predecessor (j : Nat) (hj : 0 < j) (xs ys : List Term) (a c :
       rw [← hxy]
       exact ih (by omega) _ (step_shape _ (context_above ha))
         (fun i hi hij => he i hi (by omega)) hw
-
 
 theorem zero_coordinate_predecessor (k : Nat) (xs : V multi.T) (b : multi.T)
     (hsD : Dim (k + 3) (.P xs .Z))

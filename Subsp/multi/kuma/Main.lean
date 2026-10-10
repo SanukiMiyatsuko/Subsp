@@ -28,10 +28,6 @@ theorem lt_pivot_eq {d : Nat} {xs ys : V multi.T} (hxD : Dim d (.P xs .Z)) (hyD 
   exact ⟨p, hp, fun j hj => eq_of_norm_eq (hxD.coord j) (hyD.coord j)
     ((compareT_eq_iff _ _).1 (habove j hj))⟩
 
-theorem predR_lt_psi (v b : Term) (hw : Term.wf (.psi v b) = true) :
-    Term.lt (Term.predR v) (.psi v b) = true :=
-  kumakuma.JaegerFacts.predR_lt_psi hw
-
 theorem upperVec_le_succ (q : V multi.T) (r : Nat) :
     multi.T.P (upperVec q (r + 1)) .Z ≤ multi.T.P (upperVec q r) .Z := by
   by_cases hz : V.get0 q (r + 1) = .Z
@@ -84,13 +80,10 @@ theorem context_lt_of_image_lt {r s : Nat} {a b : Term}
   · exfalso
     rw [ite_eq_left hb0] at h
     by_cases ha0 : a = .zero
-    · rw [ite_eq_left ha0, lt_self] at h; cases h
+    · rw [ite_eq_left ha0, Term.lt_irrefl] at h; cases h
     · rw [ite_eq_right ha0] at h
-      have hle := one_le_principal (above_principal (ha.resolve_left ha0)) haw
-      rcases (Term.le_iff_eq_or_lt _ _).mp hle with he | hl
-      · rw [← he, lt_self] at h; cases h
-      · have := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ Term.wf_one haw Term.wf_one hl h
-        rw [lt_self] at this; cases this
+      rw [Term.not_lt_of_le (Term.one_le_prin haw (above_principal (ha.resolve_left ha0)))] at h
+      cases h
   · refine ⟨?_, hb0⟩
     by_cases ha0 : a = .zero
     · subst a; exact (zero_lt_iff _).mpr hb0
@@ -139,21 +132,16 @@ theorem H_lower_visible (n : Nat) (zz : Term)
           .psi (regular j h) (dropOne (args[j]?.getD .zero)) := by simp [step, hy, hh0]
       have hpsiW : Term.wf (.psi (regular j h) (dropOne (args[j]?.getD .zero))) = true := hstep ▸ hstepWf
       have hhPsi : Term.lt h (.psi (regular j h) (dropOne (args[j]?.getD .zero))) = true := by
-        have := predR_lt_psi _ _ hpsiW
+        have := (Term.predR_spec hpsiW).1
         rwa [predR_regular habove hh0 hhw] at this
-      have hpredPsi := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hpw hhw hpsiW hpred hhPsi
+      have hpredPsi := Term.lt_trans hpw hhw hpsiW hpred hhPsi
       have hregLt : Term.lt (regular j h) (.inacc n zz) = true := by
         simp only [regular, Term.lt, show j < n by omega, ↓reduceIte]
         rw [succ_principal (above_principal (habove.resolve_left hh0)), Term.lt]
         exact hlt
       have hnotLe : Term.le (.psi (regular j h) (dropOne (args[j]?.getD .zero)))
-          (Term.predR (.inacc n zz)) = false := by
-        cases he : Term.le (.psi (regular j h) (dropOne (args[j]?.getD .zero))) (Term.predR (.inacc n zz))
-        · rfl
-        · rcases (Term.le_iff_eq_or_lt _ _).mp he with he' | hl
-          · rw [he', lt_self] at hpredPsi; cases hpredPsi
-          · have := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hpw hpsiW hpw hpredPsi hl
-            rw [lt_self] at this; cases this
+          (Term.predR (.inacc n zz)) = false :=
+        Bool.eq_false_iff.mpr fun he => by rw [Term.not_lt_of_le he] at hpredPsi; cases hpredPsi
       apply ih (by omega) args _ (step_shape _ habove)
         (step_lt_inacc j n (by omega) h _ zz habove hlt)
         (by rw [hstep]; exact hpredPsi) hwf z
@@ -177,18 +165,11 @@ theorem lift_self_of_low (xs : V multi.T) (i : Nat) (hi : i < xs.length)
 
 theorem psi_self_visible (w Q : Term) (hw : Term.wf (.psi w Q) = true) :
     Q ∈ Term.H w (.psi w Q) := by
-  have hpr := predR_lt_psi w Q hw
-  have hp := (Term.wf_psi_iff _ _).mp hw
-  have hpw := ((kumakuma.JaegerFacts.predR_facts hp.2.1 hp.1)).1
-  have hnotLe : Term.le (.psi w Q) (Term.predR w) = false := by
-    cases he : Term.le (.psi w Q) (Term.predR w)
-    · rfl
-    · rcases (Term.le_iff_eq_or_lt _ _).mp he with he' | hl
-      · rw [he', lt_self] at hpr; cases hpr
-      · have := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hpw hw hpw hpr hl
-        rw [lt_self] at this; cases this
+  have hpr := (Term.predR_spec hw).1
+  have hnotLe : Term.le (.psi w Q) (Term.predR w) = false :=
+    Bool.eq_false_iff.mpr fun he => by rw [Term.not_lt_of_le he] at hpr; cases hpr
   rw [Term.H, hnotLe]
-  simp [lt_self]
+  simp [Term.lt_irrefl]
 
 theorem higher_equal_context_false (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
@@ -232,8 +213,8 @@ theorem higher_equal_context_false (k : Nat)
       have hpsiW := lower_context_wf i _ _ (Or.inr ⟨rfl, by simp [layerCut, Term.fT]⟩) hqWf
       rw [heQ]
       exact H_lower_visible i _ hp.1 hp.2.1 i (Nat.le_refl _) _ _
-        (Or.inr ⟨rfl, by simp [Term.fT]⟩) (by simp [Term.lt, Term.fT])
-        (predR_lt_psi _ _ hpsiW) hqWf _ (psi_self_visible _ _ hpsiW)
+        (Or.inr ⟨rfl, by simp [layerCut, Term.fT]⟩) (by simp [Term.lt, layerCut, Term.fT])
+        ((Term.predR_spec hpsiW).1) hqWf _ (psi_self_visible _ _ hpsiW)
     · have hiK : i = k + 1 := by omega
       subst hiK
       have hxsImg := lift_image_top k xs hxl (k + 1) hc0
@@ -254,8 +235,8 @@ theorem higher_equal_context_false (k : Nat)
       have hpsiW := lower_context_wf (k + 1) _ _ (Or.inr ⟨rfl, by simp [pairCut, Term.fT]⟩) hqWf
       rw [heQ]
       exact H_lower_visible (k + 1) _ hp.1 hp.2.1 (k + 1) (Nat.le_refl _) _ _
-        (Or.inr ⟨rfl, by simp [Term.fT]⟩) (by simp [Term.lt, Term.fT])
-        (predR_lt_psi _ _ hpsiW) hqWf _ (psi_self_visible _ _ hpsiW)
+        (Or.inr ⟨rfl, by simp [pairCut, Term.fT]⟩) (by simp [Term.lt, pairCut, Term.fT])
+        ((Term.predR_spec hpsiW).1) hqWf _ (psi_self_visible _ _ hpsiW)
   obtain ⟨w, hwR, hww, hΩw, hHc, hvis⟩ := key
   have hRel := kumakuma.GeneralImageHigherDiagonal.Omega_label_relative_bound k _ hcD hcr hcw hdq w _
     hwR hww hΩw hcw.wf hHc
@@ -263,12 +244,8 @@ theorem higher_equal_context_false (k : Nat)
   have hcq := (convert_order k _ _ hcD (hqD.coord i) hcw (hqcoords i)).mp hlt
   have hdo := dropOne_order (hqcoords i).wf hcw.wf hqy hcy
   rw [hdrop, hQ] at hdo
-  have hself := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hcw.wf (hqcoords i).wf hcw.wf hcq hdo.symm
-  rw [lt_self] at hself; cases hself
-
-theorem predR_lt_self (v : Term) (hvR : Term.isRT v = true) (hv : Term.wf v = true) :
-    Term.lt (Term.predR v) v = true :=
-  (kumakuma.JaegerFacts.predR_facts hv hvR).2.1
+  have hself := Term.lt_trans hcw.wf (hqcoords i).wf hcw.wf hcq hdo.symm
+  rw [Term.lt_irrefl] at hself; cases hself
 
 theorem succ_le_of_lt_source (lam : Nat) {x y : multi.T} (h : x < y) :
     kumakuma.SourceSuccessor.succ lam x ≤ y := by
@@ -437,9 +414,9 @@ theorem topOK_higher (k : Nat) (xs q : V multi.T)
             · exact Or.inl h
             · exact Or.inr ⟨above_principal h, by omega⟩) hfi hlt
     have hcutXW := layerCut_wf i ax hax haxw
-    have hAle := term_lt_of_lt_of_le hcutXW haqiw haqrw hA hle
+    have hAle := Term.lt_of_lt_of_le hcutXW haqiw haqrw hA hle
     have hcut : Term.le (layerCut i ax) (layerCut r aqr) = true := by
-      have := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hcutXW haqrw hcutW hAle (hCof haqr0)
+      have := Term.lt_trans hcutXW haqrw hcutW hAle (hCof haqr0)
       simp [Term.le, this]
     have hpred : Term.le (Term.predR (layerCut i ax)) (Term.predR (layerCut r aqr)) = true := by
       rw [hPr haqr0]
@@ -449,7 +426,7 @@ theorem topOK_higher (k : Nat) (xs q : V multi.T)
       · have hPx : Term.predR (layerCut i ax) = ax := by
           simp only [layerCut, hax0, ↓reduceIte]; exact predR_regular hax hax0 haxw
         rw [hPx]
-        have := term_lt_of_lt_of_le haxw haqiw haqrw hlt hle
+        have := Term.lt_of_lt_of_le haxw haqiw haqrw hlt hle
         simp [Term.le, this]
     have hH := H_bound_of_comparable_cuts _ _ _ hpx.1 hpx.2.1 hcutR hcutW
       (dropOne_wf hcw.wf) hcut hpred hpx.2.2.2
@@ -507,15 +484,15 @@ theorem topOK_higher (k : Nat) (xs q : V multi.T)
         (layerCut r aqr) = true := by
       rcases (Term.le_iff_eq_or_lt _ _).mp hle0 with he | hl
       · rw [he]; exact hCof haqr0
-      · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hcutX haqrw hcutW hl (hCof haqr0)
+      · exact Term.lt_trans hcutX haqrw hcutW hl (hCof haqr0)
     have hcut : Term.le (pairCut (k + 1) (convert (k + 3) (code (V.get0 xs (k + 2)))))
         (layerCut r aqr) = true := by simp [Term.le, hltCut]
     have hpred : Term.le (Term.predR (pairCut (k + 1) (convert (k + 3) (code (V.get0 xs (k + 2))))))
         (Term.predR (layerCut r aqr)) = true := by
       rw [hPr haqr0]
-      have hpl := predR_lt_self _ (pairCut_regular _ _) hcutX
+      have hpl := (kumakuma.JaegerFacts.predR_facts hcutX (pairCut_regular _ _)).2.1
       have hpw := ((kumakuma.JaegerFacts.predR_facts hcutX (pairCut_regular _ _))).1
-      have := term_lt_of_lt_of_le hpw hcutX haqrw hpl hle0
+      have := Term.lt_of_lt_of_le hpw hcutX haqrw hpl hle0
       simp [Term.le, this]
     have hH := H_bound_of_comparable_cuts _ _ _ hpx.1 hpx.2.1 hcutR hcutW
       (dropOne_wf hcw.wf) hcut hpred hpx.2.2.2
@@ -651,68 +628,6 @@ theorem UC_diagonal_iterates (k : Nat) (c : multi.T) (hcD : Dim (k + 3) c)
     exact UC_fund_Omega k c hcD hcr hcw hcuc hd κ hκ _ hItD hIter.1 ih
       (hIter.2 κ hκ.regular hκ.cutWf hSource)
       (topOK_transfer k q hql c _ htop hc0 hIter.1 hIter.2)
-
-theorem UC_fund_zero (k : Nat) : ∀ (s : multi.T),
-    Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s → UC k s → UC k (T.fund s .Z)
-  | .Z, _, _, _, _ => by rw [fund_Z]; exact UC_zero k
-  | .P xs b, hsD, hr, hs, huc => by
-    have omegaCase (q : V multi.T) (hd : domF (.P xs b) = .Omega q) :
-        UC k (T.fund (.P xs b) .Z) := by
-      obtain ⟨κ, hκ⟩ := Omega_label_cutFund k _ hsD hr hs hd
-      exact UC_fund_Omega k _ hsD hr hs huc hd κ hκ .Z (Dim_Z _) (recursive_zero _) (UC_zero k)
-        (by simp [convert_Z, Term.H, Term.allLt]) (fun h => absurd rfl h)
-    have hcoordsR : ∀ j, Recursive (V.get0 xs j) := (Recursive_P.1 hr).1
-    have hcoordsW : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
-    have hxl : xs.length = k + 3 := hsD.length
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [fund_none hf]; exact UC_zero k
-      · have hil := fnz_lt_length hf
-        have hlow := (V.fnz_some_spec xs i hf).2
-        have hc0 := (V.fnz_some_spec xs i hf).1
-        cases hcd : domF (V.get0 xs i) with
-        | zero => exact absurd ((domF_eq_zero_iff _).1 hcd) hc0
-        | one =>
-          cases i with
-          | zero =>
-            obtain ⟨c, hcc⟩ := dom_one_succ _ (hsD.coord 0) hcd
-            rw [fund_zero_coordinate_successor k xs c _ hcc]
-            exact UC_zero k
-          | succ m => exact omegaCase xs (domF_one_succ hf hcd)
-        | Omega q =>
-          by_cases hdiag : xs < q
-          · have hf0 : T.fund (.P xs .Z) .Z = .P (V.set xs i (T.fund (V.get0 xs i) .Z)) .Z :=
-              fund_diag hf hcd hdiag .Z
-            rw [hf0, UC_P_iff]
-            refine ⟨VecUC_replace_zero_fund k xs i hxl hlow huc.vec hc0 (hsD.coord i) (hcoordsR i)
-              (hcoordsW i), ?_, UC_zero k⟩
-            intro j
-            rw [V.get0_set xs i _ j hil]
-            split
-            · obtain ⟨κ, hκ⟩ := Omega_label_cutFund k _ (hsD.coord i) (hcoordsR i) (hcoordsW i) hcd
-              exact UC_fund_Omega k _ (hsD.coord i) (hcoordsR i) (hcoordsW i) (huc.coord i) hcd κ hκ .Z
-                (Dim_Z _) (recursive_zero _) (UC_zero k) (by simp [convert_Z, Term.H, Term.allLt])
-                (fun h => absurd rfl h)
-            · exact huc.coord j
-          · exact omegaCase q (domF_nondiag hf hcd hdiag)
-        | omega =>
-          rw [fund_omega hf hcd, UC_P_iff]
-          refine ⟨VecUC_replace_zero_fund k xs i hxl hlow huc.vec hc0 (hsD.coord i) (hcoordsR i)
-            (hcoordsW i), ?_, UC_zero k⟩
-          intro j
-          rw [V.get0_set xs i _ j hil]
-          split
-          · exact UC_fund_zero k (V.get0 xs i) (hsD.coord i) (hcoordsR i) (hcoordsW i) (huc.coord i)
-          · exact huc.coord j
-    · rw [fund_tail xs hb, UC_P_iff]
-      exact ⟨huc.vec, huc.coord, UC_fund_zero k b hsD.tail (Recursive_P.1 hr).2.1
-        (RecursiveWF_P.1 hs).2.1 huc.tail⟩
-termination_by s => s.size
-decreasing_by
-  all_goals first
-    | exact multi.T.size_get0_lt_P _ _ _
-    | exact multi.T.size_lt_P_right _ _
 
 theorem UC_fund_omega (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s → UC k s → domF s = .omega →

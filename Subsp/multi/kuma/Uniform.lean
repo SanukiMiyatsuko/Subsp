@@ -157,26 +157,10 @@ theorem virtual_pair_images (k : Nat) (ys : V multi.T) (hl : ys.length = k + 3) 
     converted_coordinate xc j
   have hnew (j : Nat) : newArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 xa j)) :=
     converted_coordinate xa j
-  have holdc : oldArgs[r]?.getD .zero = convert (k + 3) (code c) := by
-    rw [hold r]; show convert (k + 3) (code (V.get0 (V.set ys r c) r)) = _
-    rw [V.get0_set_same ys r c hrl]
-  have hnewa : newArgs[r]?.getD .zero = convert (k + 3) (code a) := by
-    rw [hnew r]; show convert (k + 3) (code (V.get0 (V.set ys r a) r)) = _
-    rw [V.get0_set_same ys r a hrl]
-  have hzeroOld : ∀ j, j < r → oldArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hold j]; show convert (k + 3) (code (V.get0 (V.set ys r c) j)) = _
-    rw [V.get0_set_ne ys r c j (by omega), hlow j hj, convert_Z]
-  have hzeroNew : ∀ j, j < r → newArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hnew j]; show convert (k + 3) (code (V.get0 (V.set ys r a) j)) = _
-    rw [V.get0_set_ne ys r a j (by omega), hlow j hj, convert_Z]
-  have hsame : ∀ j, r < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
-    intro j hj _
-    rw [hnew j, hold j]
-    show convert (k + 3) (code (V.get0 (V.set ys r a) j)) =
-      convert (k + 3) (code (V.get0 (V.set ys r c) j))
-    rw [V.get0_set_ne ys r a j (by omega), V.get0_set_ne ys r c j (by omega)]
+  obtain ⟨holdc, -, hzeroOld, hsameC⟩ := kumakuma.GeneralImageRegularLimit.replace_args k hrl hlow c
+  obtain ⟨hnewa, -, hzeroNew, hsameA⟩ := kumakuma.GeneralImageRegularLimit.replace_args k hrl hlow a
+  have hsame (j : Nat) (hj : r < j) (hjk : j < k + 3) :
+      newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := (hsameA j hj hjk).trans (hsameC j hj hjk).symm
   have heOld : convert (k + 3) (code (.P xc .Z)) = lower (k + 1) oldArgs
       (topPair (k + 1) (oldArgs[k + 2]?.getD .zero) (oldArgs[k + 1]?.getD .zero)) := by
     rw [convert_principal, principal_as_layers]
@@ -191,9 +175,9 @@ theorem virtual_pair_images (k : Nat) (ys : V multi.T) (hl : ys.length = k + 3) 
     have hcOld : oldArgs[k + 1]?.getD .zero = convert (k + 3) (code c) := by rw [← hi, holdc]
     have hcNew : newArgs[k + 1]?.getD .zero = convert (k + 3) (code a) := by rw [← hi, hnewa]
     refine ⟨.inacc (k + 1) (if h = .zero then .zero else succTerm (dropOne h)), ?_, ?_⟩
-    · rw [heOld, hcOld, lower_keep (k + 1) oldArgs _ htopOld (by simpa only [hi] using hzeroOld)]
+    · rw [heOld, hcOld, lower_keep (k + 1) oldArgs _ htopOld (fun j hj => hzeroOld j (by omega))]
       simp only [topPair, hc, ↓reduceIte, h]
-    · rw [heNew, hcNew, lower_keep (k + 1) newArgs _ htopNew (by simpa only [hi] using hzeroNew)]
+    · rw [heNew, hcNew, lower_keep (k + 1) newArgs _ htopNew (fun j hj => hzeroNew j (by omega))]
       simp only [topPair, ha, ↓reduceIte, h]
   · rw [hsame (k + 1) (by omega) (by omega)] at heNew
     obtain ⟨b, hbOld, hbNew⟩ := lower_selected_step (k + 1) r (by omega) oldArgs newArgs _ _ _ hc ha
@@ -607,13 +591,7 @@ theorem ucTree_fund_invariant (k : Nat) {s : multi.T}
             hnChild hc0 (drop_image_of_omega k _ hcD (hcoords i) hdi) hrelChild
         · have hi : i = k + 2 := by omega
           rw [hi] at hlow hnChild ⊢
-          have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
-          have heR : V.set xs (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) (n + 1))) =
-              lastVec (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) (n + 1))) := by
-            have := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-              (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) (n + 1)))
-            rw [← he] at this; exact this
-          rw [heR]; exact topNode_recursiveWF k _ hnChild
+          rw [set_last_of_low hsD.length hlow]; exact topNode_recursiveWF k _ hnChild
       refine ⟨hn, ?_, ?_⟩
       · intro v hvR hv hOmega
         exact inherited_omega_dominated_support k xs i hsD hf hdi hs (n + 1) (by omega) hn v hvR hv
@@ -883,13 +861,6 @@ theorem principal_lt_pairCut (k : Nat) (xs : V multi.T)
   exact lower_lt_inacc (k + 1) (k + 1) (Nat.le_refl _) _ _ _ (topPair_context _ _ _)
     (topPair_lt_pairCut _ _ _ (hcoords _).wf)
 
-theorem term_lt_of_lt_of_le {a b c : Term}
-    (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
-    (hab : Term.lt a b = true) (hbc : Term.le b c = true) : Term.lt a c = true := by
-  rcases (Term.le_iff_eq_or_lt _ _).mp hbc with he | hl
-  · rw [← he]; exact hab
-  · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ha hb hc hab hl
-
 theorem uc_image_le_of_le (k : Nat) (s t : multi.T)
     (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t)
     (hs : RecursiveWF (k + 3) s) (ht : RecursiveWF (k + 3) t) (h : s ≤ t) :
@@ -948,7 +919,7 @@ theorem nondiagonal_virtual_cut_above_label (k : Nat)
       (upper_le_of_not_lt xs q r hnd)
     rw [heBaseQ, heBase] at hle
     have hcut := (layerCut_comparable_of_erased_le r r (Nat.le_refl _) aq a haq ha haqw haw hle).1
-    exact term_lt_of_lt_of_le hqW.wf (layerCut_wf r aq haq haqw) (layerCut_wf r a ha haw) hq1 hcut
+    exact Term.lt_of_lt_of_le hqW.wf (layerCut_wf r aq haq haqw) (layerCut_wf r a ha haw) hq1 hcut
   · have hrK : r = k + 1 := by omega
     subst hrK
     rw [lift_image_top k xs hxl i hc0] at hw
@@ -973,7 +944,7 @@ theorem nondiagonal_virtual_cut_above_label (k : Nat)
       (hqD.coord _) (hsD.coord _) (hqcoords _) (hcoords _) htop).1
     have hcutQ := kumakuma.GeneralImageChangingMiddle.pairCut_convert_wf k _ (hqcoords (k + 2))
     have hcutX := kumakuma.GeneralImageChangingMiddle.pairCut_convert_wf k _ (hcoords (k + 2))
-    exact term_lt_of_lt_of_le hqW.wf hcutQ hcutX hq1 hpair
+    exact Term.lt_of_lt_of_le hqW.wf hcutQ hcutX hq1 hpair
 
 end kumakuma.GeneralImageUniformContext
 

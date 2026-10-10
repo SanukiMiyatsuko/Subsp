@@ -22,39 +22,31 @@ theorem H_subset_of_comparable_cuts (w v t : Term)
     have hp := (Term.wf_add_iff _ _).mp ht
     rw [Term.H] at hz
     rcases List.mem_append.mp hz with hz | hz
-    · rcases iha hp.2.1 hz with he | he
-      · exact Or.inl he
-      · exact Or.inr (List.mem_append_left _ he)
-    · rcases ihb hp.2.2.1 hz with he | he
-      · exact Or.inl he
-      · exact Or.inr (List.mem_append_right _ he)
+    · exact (iha hp.2.1 hz).imp_right (List.mem_append_left _)
+    · exact (ihb hp.2.2.1 hz).imp_right (List.mem_append_right _)
   | inacc n a ih =>
     rcases H_inacc_support n a hz with he | he
     · exact Or.inl he
-    · rcases ih ((Term.wf_inacc_iff _ _).mp ht).1 he with he | he
-      · exact Or.inl he
-      · exact Or.inr (List.mem_append_right _ he)
+    · exact (ih ((Term.wf_inacc_iff _ _).mp ht).1 he).imp_right (List.mem_append_right _)
   | psi c a ihc iha =>
     have hp := (Term.wf_psi_iff _ _).mp ht
     by_cases hskip : Term.le (.psi c a) (Term.predR w) = true
-    · have hn := target_le_trans ht hpw.1 hpv.1 hskip hpred
-      rw [H_eq_nil_of_le_pred v _ hvR hv ht hn] at hz
+    · have hn := Term.le_trans ht hpw.1 hpv.1 hskip hpred
+      rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR _ ht hn] at hz
       cases hz
-    · have hskipF : Term.le (.psi c a) (Term.predR w) = false := by
-        cases he : Term.le (.psi c a) (Term.predR w) <;> simp_all
+    · have hskipF : Term.le (.psi c a) (Term.predR w) = false := Bool.eq_false_iff.mpr ‹_›
       rw [Term.H, hskipF]
       by_cases hcw : Term.lt c w = true
       · have hcv : Term.lt c v = true := by
           rcases (Term.le_iff_eq_or_lt _ _).mp hcut with he | he
           · rw [← he]; exact hcw
-          · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hp.2.1 hw hv hcw he
+          · exact Term.lt_trans hp.2.1 hw hv hcw he
         simp only [hcw, ↓reduceIte]
         rw [Term.H] at hz
         split at hz
         · cases hz
         · exact ihc hp.2.1 hz
-      · have hcwF : Term.lt c w = false := by
-          cases he : Term.lt c w <;> simp_all
+      · have hcwF : Term.lt c w = false := Bool.eq_false_iff.mpr ‹_›
         simp only [hcwF, Bool.false_eq_true, ↓reduceIte]
         rcases H_psi_support hz with he | he | he
         · exact Or.inr (List.mem_cons.mpr (Or.inl he))
@@ -227,7 +219,7 @@ theorem layerCut_le_of_context_le (i m : Nat) (him : i ≤ m)
           change Term.lt a (regular m a) = true
           rw [context_lt_regular hfa (above_principal hfa)]
           simp [Term.le]
-        have hlt := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hcutC haw hcutA hregLt haLt
+        have hlt := Term.lt_trans hcutC haw hcutA hregLt haLt
         simp [Term.le, hlt]
   · rw [hPredA]
     by_cases hc0 : c = .zero
@@ -608,7 +600,7 @@ theorem strict_highest_parent_index (k : Nat)
         simp only [layerCut, hc0, ↓reduceIte]
         change Term.lt (regular i c) (convert (k + 3) (code (topNode k b))) = true
         rwa [regular_lt_context (above_principal (hca.resolve_left hc0)) (by rw [hBft]; omega)]
-      have hwCut := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hp.2.1 hB.wf hCutW hwB hBlt
+      have hwCut := Term.lt_trans hp.2.1 hB.wf hCutW hwB hBlt
       simp only [Term.le, hwCut, Bool.or_true]
   · rw [hPred]
     by_cases hc0 : c = .zero
@@ -849,15 +841,7 @@ theorem closed_diagonal_dominated_support (k : Nat)
     rcases H_psi_replacement_support v w _ _ hvR hv (heOld ▸ hs.wf) (heFund ▸ hn.wf) hlt hz
       with ⟨_, ho⟩ | ⟨he, hroot, hchild⟩
     · exact Or.inr (Or.inl (heOld ▸ ho))
-    · have lift (ho : DominatedCoefficient k v (V.get0 xs i) z) :
-          DominatedCoefficient k v (.P xs .Z) z := by
-        rcases ho with he | ho | ⟨c, hcs, hmem, hbound⟩
-        · exact Or.inl he
-        · exact Or.inr (Or.inl (heOld ▸ hchild _ ho))
-        · exact Or.inr (Or.inr ⟨c, Subterm.trans hcs (Subterm.coordinate xs .Z i),
-            hmem.elim (fun h => Or.inl (heOld ▸ hchild _ h)) (fun h => Or.inr (heOld ▸ hchild _ h)),
-            hbound⟩)
-      have rootBound (hl : Term.lt z (convert (k + 3) (code (V.get0 xs i))) = true) :
+    · have rootBound (hl : Term.lt z (convert (k + 3) (code (V.get0 xs i))) = true) :
           DominatedCoefficient k v (.P xs .Z) z :=
         Or.inr (Or.inr ⟨V.get0 xs i, Subterm.coordinate xs .Z i, Or.inl (heOld ▸ hroot),
           by simp [Term.le, hl]⟩)
@@ -865,7 +849,8 @@ theorem closed_diagonal_dominated_support (k : Nat)
       · apply rootBound; rw [he]; exact dropOne_lt_of_lt ha.wf (hcoords i).wf haLt
       · rcases Omega_iter_coefficient_support_at_label_cut k _ hcD hcr (hcoords i) hdq cut hc hSource
             v hvR hv hOmega (n + 1) he with ho | ho
-        · exact lift ho
+        · exact DominatedCoefficient.lift (Subterm.coordinate xs .Z i)
+            (fun _ h => heOld ▸ hchild _ h) ho
         · exact rootBound ho
 
 end kumakuma.GeneralImageClosedDiagonal
@@ -957,11 +942,11 @@ theorem H_self_of_cut_below_zero_context (w v a t : Term)
   have hwv : Term.lt w v = true := by
     rcases (Term.le_iff_eq_or_lt _ _).mp hWA with he | he
     · rwa [he]
-    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hw.2.1 ha hv he hAV
+    · exact Term.lt_trans hw.2.1 ha hv he hAV
   have hpred : Term.le (Term.predR w) (Term.predR v) = true := by
     rw [hPred]
-    have hlt := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ((kumakuma.JaegerFacts.predR_facts hw.2.1 hw.1)).1
-      hp ha (psi_above_predR w t hp) hPA
+    have hlt := Term.lt_trans ((kumakuma.JaegerFacts.predR_facts hw.2.1 hw.1)).1
+      hp ha ((Term.predR_spec hp).1) hPA
     simp only [Term.le, hlt, Bool.or_true]
   exact H_bound_of_comparable_cuts w v t hw.1 hw.2.1 hvR hv hw.2.2.1
     (by simp only [Term.le, hwv, Bool.or_true]) hpred hw.2.2.2
@@ -1021,7 +1006,7 @@ theorem lower_context_le (j : Nat) (xs : List Term) (a : Term)
     have ha' := context_above ha
     have hshape : Context j (step j a (xs[j]?.getD .zero)) := step_shape _ ha'
     have hstep := lower_context_wf j xs _ hshape hw
-    exact target_le_trans (step_context_wf ha' hstep) hstep hw
+    exact Term.le_trans (step_context_wf ha' hstep) hstep hw
       (step_context_le j a _ ha' hstep) (ih _ hshape hw)
 
 end kumakuma.GeneralImageHigherSparseDiagonal
@@ -1057,7 +1042,7 @@ theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
   have hp := OmegaLabelPath.of_domain s hd
   clear hd
   induction hp with
-  | regular _ => exact hH
+  | regular => exact hH
   | inherit xs i hf hdq hnd hc ih =>
     have hil : i < xs.length := fnz_lt_length hf
     have hik : i < k + 3 := by rw [← hsD.length]; exact hil
@@ -1074,12 +1059,12 @@ theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
         (Omega_image_drop k _ hcD hcr hcw hdq) (Omega_principal_image_ne_low k xs i hsD hs hdParent)
       have hwP := (Term.wf_psi_iff _ _).mp (heOld ▸ hs.wf)
       by_cases hskip : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = true
-      · have hLpred := target_le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
+      · have hLpred := Term.le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
           (cofinality_image_le k _ hsD hr hs hdParent) hskip
-        rw [H_eq_nil_of_le_pred v _ hvR hv hL hLpred]
+        rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR _ hL hLpred]
         rfl
-      have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false := by
-        cases he : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) <;> simp_all
+      have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false :=
+        Bool.eq_false_iff.mpr ‹_›
       rw [heOld] at hskipF hH
       by_cases hcut : Term.lt w v = true
       · have hWH : Term.allLt (Term.H v w) B = true := by
@@ -1091,7 +1076,7 @@ theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
             exact le_psi_index_bound n a _ _ hL (heOld ▸ hs.wf)
               (heOld ▸ cofinality_image_le k _ hsD hr hs hdParent)
         exact kumakuma.JaegerFacts.H_downward hv hvR hB _ w hL hwP.2.1 hLw hcut hWH
-      · have hcutF : Term.lt w v = false := by cases he : Term.lt w v <;> simp_all
+      · have hcutF : Term.lt w v = false := Bool.eq_false_iff.mpr ‹_›
         have hChild : Term.allLt (Term.H v (convert (k + 3) (code (V.get0 xs i)))) B = true := by
           apply (Term.allLt_iff _ _).mpr; intro z hz
           apply (Term.allLt_iff _ _).mp hH z
@@ -1260,13 +1245,13 @@ theorem middle_cut_le_zero_of_le_label (k : Nat)
     kumakuma.GeneralImageRegularLimit.inacc_image_drop_wf k _ hhR
   have hNewW := (zero_fund_invariant k (.P q .Z) hqD hr hs).1.wf
   rw [heFund, heA] at hNewW
-  apply target_le_trans hw hBaseW hNewW hWB
+  apply Term.le_trans hw hBaseW hNewW hWB
   change Term.le (.inacc (k + 1) (dropOne h)) (topPair (k + 1) h (convert (k + 3) (code b))) = true
   by_cases hb0 : convert (k + 3) (code b) = .zero
   · simp only [topPair, hh0, hb0, ↓reduceIte, Term.le, decide_true, Bool.true_or]
   · have hlt := topPair_order (k + 1) hhw Term.wf_zero hhw hbw
     have hZero : Term.lt .zero (convert (k + 3) (code b)) = true := (zero_lt_iff _).mpr hb0
-    simp only [lt_self, decide_true, Bool.true_and, Bool.false_or, hZero] at hlt
+    simp only [Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or, hZero] at hlt
     have hBaseLt : Term.lt (.inacc (k + 1) (dropOne h))
         (topPair (k + 1) h (convert (k + 3) (code b))) = true := by
       simpa only [topPair, hh0, ↓reduceIte] using hlt
@@ -1310,7 +1295,7 @@ theorem higher_cut_le_zero_of_le_label (k m : Nat) (hmk : m + 1 ≤ k)
   have hcw := lower_context_wf (m + 2) _ c hctx (heA ▸ hAw)
   have hWC := regular_le_lower_context (m + 2) _ c w hctx (heQ ▸ hs.wf) hwr hw (by omega) (heQ ▸ hle)
   rw [heFund, heA]
-  exact target_le_trans hw hcw (heA ▸ hAw) hWC (lower_context_le _ _ c hctx (heA ▸ hAw))
+  exact Term.le_trans hw hcw (heA ▸ hAw) hWC (lower_context_le _ _ c hctx (heA ▸ hAw))
 
 theorem higher_source_closed (k m : Nat)
     (xs q : V multi.T) (i : Nat) (hmi : m < i) (hi : i ≤ k + 1) (hsD : Dim (k + 3) (.P xs .Z))
@@ -1333,7 +1318,7 @@ theorem higher_source_closed (k m : Nat)
   have hPsi := heOld ▸ hs.wf
   have hp := (Term.wf_psi_iff _ _).mp hPsi
   have hOmega : Term.lt Term.bigOmega w = true := by
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega w Term.wf_bigOmega hp.2.1 with he | he | he
+    rcases Term.lt_trichotomy Term.wf_bigOmega hp.2.1 with he | he | he
     · exact he
     · have hft := congrArg Term.fT he
       simp only [Term.bigOmega, Term.fT, hf'] at hft; omega_c
@@ -1344,7 +1329,7 @@ theorem higher_source_closed (k m : Nat)
   have hParentLt := (convert_order k _ _ hsD hAD hs hA).mp hbound
   have ha0 : a ≠ .zero := by
     intro he
-    rw [heOld, heA, he, ite_eq_left rfl, principal_not_lt_one (by rfl) hPsi] at hParentLt
+    rw [heOld, heA, he, ite_eq_left rfl, Term.not_prin_lt_one hPsi (by rfl)] at hParentLt
     cases hParentLt
   rw [ite_eq_right ha0] at heA
   have hPA : Term.lt (.psi w (convert (k + 3) (code (V.get0 xs i)))) a = true := by
@@ -1363,7 +1348,7 @@ theorem higher_source_closed (k m : Nat)
         exact middle_cut_le_zero_of_le_label k q hlD hqf hqOne hlr hlw w hp.1 hp.2.1
           (by rw [hf']; omega_c) hle
     have hLW : Term.lt (convert (k + 3) (code (.P q .Z))) w = true := by
-      rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ hlw.wf hp.2.1 with he | he | he
+      rcases Term.lt_trichotomy hlw.wf hp.2.1 with he | he | he
       · exact he
       · exact False.elim (hnotLabel (by rw [← he]; simp [Term.le]))
       · exact False.elim (hnotLabel (by simp only [Term.le, he, Bool.or_true]))
@@ -1375,8 +1360,8 @@ theorem higher_source_closed (k m : Nat)
       rw [← heOld]
       exact (convert_order k _ _ hsD hlD hs hlw).mp
         (T.lt_trans hbound (fund_lt _ .Z (by intro he; cases he)))
-    have hbad := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hlw.wf hPsi hlw.wf hLP hPL
-    rw [lt_self] at hbad; cases hbad
+    have hbad := Term.lt_trans hlw.wf hPsi hlw.wf hLP hPL
+    rw [Term.lt_irrefl] at hbad; cases hbad
   have hAV : Term.lt a (layerCut m a) = true := by
     simp only [layerCut, ha0, ↓reduceIte]
     change Term.lt a (regular m a) = true
