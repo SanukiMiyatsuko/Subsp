@@ -340,28 +340,15 @@ structure CutFund (k : Nat) (s : multi.T) (cut : Term) : Prop where
   fundWf : ∀ t, RecursiveWF (k + 3) t →
     Term.allLt (Term.H cut (convert (k + 3) (code t))) (convert (k + 3) (code t)) = true →
     RecursiveWF (k + 3) (T.fund s t)
-  zeroSupport : ∀ z, z ∈ Term.H cut (convert (k + 3) (code (T.fund s .Z))) → z = .zero
   cutSupport : ∀ v, Term.lt Term.bigOmega v = true → ∀ z, z ∈ Term.H v cut →
     z = .zero ∨ z ∈ Term.H v (convert (k + 3) (code (T.fund s .Z)))
   fundSupport : ∀ t, t ≠ .Z → ∀ v z,
     z ∈ Term.H v (convert (k + 3) (code (T.fund s t))) →
     InsertedCoefficient v cut (convert (k + 3) (code t)) z
-  baseSupport : ∀ v z, z ∈ Term.H v (convert (k + 3) (code (T.fund s .Z))) →
-    z = .zero ∨ z ∈ Term.H v cut
 
 theorem inserted_psi_support (v cut a z : Term)
     (hz : z ∈ Term.H v (.psi cut a)) :
     z = a ∨ z ∈ Term.H v a ∨ z ∈ Term.H v cut := H_psi_support hz
-
-theorem layerCut_contains_base (m : Nat) (a v : Term) {z : Term}
-    (hz : z ∈ Term.H v (if a = .zero then Term.one else a)) :
-    z = .zero ∨ z ∈ Term.H v (layerCut m a) := by
-  by_cases ha : a = .zero
-  · rw [ite_eq_left ha] at hz; exact Or.inl (H_one_mem hz)
-  · rw [ite_eq_right ha] at hz
-    apply Or.inr
-    simp only [layerCut, ha, ↓reduceIte, Term.H, kumakuma.OT2.H_succTerm]
-    exact List.mem_append_right _ (List.mem_append_left _ hz)
 
 theorem regular_lower_cutFund_image (k m : Nat)
     (hmk : m ≤ k) (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
@@ -415,7 +402,7 @@ theorem regular_lower_cutFund_image (k m : Nat)
       fun he => ht0 ((kumakuma.GeneralImageOmegaCoefficients.convert_eq_zero_iff _ _).1 he)
     by_cases ha0 : a = .zero <;> by_cases hm0 : m = 0 <;>
       simp [step, cut, layerCut, regular, arg, ha0, hm0, htNZ, Term.bigOmega]
-  refine ⟨cut, ⟨hCutR, hCutW, hCutH, ?_, ?_, ?_, ?_, ?_⟩,
+  refine ⟨cut, ⟨hCutR, hCutW, hCutH, ?_, ?_, ?_⟩,
     (by simp only [cut, layerCut, Term.fT]), ?_, ?_⟩
   · intro t ht hHt
     by_cases ht0 : t = .Z
@@ -435,11 +422,6 @@ theorem regular_lower_cutFund_image (k m : Nat)
       · rw [hbidx]; split
         · exact hp
         · exact hcoords i
-  · intro z hz
-    rw [hfZero, heBase] at hz
-    by_cases ha0 : a = .zero
-    · rw [ite_eq_left ha0] at hz; exact H_one_mem hz
-    · rw [ite_eq_right ha0, layerCut_H_context_empty m a ha hwA] at hz; cases hz
   · intro v _ z hz
     rcases layerCut_base_support m a v hz with he | he
     · exact Or.inl he
@@ -456,9 +438,6 @@ theorem regular_lower_cutFund_image (k m : Nat)
         · exact kumakuma.OT2.mem_H_dropOne he
       exact Or.inr (Or.inr (Or.inr (Or.inl hzT)))
     · exact Or.inr (Or.inr (Or.inr (Or.inr he)))
-  · intro v z hz
-    rw [hfZero, heBase] at hz
-    exact layerCut_contains_base m a v hz
   · intro t ht0
     exact ⟨arg t, hNew t ht0⟩
   · intro j hj hBase
@@ -489,18 +468,12 @@ theorem highest_regular_cutFund_at (k : Nat) (b : multi.T)
   have hCutR : Term.isRT cut = true := pairCut_regular _ _
   have hB := topNode_recursiveWF k b hb
   have hCutH : Term.H cut cut = [] := pairCut_H_self_empty (k + 1) (by omega) _ hb.wf hCutW
-  refine ⟨hCutR, hCutW, hCutH, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨hCutR, hCutW, hCutH, ?_, ?_, ?_⟩
   · intro t ht hHt
     by_cases ht0 : t = .Z
     · rw [ht0, highest_regular_fund_zero]; exact hB
     · exact highest_regular_fund_at_cut k b t hb ht ht0
         ((Term.wf_psi_iff _ _).mpr ⟨hCutR, hCutW, dropOne_wf ht.wf, H_drop_bound cut _ ht.wf hHt⟩)
-  · intro z hz
-    rw [highest_regular_fund_zero, highest_base_image] at hz
-    split at hz
-    · exact H_one_mem hz
-    · rw [(topPair_zero_bound (k + 1) (by omega) _ hb.wf hCutW).2] at hz
-      cases hz
   · intro v _ z hz
     rw [highest_regular_fund_zero]
     exact highest_cut_base_support k b v hz
@@ -510,21 +483,6 @@ theorem highest_regular_cutFund_at (k : Nat) (b : multi.T)
     · exact Or.inr (Or.inr (Or.inl he))
     · exact Or.inr (Or.inr (Or.inr (Or.inl (kumakuma.OT2.mem_H_dropOne he))))
     · exact Or.inr (Or.inr (Or.inr (Or.inr he)))
-  · intro v z hz
-    rw [highest_regular_fund_zero] at hz
-    by_cases hb0 : b = .Z
-    · rw [highest_base_image] at hz
-      rw [hb0, convert_Z, ite_eq_left rfl] at hz
-      exact Or.inl (H_one_mem hz)
-    · rw [convert_topNode k b hb0] at hz
-      rcases H_inacc_support (k + 1) _ hz with he | he
-      · exact Or.inl he
-      · apply Or.inr
-        change z ∈ Term.H v (pairCut (k + 1) (convert (k + 3) (code b)))
-        have hbNZ : convert (k + 3) (code b) ≠ .zero :=
-          fun he => hb0 ((kumakuma.GeneralImageOmegaCoefficients.convert_eq_zero_iff _ _).1 he)
-        simp only [pairCut, hbNZ, ↓reduceIte, Term.H, kumakuma.OT2.H_succTerm]
-        exact List.mem_append_right _ (List.mem_append_left _ he)
 
 theorem highest_regular_cutFund (k : Nat) (b : multi.T)
     (hs : RecursiveWF (k + 3) (topNode k (kumakuma.SourceSuccessor.succ (k + 3) b))) :

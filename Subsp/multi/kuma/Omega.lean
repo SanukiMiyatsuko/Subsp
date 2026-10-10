@@ -1927,16 +1927,6 @@ theorem layerCut_H_self_empty (n : Nat) (hn : 0 < n) (a : Term)
   · simp [layerCut, ha0, Term.H, hOne_positive_cut n hn]
   · simpa only [layerCut, ha0, ↓reduceIte, regular] using regular_H_self_empty n a ha hwa
 
-theorem layerCut_H_context_empty (n : Nat) (a : Term)
-    (ha : Above n a) (hwa : Term.wf a = true) : Term.H (layerCut n a) a = [] := by
-  by_cases ha0 : a = .zero
-  · simp [ha0, Term.H]
-  · have hp : Term.predR (layerCut n a) = a := by
-      simp only [layerCut, ha0, ↓reduceIte, Term.predR, succTerm_ne_zero,
-        predT_succTerm hwa, show ¬Term.fT a ≤ n from Nat.not_le.mpr (ha.resolve_left ha0)]
-    exact kumakuma.JaegerFacts.H_nil_of_le_predR (layerCut_wf n a ha hwa) (layerCut_regular n a) a hwa
-      (by rw [hp]; simp [Term.le, Term.lt_irrefl])
-
 theorem step_positive_nonzero (n : Nat) (hn : 0 < n) (a c : Term) (hc : c ≠ .zero) :
     step n a c ≠ .zero := by
   by_cases ha0 : a = .zero <;> simp [step, ha0, hc, Nat.ne_of_gt hn]
@@ -1975,26 +1965,6 @@ theorem pairCut_H_self_empty (n : Nat) (hn : 0 < n) (h : Term)
   · simpa only [pairCut, hh0, ↓reduceIte, regular] using
       regular_H_self_empty_of_wf n (dropOne h) (dropOne_wf hh)
         (by simpa only [pairCut, hh0, ↓reduceIte, regular] using hu)
-
-theorem topPair_zero_bound (n : Nat) (hn : 0 < n) (h : Term)
-    (hh : Term.wf h = true) (hu : Term.wf (pairCut n h) = true) :
-    Term.lt (topPair n h .zero) (pairCut n h) = true ∧
-      Term.H (pairCut n h) (topPair n h .zero) = [] := by
-  by_cases hh0 : h = .zero
-  · simp [topPair, pairCut, hh0, Term.lt, Term.H]
-  · have hwD := dropOne_wf hh
-    have hreg : Term.wf (regular n (dropOne h)) = true := by
-      simpa only [pairCut, hh0, ↓reduceIte, regular] using hu
-    have hHD := regular_H_context_empty_of_wf n (dropOne h) hwD hreg
-    have hOne : Term.hOne (pairCut n h) = [] := by simp [Term.hOne, pairCut_above_Omega n hn h]
-    refine ⟨?_, ?_⟩
-    · simp only [topPair, hh0, ↓reduceIte, pairCut, inacc_same_lt]
-      rw [lt_succTerm_eq_le hwD hwD]
-      simp [Term.le]
-    · rw [topPair, ite_eq_left rfl, ite_eq_right hh0, Term.H]
-      have hd : Term.H (pairCut n h) (dropOne h) = [] := by
-        simpa only [pairCut, hh0, ↓reduceIte, regular] using hHD
-      simp only [hOne, hd, ite_self, List.nil_append]
 
 end kumakuma.GeneralImageSharedTopPair
 

@@ -20,7 +20,6 @@ open multi
 inductive Code where
   | zero : Code
   | p (args : List Code) (tail : Code) : Code
-  deriving Repr
 
 def Code.isZero : Code → Bool
   | .zero => true
