@@ -607,13 +607,7 @@ theorem ucTree_fund_invariant (k : Nat) {s : multi.T}
             hnChild hc0 (drop_image_of_omega k _ hcD (hcoords i) hdi) hrelChild
         · have hi : i = k + 2 := by omega
           rw [hi] at hlow hnChild ⊢
-          have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
-          have heR : V.set xs (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) (n + 1))) =
-              lastVec (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) (n + 1))) := by
-            have := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-              (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) (n + 1)))
-            rw [← he] at this; exact this
-          rw [heR]; exact topNode_recursiveWF k _ hnChild
+          rw [set_last_of_low hsD.length hlow]; exact topNode_recursiveWF k _ hnChild
       refine ⟨hn, ?_, ?_⟩
       · intro v hvR hv hOmega
         exact inherited_omega_dominated_support k xs i hsD hf hdi hs (n + 1) (by omega) hn v hvR hv

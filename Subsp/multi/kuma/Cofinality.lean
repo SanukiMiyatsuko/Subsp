@@ -1285,6 +1285,11 @@ theorem lastVec_of_low {k : Nat} {xs : V multi.T} (hl : xs.length = k + 3)
     · exact hlow j hjl
     · exact V.get0_ge xs j (by omega)
 
+theorem set_last_of_low {k : Nat} {xs : V multi.T} (hl : xs.length = k + 3)
+    (hlow : ∀ j, j < k + 2 → V.get0 xs j = .Z) (b : multi.T) :
+    V.set xs (k + 2) b = lastVec (k + 2) b := by
+  rw [lastVec_of_low hl hlow, kumakuma.SourceOmegaHighest.lastVec_replace_last]
+
 theorem child_fund_recursiveWF {k : Nat} {xs q : V multi.T} {i : Nat} (hf : V.fnz xs = some i)
     (hdq : domF (V.get0 xs i) = .Omega q) (hnd : ¬ xs < q) {t : multi.T}
     (hn : RecursiveWF (k + 3) (T.fund (.P xs .Z) t)) :
@@ -1311,9 +1316,7 @@ theorem parent_Omega_updated_or_support (k : Nat)
   have hchildDim : Dim (k + 3) (V.get0 xs i) := hsD.coord i
   have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
     fund_nondiag hf hdq (not_diag_of_dom hf hdq hd) t
-  have hnChild : RecursiveWF (k + 3) (T.fund (V.get0 xs i) t) := by
-    have := (RecursiveWF_P.1 (hfund ▸ hn)).1 i
-    rwa [V.get0_set_same xs i _ hil] at this
+  have hnChild := child_fund_recursiveWF hf hdq (not_diag_of_dom hf hdq hd) hn
   have lift (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code (V.get0 xs i))) →
       z ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) {z : Term} :
       UpdatedCoefficient k v (V.get0 xs i) t z ∨ extra z →
@@ -1348,12 +1351,7 @@ theorem parent_Omega_updated_or_support (k : Nat)
     have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) :=
       lastVec_of_low hsD.length (V.fnz_some_spec xs _ hf).2
     have heNew : T.fund (.P xs .Z) t = topNode k (T.fund (V.get0 xs (k + 2)) t) := by
-      rw [hfund]
-      show multi.T.P _ .Z = multi.T.P _ .Z
-      congr 1
-      have := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-        (T.fund (V.get0 xs (k + 2)) t)
-      rwa [← he] at this
+      rw [hfund, set_last_of_low hsD.length (V.fnz_some_spec xs _ hf).2]; rfl
     have heH : Term.H v (convert (k + 3) (code (.P xs .Z))) =
         Term.H v (convert (k + 3) (code (V.get0 xs (k + 2)))) := by
       rw [show multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) from congrArg (multi.T.P · .Z) he]
@@ -1385,9 +1383,7 @@ theorem parent_Omega_relative_of_updated_or_bounded (k : Nat)
   have hlow := (V.fnz_some_spec xs i hf).2
   have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
     fund_nondiag hf hdq (not_diag_of_dom hf hdq hd) t
-  have hnChild : RecursiveWF (k + 3) (T.fund (V.get0 xs i) t) := by
-    have := (RecursiveWF_P.1 (hfund ▸ hn)).1 i
-    rwa [V.get0_set_same xs i _ hil] at this
+  have hnChild := child_fund_recursiveWF hf hdq (not_diag_of_dom hf hdq hd) hn
   have hsZ : convert (k + 3) (code (.P xs .Z)) ≠ .zero := convert_ne_zero xs .Z
   have hnZ : convert (k + 3) (code (T.fund (.P xs .Z) t)) ≠ .zero :=
     fun he => domOmega_fund_ne_zero _ t hd ((convert_eq_zero_iff _ _).1 he)
@@ -1535,12 +1531,7 @@ theorem Omega_fund_invariant (k : Nat) (G : V multi.T → Prop) (t : multi.T) (h
           fun v hvR hv hOmega hcut hH => (hchildInv v hvR hv hOmega hcut).2 hH
       · have hi : i = k + 2 := by have := fnz_lt_length hf; rw [hsD.length] at this; omega
         subst hi
-        have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) :=
-          lastVec_of_low hsD.length (V.fnz_some_spec xs _ hf).2
-        have hrplc := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-          (T.fund (V.get0 xs (k + 2)) t)
-        rw [← he] at hrplc
-        rw [hrplc]
+        rw [set_last_of_low hsD.length (V.fnz_some_spec xs _ hf).2]
         exact topNode_recursiveWF k _ hnChild
     refine ⟨hn, fun v hvR hv hOmega hcut => ?_⟩
     have hcf' := fun z hz => Or.inl (b := False) ((hchildInv v hvR hv hOmega hcut).1 z hz)
@@ -1851,17 +1842,10 @@ theorem parent_zero_updated_support (k : Nat)
           exact Or.inr (Or.inl ((heOld.trans heO) ▸ ho))
     · have hi : i = k + 2 := by omega_c
       subst hi
-      have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
       have heOld : multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) :=
-        congrArg (fun us => multi.T.P us .Z) he
+        congrArg (multi.T.P · .Z) (lastVec_of_low hsD.length hlow)
       have heNew : T.fund (.P xs .Z) .Z = topNode k (T.fund (V.get0 xs (k + 2)) .Z) := by
-        rw [hf]
-        show multi.T.P _ .Z = multi.T.P _ .Z
-        congr 1
-        have := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-          (T.fund (V.get0 xs (k + 2)) .Z)
-        rw [← he] at this
-        exact this
+        rw [hf, set_last_of_low hsD.length hlow]; rfl
       have heH : Term.H v (convert (k + 3) (code (.P xs .Z))) =
           Term.H v (convert (k + 3) (code (V.get0 xs (k + 2)))) := by
         rw [heOld, H_topNode_above_Omega k _ hc0 v hOmega, hdrop]
@@ -2060,14 +2044,7 @@ theorem zero_fund_invariant (k : Nat) : ∀ (s : multi.T), Dim (k + 3) s →
                   hdrop hrelChild
               · have hi : i = k + 2 := by omega
                 subst hi
-                have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
-                have heR : V.set xs (k + 2) (T.fund (V.get0 xs (k + 2)) .Z) =
-                    lastVec (k + 2) (T.fund (V.get0 xs (k + 2)) .Z) := by
-                  have := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-                    (T.fund (V.get0 xs (k + 2)) .Z)
-                  rw [← he] at this
-                  exact this
-                rw [heR]; exact topNode_recursiveWF k _ hnChild
+                rw [set_last_of_low hsD.length hlow]; exact topNode_recursiveWF k _ hnChild
             apply finish hn
             intro v hvR hv hOmega
             exact parent_zero_updated_support k xs i hsD hlow hs hc0 hdrop hf hn v hvR hv hOmega

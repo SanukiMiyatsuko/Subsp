@@ -748,14 +748,9 @@ theorem inherited_omega_dominated_support (k : Nat)
         · exact lift (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
     · have hi : i = k + 2 := by omega
       subst hi
-      have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
-      have heOld : multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) := by
-        rw [topNode]; exact congrArg (fun us => multi.T.P us .Z) he
-      have heR : V.set xs (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n)) =
-          lastVec (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n)) := by
-        have := lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-          (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n))
-        rw [← he] at this; exact this
+      have heOld : multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) :=
+        congrArg (multi.T.P · .Z) (lastVec_of_low hsD.length hlow)
+      have heR := set_last_of_low hsD.length hlow (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n))
       have heH : Term.H v (convert (k + 3) (code (.P xs .Z))) =
           Term.H v (convert (k + 3) (code (V.get0 xs (k + 2)))) := by
         rw [heOld, H_topNode_above_Omega k _ hc0 v hOmega, hdrop]
@@ -870,14 +865,9 @@ theorem inherited_omega_dominated_relative_above (k : Nat)
               hnChild hhead hnZ v (fun z hz => heOld ▸ hchild z hz) hcoef hH z hzChild
       · have hi : i = k + 2 := by omega_c
         subst hi
-        have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
-        have heOld : multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) := by
-          rw [topNode]; exact congrArg (fun us => multi.T.P us .Z) he
-        have heR : V.set xs (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n)) =
-            lastVec (k + 2) (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n)) := by
-          have := lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-            (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n))
-          rw [← he] at this; exact this
+        have heOld : multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) :=
+          congrArg (multi.T.P · .Z) (lastVec_of_low hsD.length hlow)
+        have heR := set_last_of_low hsD.length hlow (T.fund (V.get0 xs (k + 2)) (ofNatD (k + 3) n))
         have heH : Term.H v (convert (k + 3) (code (.P xs .Z))) =
             Term.H v (convert (k + 3) (code (V.get0 xs (k + 2)))) := by
           rw [heOld, H_topNode_above_Omega k _ hc0 v hOmega, hdrop]
