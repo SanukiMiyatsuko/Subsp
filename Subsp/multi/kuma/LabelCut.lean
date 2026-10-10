@@ -924,38 +924,14 @@ theorem Omega_fund_at_label_cut_invariant (k : Nat) (s : multi.T)
   kumakuma.GeneralImageOmegaCofinality.Omega_fund_invariant k (fun q => CutFund k (.P q .Z) κ) t htD
     (fun _ _ _ _ _ hG _ => hG.fundWf t ht hHt) s hsD hr hs hd hcut
 
-theorem Omega_label_recursive : ∀ (s : multi.T),
-    Recursive s → ∀ {q : V multi.T}, domF s = .Omega q → Recursive (.P q .Z)
-  | .Z, _, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, hr, q, hd => by
-    have hr' := Recursive_P.1 hr
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hc] at hd
-            cases hd
-            exact hr
-        | Omega ys =>
-          by_cases hv : xs < ys
-          · rw [domF_diag hf hc hv] at hd; cases hd
-          · rw [domF_nondiag hf hc hv] at hd
-            cases hd
-            exact Omega_label_recursive _ (hr'.1 i) hc
-    · rw [domF_tail xs hb] at hd
-      exact Omega_label_recursive b hr'.2.1 hd
-termination_by s => s.size
-decreasing_by
-  all_goals first
-    | exact multi.T.size_get0_lt_P _ _ _
-    | exact multi.T.size_lt_P_right _ _
+theorem Omega_label_recursive (s : multi.T) (hr : Recursive s) {q : V multi.T}
+    (hd : domF s = .Omega q) : Recursive (.P q .Z) := by
+  have hp := OmegaLabelPath.of_domain s hd
+  clear hd
+  induction hp with
+  | regular => exact hr
+  | inherit xs i _ _ _ _ ih => exact ih ((Recursive_P.1 hr).1 i)
+  | tail xs b _ _ ih => exact ih (Recursive_P.1 hr).2.1
 
 theorem Omega_label_cutFund (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
@@ -1007,81 +983,26 @@ theorem inserted_coefficient_bound_at_self
       ((Term.allLt_iff _ _).mp hH z he) hNext
   · rw [hSelf] at he; cases he
 
-theorem Omega_fund_parametric_support (k : Nat) : ∀ (s : multi.T),
-    Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s →
-    ∀ {q : V multi.T}, domF s = .Omega q →
-    ∀ (cut : Term), CutFund k (.P q .Z) cut → ∀ (t : multi.T), Dim (k + 3) t → t ≠ .Z →
-    RecursiveWF (k + 3) (T.fund s t) →
-    ∀ (v : Term), Term.isRT v = true → Term.wf v = true → Term.lt Term.bigOmega v = true →
+theorem Omega_fund_parametric_support (k : Nat) (s : multi.T)
+    (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
+    {q : V multi.T} (hd : domF s = .Omega q)
+    (cut : Term) (hc : CutFund k (.P q .Z) cut) (t : multi.T) (htD : Dim (k + 3) t) (ht0 : t ≠ .Z)
+    (hn : RecursiveWF (k + 3) (T.fund s t))
+    (v : Term) (hvR : Term.isRT v = true) (hv : Term.wf v = true)
+    (hOmega : Term.lt Term.bigOmega v = true) :
     ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund s t))) →
-      UpdatedCoefficient k v s t z ∨ InsertedCoefficient v cut (convert (k + 3) (code t)) z
-  | .Z, _, _, _, _, hd, _, _, _, _, _, _, _, _, _, _ => by rw [domF_Z] at hd; cases hd
-  | .P xs b, hsD, hr, hs, q, hd, cut, hc, t, htD, ht0, hn, v, hvR, hv, hOmega => by
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hcd : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hcd] at hd; cases hd
-        | omega => rw [domF_omega hf hcd] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hcd] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hcd] at hd
-            cases hd
-            intro z hz
-            exact Or.inr (hc.fundSupport t ht0 v z hz)
-        | Omega ys =>
-          by_cases hlt : xs < ys
-          · rw [domF_diag hf hcd hlt] at hd; cases hd
-          · have hd' := domF_nondiag hf hcd hlt
-            have hil := fnz_lt_length hf
-            have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
-            have hchildR : Recursive (V.get0 xs i) := (Recursive_P.1 hr).1 i
-            have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
-              fund_nondiag hf hcd hlt t
-            have hnChild : RecursiveWF (k + 3) (T.fund (V.get0 xs i) t) := by
-              have hw := hn
-              rw [hfund] at hw
-              have := (RecursiveWF_P.1 hw).1 i
-              rwa [V.get0_set_same xs i _ hil] at this
-            rw [hd'] at hd
-            cases hd
-            have hchildCoef := Omega_fund_parametric_support k (V.get0 xs i) (hsD.coord i) hchildR
-              (hcoords i) hcd cut hc t htD ht0 hnChild v hvR hv hOmega
-            exact parent_Omega_updated_or_support k xs _ i hsD hf hcd hr hs hd' t htD hn v hvR hv hOmega
-              (InsertedCoefficient v cut (convert (k + 3) (code t))) hchildCoef
-    · have hbr : Recursive b := (Recursive_P.1 hr).2.1
-      have hbw : RecursiveWF (k + 3) b := (RecursiveWF_P.1 hs).2.1
-      have hdb : domF b = .Omega q := by rwa [domF_tail xs hb] at hd
-      have hnB : RecursiveWF (k + 3) (T.fund b t) := by
-        have hw := hn
-        rw [fund_tail xs hb] at hw
-        exact (RecursiveWF_P.1 hw).2.1
-      have htailCoef := Omega_fund_parametric_support k b hsD.tail hbr hbw hdb cut hc t htD ht0 hnB
-        v hvR hv hOmega
-      intro z hz
-      rw [fund_tail xs hb, convert_P] at hz
-      rcases H_assemble_support v _ _ hz with hz | hz
-      · exact Or.inl (Or.inr (Or.inl (by rw [convert_P]; exact H_assemble_left v _ _ hz)))
-      · rcases htailCoef z hz with hu | he
-        · apply Or.inl
-          rcases hu with he | ho | ⟨a, ha, hw, hmA, he⟩
-          · exact Or.inl he
-          · apply Or.inr; apply Or.inl
-            rw [convert_P]
-            exact H_assemble_right v _ _ ho
-          · refine Or.inr (Or.inr ⟨a, Subterm.trans ha (Subterm.tail xs b), hw, ?_, he⟩)
-            rw [convert_P]
-            exact hmA.elim (fun h => Or.inl (H_assemble_right v _ _ h))
-              (fun h => Or.inr (H_assemble_right v _ _ h))
-        · exact Or.inr he
-termination_by s => s.size
-decreasing_by
-  all_goals first
-    | exact multi.T.size_get0_lt_P _ _ _
-    | exact multi.T.size_lt_P_right _ _
+      UpdatedCoefficient k v s t z ∨ InsertedCoefficient v cut (convert (k + 3) (code t)) z := by
+  have hp := OmegaLabelPath.of_domain s hd
+  induction hp with
+  | regular => exact fun z hz => Or.inr (hc.fundSupport t ht0 v z hz)
+  | inherit xs i hf hdq hnd _ ih =>
+    exact parent_Omega_updated_or_support k xs _ i hsD hf hdq hr hs hd t htD hn v hvR hv hOmega _
+      (ih (hsD.coord i) ((Recursive_P.1 hr).1 i) ((RecursiveWF_P.1 hs).1 i) hdq
+        (child_fund_recursiveWF hf hdq hnd hn))
+  | tail xs b hb _ ih =>
+    exact tail_updated_or k v xs hb t _ (ih hsD.tail (Recursive_P.1 hr).2.1
+      (RecursiveWF_P.1 hs).2.1 (by rwa [domF_tail xs hb] at hd)
+      (RecursiveWF_P.1 (fund_tail xs hb t ▸ hn)).2.1)
 
 theorem Omega_fund_relative_of_bounded_parameter (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
@@ -1095,54 +1016,17 @@ theorem Omega_fund_relative_of_bounded_parameter (k : Nat) (s : multi.T)
       Term.lt z (convert (k + 3) (code (T.fund s t))) = true) :
     Term.allLt (Term.H v (convert (k + 3) (code (T.fund s t))))
       (convert (k + 3) (code (T.fund s t))) = true := by
-  have hn0 : convert (k + 3) (code (T.fund s t)) ≠ .zero :=
-    fun he => domOmega_fund_ne_zero _ _ hd ((convert_eq_zero_iff _ _).1 he)
-  cases s with
-  | Z => rw [domF_Z] at hd; cases hd
-  | P xs b =>
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hcd : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hcd] at hd; cases hd
-        | omega => rw [domF_omega hf hcd] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hcd] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hcd] at hd
-            cases hd
-            apply (Term.allLt_iff _ _).mpr
-            intro z hz
-            exact hBound z (hc.fundSupport t ht0 v z hz)
-        | Omega ys =>
-          by_cases hlt : xs < ys
-          · rw [domF_diag hf hcd hlt] at hd; cases hd
-          · have hd' := domF_nondiag hf hcd hlt
-            have hil := fnz_lt_length hf
-            have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
-            have hchildR : Recursive (V.get0 xs i) := (Recursive_P.1 hr).1 i
-            have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
-              fund_nondiag hf hcd hlt t
-            have hnChild : RecursiveWF (k + 3) (T.fund (V.get0 xs i) t) := by
-              have hw := hn
-              rw [hfund] at hw
-              have := (RecursiveWF_P.1 hw).1 i
-              rwa [V.get0_set_same xs i _ hil] at this
-            rw [hd'] at hd
-            cases hd
-            have hchildCoef := Omega_fund_parametric_support k (V.get0 xs i) (hsD.coord i) hchildR
-              (hcoords i) hcd cut hc t htD ht0 hnChild v hvR hv hOmega
-            exact parent_Omega_relative_of_updated_or_bounded k xs _ i hsD hf hcd hr hs hd' t htD hn
-              v hvR hv hOmega (InsertedCoefficient v cut (convert (k + 3) (code t)))
-              hBound hchildCoef hSource
-    · have hs0 : convert (k + 3) (code (.P xs b)) ≠ .zero := convert_ne_zero xs b
-      have hcoef := Omega_fund_parametric_support k (.P xs b) hsD hr hs hd cut hc t htD ht0 hn
-        v hvR hv hOmega
-      exact closed_of_updated_or_bounded k v _ t hsD htD hs hn (Omega_image_head_ne_one k _ hsD hr hs hd)
-        hs0 hn0 (fun a ha => sum_subterm_gap xs b t hb (Omega_head_mass_pos xs b hr hd) hd ha)
-        (InsertedCoefficient v cut (convert (k + 3) (code t))) hBound hcoef hSource
+  rcases OmegaLabelPath.of_domain s hd with _ | ⟨xs, i, hf, hdq, hnd⟩ | ⟨xs, b, hb⟩
+  · exact (Term.allLt_iff _ _).mpr fun z hz => hBound z (hc.fundSupport t ht0 v z hz)
+  · exact parent_Omega_relative_of_updated_or_bounded k xs _ i hsD hf hdq hr hs hd t htD hn
+      v hvR hv hOmega _ hBound (Omega_fund_parametric_support k (V.get0 xs i) (hsD.coord i)
+        ((Recursive_P.1 hr).1 i) ((RecursiveWF_P.1 hs).1 i) hdq cut hc t htD ht0
+        (child_fund_recursiveWF hf hdq hnd hn) v hvR hv hOmega) hSource
+  · exact closed_of_updated_or_bounded k v _ t hsD htD hs hn
+      (Omega_image_head_ne_one k _ hsD hr hs hd) (convert_ne_zero xs b)
+      (fun he => domOmega_fund_ne_zero _ _ hd ((convert_eq_zero_iff _ _).1 he))
+      (fun a ha => sum_subterm_gap xs b t hb (Omega_head_mass_pos xs b hr hd) hd ha) _ hBound
+      (Omega_fund_parametric_support k _ hsD hr hs hd cut hc t htD ht0 hn v hvR hv hOmega) hSource
 
 theorem Omega_fund_closed_at_cut_of_wf (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
@@ -1210,53 +1094,13 @@ theorem Omega_iter_at_label_cut (k : Nat) (s : multi.T)
       ih.1 ih.2.1 ih.2.2 (domOmega_iter_lt_next s hd (k + 3) n)
     exact ⟨hnD, hn, hH⟩
 
-inductive OmegaLabelPath (q : V multi.T) : multi.T → Prop
-  | regular (hq : RegularVector q) : OmegaLabelPath q (.P q .Z)
-  | inherit (xs : V multi.T) (i : Nat) (hf : V.fnz xs = some i)
-      (hdq : domF (V.get0 xs i) = .Omega q) (hnd : ¬ xs < q)
-      (hc : OmegaLabelPath q (V.get0 xs i)) : OmegaLabelPath q (.P xs .Z)
-  | tail (xs : V multi.T) (b : multi.T) (hb : b ≠ .Z)
-      (hc : OmegaLabelPath q b) : OmegaLabelPath q (.P xs b)
-
-theorem OmegaLabelPath.of_domain : ∀ (s : multi.T) {q : V multi.T},
-    domF s = .Omega q → OmegaLabelPath q s
-  | .Z, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, q, hd => by
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hc] at hd
-            cases hd
-            exact .regular ⟨m + 1, by omega, hf, hc⟩
-        | Omega ys =>
-          by_cases hv : xs < ys
-          · rw [domF_diag hf hc hv] at hd; cases hd
-          · rw [domF_nondiag hf hc hv] at hd
-            cases hd
-            exact .inherit xs i hf hc hv (OmegaLabelPath.of_domain _ hc)
-    · rw [domF_tail xs hb] at hd
-      exact .tail xs b hb (OmegaLabelPath.of_domain b hd)
-termination_by s => s.size
-decreasing_by
-  all_goals first
-    | exact multi.T.size_get0_lt_P _ _ _
-    | exact multi.T.size_lt_P_right _ _
-
 theorem Omega_label_subterm_lift (s : multi.T)
     {q : V multi.T} (hd : domF s = .Omega q)
     {a : multi.T} (ha : Subterm a (.P q .Z)) : Subterm a s := by
   have hp := OmegaLabelPath.of_domain s hd
   clear hd
   induction hp with
-  | regular _ => exact ha
+  | regular => exact ha
   | inherit xs i _ _ _ _ ih => exact Subterm.trans ih (Subterm.coordinate xs .Z i)
   | tail xs b _ _ ih => exact Subterm.trans ih (Subterm.tail xs b)
 
@@ -1272,7 +1116,7 @@ theorem Omega_label_coefficient_lift (k : Nat) (s : multi.T)
   have hp := OmegaLabelPath.of_domain s hd
   clear hd
   induction hp with
-  | regular _ => exact fun _ hz => hz
+  | regular => exact fun _ hz => hz
   | inherit xs i hf hdq hnd hc ih =>
     have hil : i < xs.length := fnz_lt_length hf
     have hik : i < k + 3 := by rw [← hsD.length]; exact hil
@@ -1462,7 +1306,7 @@ theorem Omega_label_mass_le (s : multi.T)
   have hp := OmegaLabelPath.of_domain s hd
   clear hd
   induction hp with
-  | regular _ => exact Nat.le_refl _
+  | regular => exact Nat.le_refl _
   | inherit xs i _ _ _ _ ih =>
     have hm := vectorMass_get0_le xs i
     have h1 := mass_P q .Z

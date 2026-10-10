@@ -54,71 +54,70 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem fund_mono : ∀ (s : multi.T) {v : V multi.T}, domF s = .Omega v →
-    ∀ (t u : multi.T), t < u → T.fund s t < T.fund s u
-  | .Z, _, hd, _, _, _ => by rw [domF_Z] at hd; cases hd
-  | .P xs b, v, hd, t, u, htu => by
+/-- The terms of domain `Ω_q`: the label `q ⊕ 0` itself, a principal term inheriting `Ω_q` from
+its first nonzero coordinate, or a sum inheriting it from its tail. -/
+inductive OmegaLabelPath (q : V multi.T) : multi.T → Prop
+  | regular (m : Nat) (hf : V.fnz q = some (m + 1)) (hc : domF (V.get0 q (m + 1)) = .one) :
+      OmegaLabelPath q (.P q .Z)
+  | inherit (xs : V multi.T) (i : Nat) (hf : V.fnz xs = some i)
+      (hdq : domF (V.get0 xs i) = .Omega q) (hnd : ¬ xs < q)
+      (hc : OmegaLabelPath q (V.get0 xs i)) : OmegaLabelPath q (.P xs .Z)
+  | tail (xs : V multi.T) (b : multi.T) (hb : b ≠ .Z)
+      (hc : OmegaLabelPath q b) : OmegaLabelPath q (.P xs b)
+
+theorem OmegaLabelPath.of_domain : ∀ (s : multi.T) {q : V multi.T},
+    domF s = .Omega q → OmegaLabelPath q s
+  | .Z, _, hd => by rw [domF_Z] at hd; cases hd
+  | .P xs b, q, hd => by
     by_cases hb : b = .Z
     · subst hb
       rcases hf : V.fnz xs with _ | i
       · rw [domF_none hf] at hd; cases hd
-      · have hil := fnz_lt_length hf
-        cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m =>
-            rw [fund_one_succ hf hc, fund_one_succ hf hc]
-            exact T.P_lt_P_of_vlt _ _ (set_lt_set (by rw [V.length_set]; omega) htu)
-        | Omega q =>
-          by_cases hq : xs < q
-          · rw [domF_diag hf hc hq] at hd; cases hd
-          · rw [fund_nondiag hf hc hq, fund_nondiag hf hc hq]
-            exact T.P_lt_P_of_vlt _ _ (set_lt_set hil (fund_mono _ hc t u htu))
+      cases hc : domF (V.get0 xs i) with
+      | zero => rw [domF_zero hf hc] at hd; cases hd
+      | omega => rw [domF_omega hf hc] at hd; cases hd
+      | one =>
+        cases i with
+        | zero => rw [domF_one_zero hf hc] at hd; cases hd
+        | succ m => rw [domF_one_succ hf hc] at hd; cases hd; exact .regular m hf hc
+      | Omega ys =>
+        by_cases hv : xs < ys
+        · rw [domF_diag hf hc hv] at hd; cases hd
+        rw [domF_nondiag hf hc hv] at hd
+        cases hd
+        exact .inherit xs i hf hc hv (OmegaLabelPath.of_domain _ hc)
     · rw [domF_tail xs hb] at hd
-      rw [fund_tail xs hb, fund_tail xs hb]
-      exact T.P_tail_lt xs (fund_mono b hd t u htu)
+      exact .tail xs b hb (OmegaLabelPath.of_domain b hd)
 termination_by s => s.size
 decreasing_by
   all_goals first
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
+
+theorem fund_mono (s : multi.T) {v : V multi.T} (hd : domF s = .Omega v) (t u : multi.T)
+    (htu : t < u) : T.fund s t < T.fund s u := by
+  have hp := OmegaLabelPath.of_domain s hd
+  clear hd
+  induction hp with
+  | regular m hf hc =>
+    rw [fund_one_succ hf hc, fund_one_succ hf hc]
+    exact T.P_lt_P_of_vlt _ _
+      (set_lt_set (by rw [V.length_set]; have := fnz_lt_length hf; omega) htu)
+  | inherit xs i hf hdq hnd _ ih =>
+    rw [fund_nondiag hf hdq hnd, fund_nondiag hf hdq hnd]
+    exact T.P_lt_P_of_vlt _ _ (set_lt_set (fnz_lt_length hf) ih)
+  | tail xs b hb _ ih => rw [fund_tail xs hb, fund_tail xs hb]; exact T.P_tail_lt xs ih
 
 def RegularVector (v : V multi.T) : Prop :=
   ∃ i, 0 < i ∧ V.fnz v = some i ∧ domF (V.get0 v i) = .one
 
-theorem domOmega_regular : ∀ (s : multi.T) {v : V multi.T}, domF s = .Omega v → RegularVector v
-  | .Z, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, v, hd => by
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hc] at hd
-            cases hd
-            exact ⟨m + 1, Nat.succ_pos m, hf, hc⟩
-        | Omega q =>
-          by_cases hq : xs < q
-          · rw [domF_diag hf hc hq] at hd; cases hd
-          · rw [domF_nondiag hf hc hq] at hd
-            cases hd
-            exact domOmega_regular _ hc
-    · rw [domF_tail xs hb] at hd
-      exact domOmega_regular b hd
-termination_by s => s.size
-decreasing_by
-  all_goals first
-    | exact multi.T.size_get0_lt_P _ _ _
-    | exact multi.T.size_lt_P_right _ _
+theorem domOmega_regular (s : multi.T) {v : V multi.T} (hd : domF s = .Omega v) :
+    RegularVector v := by
+  have hp := OmegaLabelPath.of_domain s hd
+  clear hd
+  induction hp with
+  | regular m hf hc => exact ⟨m + 1, Nat.succ_pos m, hf, hc⟩
+  | inherit _ _ _ _ _ _ ih | tail _ _ _ _ ih => exact ih
 
 theorem lowVec_below_positive (k : Nat) (a : multi.T) (v : V multi.T) (i : Nat) (hi : 0 < i)
     (hv : V.get0 v i ≠ .Z) : CountableSource.lowVec k a < v := by
@@ -882,26 +881,12 @@ namespace kumakuma.SourceFundOrder
 
 open multi OTQuotient DimensionCut
 
-theorem domOmega_fund_ne_zero : ∀ (s t : multi.T) {v : V multi.T}, domF s = .Omega v →
-    T.fund s t ≠ .Z
-  | .Z, _, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, t, v, hd => by
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [fund_zero hf hc]; intro h; cases h
-        | omega => rw [fund_omega hf hc]; intro h; cases h
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m => rw [fund_one_succ hf hc]; intro h; cases h
-        | Omega q =>
-          by_cases hq : xs < q
-          · rw [fund_diag hf hc hq]; intro h; cases h
-          · rw [fund_nondiag hf hc hq]; intro h; cases h
-    · rw [fund_tail xs hb]; intro h; cases h
+theorem domOmega_fund_ne_zero (s t : multi.T) {v : V multi.T} (hd : domF s = .Omega v) :
+    T.fund s t ≠ .Z := by
+  rcases OmegaLabelPath.of_domain s hd with ⟨m, hf, hc⟩ | ⟨xs, i, hf, hdq, hnd⟩ | ⟨xs, b, hb⟩
+  · rw [fund_one_succ hf hc]; intro h; cases h
+  · rw [fund_nondiag hf hdq hnd]; intro h; cases h
+  · rw [fund_tail xs hb]; intro h; cases h
 
 theorem iter_ofNat_succ (F : multi.T → multi.T) (lam n : Nat) :
     multi.T.iter F (ofNatD lam (n + 1)) = F (multi.T.iter F (ofNatD lam n)) := rfl

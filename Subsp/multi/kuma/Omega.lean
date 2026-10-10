@@ -967,39 +967,17 @@ theorem coordinate_fund_subterms (xs : V multi.T) (i : Nat) (t : multi.T)
     · rename_i hj
       exact hcoords j hj
 
-theorem inherited_fund_subterms (xs : V multi.T) (i : Nat)
-    (t : multi.T) {v : V multi.T}
-    (hf : V.fnz xs = some i) (hd : domF (V.get0 xs i) = .Omega v) (hn : ¬ xs < v)
-    (hs : ∀ a, Subterm a (.P xs .Z) → a < .P xs .Z)
-    (ht : ∀ a, Subterm a t → a < t)
-    (hinc : t < T.fund (.P xs .Z) t) :
-    ∀ a, Subterm a (T.fund (.P xs .Z) t) → a < T.fund (.P xs .Z) t :=
-  coordinate_fund_subterms xs i t (V.fnz_some_spec xs i hf).1 (fund_nondiag hf hd hn t) hs ht hinc
-
 theorem fund_Omega_subterms (s t : multi.T) (hr : Recursive s)
     {v : V multi.T} (hd : domF s = .Omega v)
     (hs : ∀ a, Subterm a s → a < s)
     (ht : ∀ a, Subterm a t → a < t) (hinc : t < T.fund s t) :
     ∀ a, Subterm a (T.fund s t) → a < T.fund s t := by
-  cases s with
-  | Z => rw [domF_Z] at hd; cases hd
-  | P xs b =>
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m => exact regular_fund_subterms xs m hf hc t hs ht hinc
-        | Omega ys =>
-          by_cases hv : xs < ys
-          · rw [domF_diag hf hc hv] at hd; cases hd
-          · exact inherited_fund_subterms xs i t hf hc hv hs ht hinc
-    · exact fund_tail_subterms xs b t hb (Omega_head_mass_pos xs b hr hd) hs ht hinc
+  rcases SourceFundOrder.OmegaLabelPath.of_domain s hd with ⟨m, hf, hc⟩ | ⟨xs, i, hf, hdq, hnd⟩ |
+    ⟨xs, b, hb⟩
+  · exact regular_fund_subterms _ m hf hc t hs ht hinc
+  · exact coordinate_fund_subterms xs i t (V.fnz_some_spec xs i hf).1 (fund_nondiag hf hdq hnd t)
+      hs ht hinc
+  · exact fund_tail_subterms xs b t hb (Omega_head_mass_pos xs b hr hd) hs ht hinc
 
 theorem Omega_iter_subterms (s : multi.T) (hr : Recursive s)
     {v : V multi.T} (hd : domF s = .Omega v)

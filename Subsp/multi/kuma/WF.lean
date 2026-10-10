@@ -1098,37 +1098,17 @@ theorem isOT_recursive {lam : Nat} {s : multi.T} (hs : DOT lam s) : Recursive s 
     · exact recursive_zero
   | step lam s hs n ih => exact fund_recursive s _ ih (ofNat_recursive lam n)
 
-theorem domain_principal_le_head : ∀ (s : multi.T), Recursive s → ∀ {v : V multi.T},
-    domF s = .Omega v → multi.T.P v .Z ≤ T.hd s
-  | .Z, _, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, hs, v, hd => by
-    have hs' := Recursive_P.1 hs
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hc] at hd
-            cases hd
-            exact T.le_refl _
-        | Omega ys =>
-          by_cases hv : xs < ys
-          · rw [domF_diag hf hc hv] at hd; cases hd
-          · rw [domF_nondiag hf hc hv] at hd
-            cases hd
-            rcases V.not_lt.1 hv with h | h
-            · exact Or.inl (T.P_lt_P_of_vlt _ _ h)
-            · exact Or.inr ((T.P_eqv_iff _ _ _ _).2 ⟨h, compareT_ZZ⟩)
-    · rw [domF_tail xs hb] at hd
-      exact T.le_trans (domain_principal_le_head b hs'.2.1 hd) hs'.2.2.2
-termination_by s => s.size
-decreasing_by exact multi.T.size_lt_P_right _ _
+theorem domain_principal_le_head (s : multi.T) (hs : Recursive s) {v : V multi.T}
+    (hd : domF s = .Omega v) : multi.T.P v .Z ≤ T.hd s := by
+  have hp := SourceFundOrder.OmegaLabelPath.of_domain s hd
+  clear hd
+  induction hp with
+  | regular => exact T.le_refl _
+  | inherit xs i hf hdq hnd =>
+    rcases V.not_lt.1 hnd with h | h
+    · exact Or.inl (T.P_lt_P_of_vlt _ _ h)
+    · exact Or.inr ((T.P_eqv_iff _ _ _ _).2 ⟨h, compareT_ZZ⟩)
+  | tail xs b hb _ ih => exact T.le_trans (ih (Recursive_P.1 hs).2.1) (Recursive_P.1 hs).2.2.2
 
 theorem diagonal_principal_lt_argument (xs : V multi.T)
     (a : multi.T) (ha : Recursive a) {v : V multi.T}
@@ -1708,29 +1688,14 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem zeroGap_Omega : ∀ (s : multi.T) (v : V multi.T), domF s = .Omega v →
-    zeroGap s + 1 = mass s
-  | .Z, _, hd => by rw [domF_Z] at hd; cases hd
-  | .P xs b, v, hd => by
-    by_cases hb : b = .Z
-    · subst hb
-      rw [mass_P, mass_Z]
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m => rw [zeroGap_one_succ hf hc]; omega
-        | Omega ys => rw [zeroGap_Omega_case hf hc]; omega
-    · rw [domF_tail xs hb] at hd
-      rw [zeroGap_tail xs hb, mass_P]
-      have hg := zeroGap_Omega b v hd
-      omega
-termination_by s => s.size
-decreasing_by exact multi.T.size_lt_P_right _ _
+theorem zeroGap_Omega (s : multi.T) (v : V multi.T) (hd : domF s = .Omega v) :
+    zeroGap s + 1 = mass s := by
+  have hp := SourceFundOrder.OmegaLabelPath.of_domain s hd
+  clear hd
+  induction hp with
+  | regular m hf hc => rw [zeroGap_one_succ hf hc, mass_P, mass_Z]; omega
+  | inherit xs i hf hdq => rw [zeroGap_Omega_case hf hdq, mass_P, mass_Z]; omega
+  | tail xs b hb _ ih => rw [zeroGap_tail xs hb, mass_P]; omega
 
 theorem gap_nonzero (s t : multi.T) (ht : t ≠ .Z) : gap s t = mass s - 1 := by
   rw [gap, ite_eq_right ht]

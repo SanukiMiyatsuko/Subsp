@@ -1057,7 +1057,7 @@ theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
   have hp := OmegaLabelPath.of_domain s hd
   clear hd
   induction hp with
-  | regular _ => exact hH
+  | regular => exact hH
   | inherit xs i hf hdq hnd hc ih =>
     have hil : i < xs.length := fnz_lt_length hf
     have hik : i < k + 3 := by rw [← hsD.length]; exact hil
