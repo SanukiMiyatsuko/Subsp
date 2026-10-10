@@ -112,16 +112,10 @@ theorem NOT_class (a : sys.NOT) : ∃ q : Classes, classCode q = code a.val.1 :=
   obtain ⟨d, s, hs, hc⟩ := NOT_witness a
   exact ⟨classOf ⟨d, ⟨s, hs⟩⟩, hc⟩
 
-/-- The class of fixed-dimension OT terms matching a `NOT` element. -/
-noncomputable def NOTclass (a : sys.NOT) : Classes := Classical.choose (NOT_class a)
-
-theorem NOTclass_code (a : sys.NOT) : classCode (NOTclass a) = code a.val.1 :=
-  Classical.choose_spec (NOT_class a)
-
-theorem NOT_lt_iff_classLT (a b : sys.NOT) : a.val < b.val ↔ ClassLT (NOTclass a) (NOTclass b) := by
-  show compareT a.val.1 b.val.1 = .lt ↔
-    compareCode (classCode (NOTclass a)) (classCode (NOTclass b)) = .lt
-  rw [NOTclass_code, NOTclass_code, compareCode_code]
+theorem NOT_lt_iff_classLT {a b : sys.NOT} {q r : Classes} (hq : classCode q = code a.val.1)
+    (hr : classCode r = code b.val.1) : a.val < b.val ↔ ClassLT q r := by
+  show compareT a.val.1 b.val.1 = .lt ↔ compareCode (classCode q) (classCode r) = .lt
+  rw [hq, hr, compareCode_code]
 
 /-- An order on `NOT` reflected into an irreflexive relation forces injectivity. -/
 theorem injective_of_lt_iff {α : Type v} (f : sys.NOT → α) (r : α → α → Prop)
@@ -133,20 +127,28 @@ theorem injective_of_lt_iff {α : Type v} (f : sys.NOT → α) (r : α → α �
   · exact Subtype.ext hab
   · exact absurd ((h b a).1 hab) (by rw [he]; exact hirr _)
 
+/-- The OCF notation of a `NOT` element, computed from its normal-form code. -/
+def embedTerm (a : sys.NOT) : Term := convert (code a.val.1)
+
+theorem embedTerm_eq {a : sys.NOT} {q : Classes} (hq : classCode q = code a.val.1) :
+    embedTerm a = classConversion q := by
+  show convert (code a.val.1) = convert (classCode q)
+  rw [hq]
+
 /-- The conversion of a `NOT` element to a well-formed OCF notation below `Ω`. -/
-noncomputable def embed [LargeCardinals.{u}] (a : sys.NOT) : WFBelowOmega :=
-  ⟨classConversion (NOTclass a),
-    (kumakuma.GeneralImageUniformMain.global_certificate.{u}).wf _, class_below _⟩
+def embed (a : sys.NOT) : WFBelowOmega :=
+  ⟨embedTerm a, by
+    obtain ⟨q, hq⟩ := NOT_class a
+    rw [embedTerm_eq hq]
+    exact ⟨(kumakuma.GeneralImageUniformMain.global_certificate).wf _, class_below _⟩⟩
 
-theorem embed_lt_iff [LargeCardinals.{u}] (a b : sys.NOT) :
-    a.val < b.val ↔ Term.lt (embed.{u} a).val (embed.{u} b).val = true := by
-  rw [NOT_lt_iff_classLT]
-  exact (kumakuma.GeneralImageUniformMain.global_certificate.{u}).order _ _
-
-theorem embed_V_lt_iff [LargeCardinals.{u}] (a b : sys.NOT) :
-    a.val < b.val ↔ Term.V.{u} (embed.{u} a).val < Term.V.{u} (embed.{u} b).val := by
-  rw [embed_lt_iff]
-  exact lt_iff_V.{u} (embed.{u} a).2.1 (embed.{u} b).2.1
+theorem embed_lt_iff (a b : sys.NOT) :
+    a.val < b.val ↔ Term.lt (embed a).val (embed b).val = true := by
+  obtain ⟨q, hq⟩ := NOT_class a
+  obtain ⟨r, hr⟩ := NOT_class b
+  show a.val < b.val ↔ Term.lt (embedTerm a) (embedTerm b) = true
+  rw [NOT_lt_iff_classLT hq hr, embedTerm_eq hq, embedTerm_eq hr]
+  exact (kumakuma.GeneralImageUniformMain.global_certificate).order _ _
 
 end kumakuma.Stop
 
@@ -154,29 +156,20 @@ namespace kumakuma
 
 open OCF.Jaeger kumakuma.Stop kumakuma.OTQuotient kumakuma.GeneralImageEmbedding
 
-universe u
-
 /-- An order embedding of the OT terms of the `multi` kumakuma system into the well-formed OCF
 notations below `Ω`. -/
-theorem NOT_order_embedding [LargeCardinals.{u}] :
+theorem NOT_order_embedding :
     ∃ f : sys.NOT → WFBelowOmega,
       (∀ s t, f s = f t → s = t) ∧
       (∀ s t, s.val < t.val ↔ Term.lt (f s).val (f t).val = true) :=
-  ⟨embed.{u}, injective_of_lt_iff embed.{u} (fun x y => Term.lt x.val y.val = true)
+  ⟨embed, injective_of_lt_iff embed (fun x y => Term.lt x.val y.val = true)
     (fun x => by simp [kumakuma.TargetArithmetic.lt_self]) embed_lt_iff, embed_lt_iff⟩
 
-/-- The same embedding, read in the OCF ordinals. -/
-theorem NOT_ordinal_embedding [LargeCardinals.{u}] :
-    ∃ f : sys.NOT → OCF.Ordinal.{u},
-      (∀ s t, f s = f t → s = t) ∧ (∀ s t, s.val < t.val ↔ f s < f t) :=
-  ⟨fun a => Term.V.{u} (embed.{u} a).val,
-    injective_of_lt_iff _ (fun x y => x < y) OCF.Ordinal.lt_irrefl embed_V_lt_iff, embed_V_lt_iff⟩
-
 /-- The order `<` on the OT terms of the `multi` kumakuma system is well-founded. -/
-theorem NOT_lt_wellFounded [LargeCardinals.{u}] :
-    WellFounded (fun a b : sys.NOT => a.val < b.val) :=
-  Subrelation.wf (fun h => (NOT_lt_iff_classLT _ _).mp h)
-    (InvImage.wf NOTclass kumakuma.OTOrder.classLT_wellFounded.{u})
+theorem NOT_lt_wellFounded : WellFounded (fun a b : sys.NOT => a.val < b.val) :=
+  Subrelation.wf (fun h => (embed_lt_iff _ _).mp h)
+    (InvImage.wf (fun a => (⟨(embed a).val, (embed a).2.1⟩ : {t : Term // Term.wf t = true}))
+      OCF.Jaeger.Term.lt_wellFounded)
 
 theorem fundDesc : sys.FundDesc := by
   intro b n hb
@@ -191,7 +184,7 @@ theorem top_step {r : multi.T → multi.T → Prop} {x c : multi.T} (h : FundOrd
   | single h => exact ⟨_, h, Or.inl rfl⟩
   | tail h hs => exact ⟨_, hs, Or.inr h⟩
 
-theorem fundCofinal [LargeCardinals.{u}] : sys.FundCofinal := by
+theorem fundCofinal : sys.FundCofinal := by
   intro a b hba
   obtain ⟨da, sa, hsa, hca⟩ := NOT_witness a
   obtain ⟨db, sb, hsb, hcb⟩ := NOT_witness b
@@ -203,7 +196,7 @@ theorem fundCofinal [LargeCardinals.{u}] : sys.FundCofinal := by
     show compareT _ _ = .lt
     rw [← compareCode_code, hca', hcb', compareCode_code]
     exact hba
-  have hF := (kumakuma.OTOrder.lt_iff_fundLT.{u} hsb' hsa').mp hlt
+  have hF := (kumakuma.OTOrder.lt_iff_fundLT hsb' hsa').mp hlt
   obtain ⟨c, ⟨_, n, hc⟩, hle⟩ := top_step hF
   refine ⟨n, ?_⟩
   have hle' : padTo (max da db) sb ≤ c := by
@@ -222,13 +215,13 @@ theorem fundCofinal [LargeCardinals.{u}] : sys.FundCofinal := by
 
 /-- On the OT terms of the `multi` kumakuma system, the order generated by fundamental-sequence
 steps coincides with `<`. -/
-theorem NOTFundLt_iff_lt [LargeCardinals.{u}] (a b : sys.NOT) :
+theorem NOTFundLt_iff_lt (a b : sys.NOT) :
     sys.NOTFundLt a b ↔ a.val < b.val :=
-  FundSys.NOTFundLt_iff_lt fundDesc fundCofinal.{u} NOT_lt_wellFounded.{u} a b
+  FundSys.NOTFundLt_iff_lt fundDesc fundCofinal NOT_lt_wellFounded a b
 
 /-- The fundamental-sequence order on the OT terms of the `multi` kumakuma system is
 well-founded. -/
-theorem NOTFundLt_wellFounded [LargeCardinals.{u}] : WellFounded sys.NOTFundLt :=
-  Subrelation.wf (fun h => FundSys.NOTFundLt_lt fundDesc h) NOT_lt_wellFounded.{u}
+theorem NOTFundLt_wellFounded : WellFounded sys.NOTFundLt :=
+  Subrelation.wf (fun h => FundSys.NOTFundLt_lt fundDesc h) NOT_lt_wellFounded
 
 end kumakuma

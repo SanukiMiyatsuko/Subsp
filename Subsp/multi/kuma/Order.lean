@@ -151,17 +151,17 @@ theorem psi_same_lt_raw (n : Nat) (a b c d : Term) :
   rw [Term.lt]
   simp [inacc_same_lt, inacc_same_lt_psi, psi_same_lt_inacc]
 
-theorem wf_not_lt_reverse [LargeCardinals.{u}] {a c : Term}
+theorem wf_not_lt_reverse {a c : Term}
     (ha : Term.wf a = true) (hc : Term.wf c = true) (hac : Term.lt a c = true) :
     Term.lt c a = false := by
   cases hca : Term.lt c a with
   | false => rfl
   | true =>
-    have h := lemma_6_1.{u}.2.1 a c a ha hc ha hac hca
+    have h := kumakuma.JaegerFacts.jaeger_order.2.1 a c a ha hc ha hac hca
     rw [lt_self] at h
     cases h
 
-theorem psi_same_lt [LargeCardinals.{u}] (n : Nat) (a b c d : Term)
+theorem psi_same_lt (n : Nat) (a b c d : Term)
     (ha : Term.wf a = true) (hc : Term.wf c = true) :
     Term.lt (.psi (.inacc n a) b) (.psi (.inacc n c) d) =
       (Term.lt a c || (decide (a = c) && Term.lt b d)) := by
@@ -176,7 +176,7 @@ theorem psi_same_lt [LargeCardinals.{u}] (n : Nat) (a b c d : Term)
       | true => simp [wf_not_lt_reverse ha hc hac]
   rw [hbad, Bool.or_false]
 
-theorem topPair_order [LargeCardinals.{u}] (n : Nat) {h m h' m' : Term}
+theorem topPair_order (n : Nat) {h m h' m' : Term}
     (hh : Term.wf h = true) (hm : Term.wf m = true)
     (hh' : Term.wf h' = true) (hm' : Term.wf m' = true) :
     Term.lt (topPair n h m) (topPair n h' m') =
@@ -240,7 +240,7 @@ theorem topPair_shape (n : Nat) (h m : Term) : topPair n h m = .zero ∨
   by_cases hh0 : h = .zero <;> by_cases hm0 : m = .zero <;>
     simp [topPair, hh0, hm0, Term.isPrin, Term.fT]
 
-theorem topPair_eq_iff [LargeCardinals.{u}] (n : Nat) {h m h' m' : Term}
+theorem topPair_eq_iff (n : Nat) {h m h' m' : Term}
     (hh : Term.wf h = true) (hm : Term.wf m = true)
     (hh' : Term.wf h' = true) (hm' : Term.wf m' = true) :
     topPair n h m = topPair n h' m' ↔ h = h' ∧ m = m' := by
@@ -251,14 +251,14 @@ theorem topPair_eq_iff [LargeCardinals.{u}] (n : Nat) {h m h' m' : Term}
     rw [he, lt_self] at hf
     rw [he, lt_self] at hr
     have heh : h = h' := by
-      rcases lemma_6_1.{u}.2.2 h h' hh hh' with hl | he | hl
+      rcases kumakuma.JaegerFacts.jaeger_order.2.2 h h' hh hh' with hl | he | hl
       · rw [hl, Bool.true_or] at hf; cases hf
       · exact he
       · rw [hl, Bool.true_or] at hr; cases hr
     refine ⟨heh, ?_⟩
     subst h'
     simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
-    rcases lemma_6_1.{u}.2.2 m m' hm hm' with hl | he | hl
+    rcases kumakuma.JaegerFacts.jaeger_order.2.2 m m' hm hm' with hl | he | hl
     · rw [hl] at hf; cases hf
     · exact he
     · rw [hl] at hr; cases hr
@@ -328,7 +328,7 @@ theorem context_lt_regular {n : Nat} {a b : Term}
     simp only [reduceCtorEq, decide_false, Bool.false_or]
     by_cases he : Term.psi v c = b <;> simp [Term.le, he, lt_self]
 
-theorem wf_le_iff_reverse_false [LargeCardinals.{u}] {a b : Term}
+theorem wf_le_iff_reverse_false {a b : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) :
     Term.le a b = true ↔ Term.lt b a = false := by
   simp only [Term.le, Bool.or_eq_true, decide_eq_true_eq]
@@ -337,23 +337,23 @@ theorem wf_le_iff_reverse_false [LargeCardinals.{u}] {a b : Term}
     · exact lt_self a
     · exact wf_not_lt_reverse ha hb h
   · intro h
-    rcases lemma_6_1.{u}.2.2 a b ha hb with hl | he | hl
+    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
     · exact Or.inr hl
     · exact Or.inl he
     · rw [h] at hl; cases hl
 
-theorem wf_lt_iff_reverse_false_of_ne [LargeCardinals.{u}] {a b : Term}
+theorem wf_lt_iff_reverse_false_of_ne {a b : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) (hne : a ≠ b) :
     Term.lt a b = true ↔ Term.lt b a = false := by
   constructor
   · exact wf_not_lt_reverse ha hb
   · intro h
-    rcases lemma_6_1.{u}.2.2 a b ha hb with hl | he | hl
+    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
     · exact hl
     · exact False.elim (hne he)
     · rw [h] at hl; cases hl
 
-theorem psi_regular_lt_context [LargeCardinals.{u}] {n : Nat} {a b : Term} (x : Term)
+theorem psi_regular_lt_context {n : Nat} {a b : Term} (x : Term)
     (ha : Term.wf a = true) (hap : Term.isPrin a = true)
     (hb : Term.wf b = true) (hbf : n < Term.fT b) :
     Term.lt (.psi (regular n a) x) b = Term.lt a b := by
@@ -405,10 +405,10 @@ theorem psi_regular_lt_context [LargeCardinals.{u}] {n : Nat} {a b : Term} (x : 
       | false => simp
       | true =>
         have hβv : Term.lt (.psi (.inacc m d) c) (.inacc m d) = true := by simp [Term.lt, Term.fT]
-        have hav := lemma_6_1.{u}.2.1 a (.psi (.inacc m d) c) (.inacc m d) ha hb hv.2.1 hab hβv
+        have hav := kumakuma.JaegerFacts.jaeger_order.2.1 a (.psi (.inacc m d) c) (.inacc m d) ha hb hv.2.1 hab hβv
         simp [hav]
 
-theorem context_lt_psi_regular [LargeCardinals.{u}] {n : Nat} {a b : Term} (x : Term)
+theorem context_lt_psi_regular {n : Nat} {a b : Term} (x : Term)
     (ha : Term.wf a = true) (hap : Term.isPrin a = true)
     (hb : Term.wf b = true) (hbf : n < Term.fT b)
     (hw : Term.wf (.psi (regular n a) x) = true) :
@@ -507,7 +507,7 @@ theorem zero_step_lt_positive_step {n : Nat} (c d : Term) {b : Term}
       · simp [step, hb0, hd0, hn0, hc0, Term.lt]
       · simpa only [step, hb0, hd0, hn0, hc0, ↓reduceIte] using hp (dropOne c)
 
-theorem step_order [LargeCardinals.{u}] {n : Nat} {a b c d : Term}
+theorem step_order {n : Nat} {a b c d : Term}
     (haa : Above n a) (hba : Above n b)
     (ha : Term.wf a = true) (hb : Term.wf b = true)
     (hc : Term.wf c = true) (hd : Term.wf d = true)
@@ -549,7 +549,7 @@ theorem step_order [LargeCardinals.{u}] {n : Nat} {a b c d : Term}
         psi_same_lt n _ _ _ _ (succTerm_wf ha) (succTerm_wf hb),
         succTerm_order ha hb, dropOne_order hc hd hc0 hd0, hseq]
 
-theorem step_injective [LargeCardinals.{u}] {n : Nat} {a b c d : Term}
+theorem step_injective {n : Nat} {a b c d : Term}
     (haa : Above n a) (hba : Above n b)
     (ha : Term.wf a = true) (hb : Term.wf b = true)
     (hc : Term.wf c = true) (hd : Term.wf d = true)
@@ -560,19 +560,19 @@ theorem step_injective [LargeCardinals.{u}] {n : Nat} {a b c d : Term}
   rw [he, lt_self] at hf
   rw [he, lt_self] at hr
   have hab : a = b := by
-    rcases lemma_6_1.{u}.2.2 a b ha hb with hl | he | hl
+    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
     · rw [hl, Bool.true_or] at hf; cases hf
     · exact he
     · rw [hl, Bool.true_or] at hr; cases hr
   refine ⟨hab, ?_⟩
   subst b
   simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
-  rcases lemma_6_1.{u}.2.2 c d hc hd with hl | he | hl
+  rcases kumakuma.JaegerFacts.jaeger_order.2.2 c d hc hd with hl | he | hl
   · rw [hl] at hf; cases hf
   · exact he
   · rw [hl] at hr; cases hr
 
-theorem step_eq_iff [LargeCardinals.{u}] {n : Nat} {a b c d : Term}
+theorem step_eq_iff {n : Nat} {a b c d : Term}
     (haa : Above n a) (hba : Above n b)
     (ha : Term.wf a = true) (hb : Term.wf b = true)
     (hc : Term.wf c = true) (hd : Term.wf d = true)
@@ -619,7 +619,7 @@ theorem lower_context_wf (k : Nat) (xs : List Term) (a : Term)
     have hwa := ih _ hshape hw
     exact step_context_wf habove hwa
 
-theorem lower_order [LargeCardinals.{u}] (k : Nat) (xs ys : List Term) (a b : Term)
+theorem lower_order (k : Nat) (xs ys : List Term) (a b : Term)
     (ha : Context k a) (hb : Context k b)
     (hxs : ∀ i, i < k → Term.wf (xs[i]?.getD .zero) = true)
     (hys : ∀ i, i < k → Term.wf (ys[i]?.getD .zero) = true)
@@ -653,7 +653,7 @@ theorem principal_as_layers (k : Nat) (xs : List Term) :
       (topPair (k + 1) (xs[k + 2]?.getD .zero) (xs[k + 1]?.getD .zero)) := by
   simp [principal, topPair]
 
-theorem principal_order [LargeCardinals.{u}] (k : Nat) (xs ys : List Term)
+theorem principal_order (k : Nat) (xs ys : List Term)
     (hxs : ∀ i, i < k + 3 → Term.wf (xs[i]?.getD .zero) = true)
     (hys : ∀ i, i < k + 3 → Term.wf (ys[i]?.getD .zero) = true)
     (hwx : Term.wf (principal (k + 3) xs) = true)
@@ -682,20 +682,17 @@ namespace kumakuma.GeneralImageEmbedding
 
 open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.CodeReification
 
-noncomputable def fixedWitness (d : Nat) (q : Classes) (hw : width (representative q) ≤ d) : OTD d :=
-  ⟨padTo d (dimensionWitness q).2.val,
-    generated_reify _ d (dimensionWitness q).2 (by rw [representative_spec]; exact hw)⟩
+theorem exists_fixedWitness (d : Nat) (q : Classes) (hw : width (representative q) ≤ d) :
+    ∃ s : OTD d, code s.val = representative q := by
+  obtain ⟨s, hs⟩ := hasDimensionWitness_mono hw (exists_width_witness q)
+  exact ⟨s, by rw [← hs]; rfl⟩
 
-theorem fixedWitness_code (d : Nat) (q : Classes) (hw : width (representative q) ≤ d) :
-    code (fixedWitness d q hw).val = representative q := by
-  show code (padTo d (dimensionWitness q).2.val) = _
-  rw [code_padTo]
-  exact representative_spec q
 
-theorem class_fixed_value (d : Nat) (q : Classes) (hd : ambient (representative q) = d) :
-    classConversion q = DimensionImage.convert d
-      (code (fixedWitness d q (by rw [← hd]; exact Nat.le_max_right 3 _)).val) := by
-  rw [fixedWitness_code]
+
+theorem class_fixed_value (d : Nat) (q : Classes) (hd : ambient (representative q) = d)
+    (s : OTD d) (hs : code s.val = representative q) :
+    classConversion q = DimensionImage.convert d (code s.val) := by
+  rw [hs]
   exact congrArg (fun k => DimensionImage.convert k (representative q)) hd
 
 theorem global_wf_of_fixed
@@ -703,7 +700,8 @@ theorem global_wf_of_fixed
     ∀ q : Classes, Term.wf (classConversion q) = true := by
   intro q
   let d := ambient (representative q)
-  rw [class_fixed_value d q rfl]
+  obtain ⟨s, hs⟩ := exists_fixedWitness d q (Nat.le_max_right 3 _)
+  rw [class_fixed_value d q rfl s hs]
   exact h d (Nat.le_max_left 3 _) _
 
 theorem same_ambient_order_of_fixed (d : Nat) (q r : Classes)
@@ -711,11 +709,9 @@ theorem same_ambient_order_of_fixed (d : Nat) (q r : Classes)
     (h : ∀ s t : OTD d, s.val < t.val ↔
       Term.lt (DimensionImage.convert d (code s.val)) (DimensionImage.convert d (code t.val)) = true) :
     ClassLT q r ↔ Term.lt (classConversion q) (classConversion r) = true := by
-  rw [class_fixed_value d q hq, class_fixed_value d r hr]
-  let s := fixedWitness d q (by rw [← hq]; exact Nat.le_max_right 3 _)
-  let t := fixedWitness d r (by rw [← hr]; exact Nat.le_max_right 3 _)
-  have hcq := fixedWitness_code d q (by rw [← hq]; exact Nat.le_max_right 3 _)
-  have hcr := fixedWitness_code d r (by rw [← hr]; exact Nat.le_max_right 3 _)
+  obtain ⟨s, hcq⟩ := exists_fixedWitness d q (by rw [← hq]; exact Nat.le_max_right 3 _)
+  obtain ⟨t, hcr⟩ := exists_fixedWitness d r (by rw [← hr]; exact Nat.le_max_right 3 _)
+  rw [class_fixed_value d q hq s hcq, class_fixed_value d r hr t hcr]
   have hsource : compareCode (representative q) (representative r) = compareT s.val t.val := by
     calc
       compareCode (representative q) (representative r) =
@@ -824,7 +820,7 @@ theorem principal_congr (k : Nat) (xs ys : List Term)
   simp only [principal_as_layers, h (k + 2) (by omega), h (k + 1) (by omega)]
   exact lower_congr (k + 1) xs ys _ (fun i hi => h i (by omega))
 
-theorem lex_equal_of_false [LargeCardinals.{u}] (k : Nat) (xs ys : List Term)
+theorem lex_equal_of_false (k : Nat) (xs ys : List Term)
     (hxs : ∀ i, i < k → Term.wf (xs[i]?.getD .zero) = true)
     (hys : ∀ i, i < k → Term.wf (ys[i]?.getD .zero) = true)
     (hf : lexArgs k xs ys = false) (hr : lexArgs k ys xs = false) :
@@ -833,7 +829,7 @@ theorem lex_equal_of_false [LargeCardinals.{u}] (k : Nat) (xs ys : List Term)
   | zero => intro i hi; omega
   | succ k ih =>
     have he : xs[k]?.getD .zero = ys[k]?.getD .zero := by
-      rcases lemma_6_1.{u}.2.2 _ _ (hxs k (by omega)) (hys k (by omega)) with hl | he | hl
+      rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ (hxs k (by omega)) (hys k (by omega)) with hl | he | hl
       · simp [lexArgs, hl] at hf
       · exact he
       · simp [lexArgs, hl] at hr
@@ -845,7 +841,7 @@ theorem lex_equal_of_false [LargeCardinals.{u}] (k : Nat) (xs ys : List Term)
     · have : i = k := by omega
       subst i; exact he
 
-theorem principal_eq_iff [LargeCardinals.{u}] (k : Nat) (xs ys : List Term)
+theorem principal_eq_iff (k : Nat) (xs ys : List Term)
     (hxs : ∀ i, i < k + 3 → Term.wf (xs[i]?.getD .zero) = true)
     (hys : ∀ i, i < k + 3 → Term.wf (ys[i]?.getD .zero) = true)
     (hwx : Term.wf (principal (k + 3) xs) = true)
@@ -888,7 +884,7 @@ theorem vec_eq_of_compareV_eq {d : Nat} {xs ys : V multi.T} {a b : multi.T}
   vec_eq_of_Dim hs ht (fun i _ =>
     eq_of_compare_eq (hs.coord i) (ht.coord i) ((V.eqv_iff_get0 xs ys).1 h i))
 
-theorem convert_injective [LargeCardinals.{u}] (k : Nat) :
+theorem convert_injective (k : Nat) :
     ∀ (s t : multi.T), Dim (k + 3) s → Dim (k + 3) t →
       RecursiveWF (k + 3) s → RecursiveWF (k + 3) t →
       convert (k + 3) (code s) = convert (k + 3) (code t) → s = t
@@ -930,7 +926,7 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem principal_source_eq_iff [LargeCardinals.{u}] (k : Nat)
+theorem principal_source_eq_iff (k : Nat)
     (xs ys : V multi.T) (b c : multi.T) (hsD : Dim (k + 3) (.P xs b))
     (htD : Dim (k + 3) (.P ys c))
     (hs : RecursiveWF (k + 3) (.P xs b)) (ht : RecursiveWF (k + 3) (.P ys c)) :
@@ -993,7 +989,7 @@ theorem vector_lex (xs ys : V multi.T) (as bs : List Term) : ∀ m : Nat,
       have h2 : as[m]?.getD .zero = bs[m]?.getD .zero := he.2 hc
       simp [h1, h2, Ordering.then]
 
-theorem convert_lt [LargeCardinals.{u}] (k : Nat) :
+theorem convert_lt (k : Nat) :
     ∀ (s t : multi.T), Dim (k + 3) s → Dim (k + 3) t →
       RecursiveWF (k + 3) s → RecursiveWF (k + 3) t →
       Term.lt (convert (k + 3) (code s)) (convert (k + 3) (code t)) = decide (s < t)
@@ -1070,7 +1066,7 @@ decreasing_by
     | exact Nat.add_lt_add (multi.T.size_get0_lt_P _ _ _) (multi.T.size_get0_lt_P _ _ _)
     | exact Nat.add_lt_add (multi.T.size_lt_P_right _ _) (multi.T.size_lt_P_right _ _)
 
-theorem convert_order [LargeCardinals.{u}] (k : Nat) (s t : multi.T)
+theorem convert_order (k : Nat) (s t : multi.T)
     (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t)
     (hs : RecursiveWF (k + 3) s) (ht : RecursiveWF (k + 3) t) :
     s < t ↔ Term.lt (convert (k + 3) (code s)) (convert (k + 3) (code t)) = true := by
@@ -1302,7 +1298,7 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem H_convert_bound_of_subterms [LargeCardinals.{u}] (k : Nat) (v : Term)
+theorem H_convert_bound_of_subterms (k : Nat) (v : Term)
     (s : multi.T) (hsD : Dim (k + 3) s) (hs : RecursiveWF (k + 3) s)
     (hsub : ∀ a, Subterm a s → a < s) :
     Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true := by

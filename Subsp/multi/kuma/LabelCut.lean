@@ -120,7 +120,7 @@ theorem highest_cut_base_support (k : Nat) (b : multi.T) (v : Term) {z : Term}
         simp only [topPair, hb, ↓reduceIte, Term.H]
         exact List.mem_append_right _ he
 
-theorem diagonal_parent_relative_above [LargeCardinals.{u}] (k : Nat)
+theorem diagonal_parent_relative_above (k : Nat)
     (xs : V multi.T) (i : Nat) (q : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hd : domF (V.get0 xs i) = .Omega q) (hdiag : xs < q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -176,7 +176,7 @@ theorem diagonal_parent_relative_above [LargeCardinals.{u}] (k : Nat)
         with ⟨hw, ho⟩ | ⟨_, hroot, _⟩
       · exact ⟨hw, heOld ▸ ho⟩
       · have hback := (Term.allLt_iff _ _).mp hH _ (heOld ▸ hroot)
-        have hfalse := lemma_6_1.{u}.2.1 _ _ _ (hcoords i).wf hs.wf (hcoords i).wf hback hparentLtChild
+        have hfalse := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (hcoords i).wf hs.wf (hcoords i).wf hback hparentLtChild
         rw [lt_self] at hfalse; cases hfalse
     by_cases hex : ∃ j, i ≠ j ∧ V.get0 xs j ≠ .Z
     · obtain ⟨j, hij, hj⟩ := hex
@@ -371,7 +371,7 @@ theorem layerCut_contains_base (m : Nat) (a v : Term) {z : Term}
     simp only [layerCut, ha, ↓reduceIte, Term.H, kumakuma.OT2.H_succTerm]
     exact List.mem_append_right _ (List.mem_append_left _ hz)
 
-theorem regular_lower_cutFund_image [LargeCardinals.{u}] (k m : Nat)
+theorem regular_lower_cutFund_image (k m : Nat)
     (hmk : m ≤ k) (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hfz : V.fnz xs = some (m + 1)) (hdOne : domF (V.get0 xs (m + 1)) = .one)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) :
@@ -477,7 +477,7 @@ theorem regular_lower_cutFund_image [LargeCardinals.{u}] (k m : Nat)
       simpa only [cut, layerCut, ha0, ↓reduceIte, Term.lt, hj,
         succ_principal hp] using hBase
 
-theorem regular_lower_cutFund [LargeCardinals.{u}] (k m : Nat)
+theorem regular_lower_cutFund (k m : Nat)
     (hmk : m ≤ k) (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hfz : V.fnz xs = some (m + 1)) (hdOne : domF (V.get0 xs (m + 1)) = .one)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) :
@@ -485,7 +485,7 @@ theorem regular_lower_cutFund [LargeCardinals.{u}] (k m : Nat)
   obtain ⟨cut, hc, _, _, _⟩ := regular_lower_cutFund_image k m hmk xs hsD hfz hdOne hr hs
   exact ⟨cut, hc⟩
 
-theorem highest_regular_cutFund_at [LargeCardinals.{u}] (k : Nat) (b : multi.T)
+theorem highest_regular_cutFund_at (k : Nat) (b : multi.T)
     (hs : RecursiveWF (k + 3) (topNode k (kumakuma.SourceSuccessor.succ (k + 3) b))) :
     CutFund k (topNode k (kumakuma.SourceSuccessor.succ (k + 3) b))
       (pairCut (k + 1) (convert (k + 3) (code b))) := by
@@ -534,12 +534,12 @@ theorem highest_regular_cutFund_at [LargeCardinals.{u}] (k : Nat) (b : multi.T)
         simp only [pairCut, hbNZ, ↓reduceIte, Term.H, kumakuma.OT2.H_succTerm]
         exact List.mem_append_right _ (List.mem_append_left _ he)
 
-theorem highest_regular_cutFund [LargeCardinals.{u}] (k : Nat) (b : multi.T)
+theorem highest_regular_cutFund (k : Nat) (b : multi.T)
     (hs : RecursiveWF (k + 3) (topNode k (kumakuma.SourceSuccessor.succ (k + 3) b))) :
     ∃ cut, CutFund k (topNode k (kumakuma.SourceSuccessor.succ (k + 3) b)) cut :=
   ⟨pairCut (k + 1) (convert (k + 3) (code b)), highest_regular_cutFund_at k b hs⟩
 
-theorem regular_cutFund [LargeCardinals.{u}] (k m : Nat)
+theorem regular_cutFund (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hfz : V.fnz xs = some (m + 1)) (hdOne : domF (V.get0 xs (m + 1)) = .one)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) :
@@ -583,7 +583,7 @@ def DominatedCoefficient (k : Nat) (v : Term) (s : multi.T) (z : Term) : Prop :=
         dropOne (convert (k + 3) (code a)) ∈ Term.H v (convert (k + 3) (code s))) ∧
       Term.le z (convert (k + 3) (code a)) = true
 
-theorem UpdatedCoefficient.dominated [LargeCardinals.{u}] (k : Nat) (v : Term)
+theorem UpdatedCoefficient.dominated (k : Nat) (v : Term)
     (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
     {z : Term} (hc : UpdatedCoefficient k v s t z) : DominatedCoefficient k v s z := by
   rcases hc with he | he | ⟨a, ha, hw, hm, he⟩
@@ -602,7 +602,7 @@ theorem UpdatedCoefficient.dominated [LargeCardinals.{u}] (k : Nat) (v : Term)
       · simp [Term.le, hl]
       · simp [Term.le, dropOne_lt_of_lt hw.wf haW.wf hl]
 
-theorem closed_of_dominated_coefficients [LargeCardinals.{u}] (k : Nat) (v : Term)
+theorem closed_of_dominated_coefficients (k : Nat) (v : Term)
     (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
     (hn : RecursiveWF (k + 3) (T.fund s t))
     (hhead : Term.head (convert (k + 3) (code s)) ≠ Term.one)
@@ -639,10 +639,10 @@ theorem closed_of_dominated_coefficients [LargeCardinals.{u}] (k : Nat) (v : Ter
       · exact dropOne_lt_of_lt (ha.recursiveWF hs).wf hn.wf (bound a ha hm)
   · rcases (Term.le_iff_eq_or_lt _ _).mp he with he | he
     · rw [he]; exact bound a ha hm
-    · exact lemma_6_1.{u}.2.1 _ _ _ (H_coefficient_wf v _ hn.wf hz) (ha.recursiveWF hs).wf hn.wf
+    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v _ hn.wf hz) (ha.recursiveWF hs).wf hn.wf
         he (bound a ha hm)
 
-theorem dominated_child_coefficients_below_parent [LargeCardinals.{u}] (k : Nat)
+theorem dominated_child_coefficients_below_parent (k : Nat)
     (xs : V multi.T) (i : Nat) (t a : multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (htD : Dim (k + 3) t) (ht : t ≠ .Z) (hs : RecursiveWF (k + 3) (.P xs .Z))
     (hn : RecursiveWF (k + 3) (T.fund (.P xs .Z) t)) (ha : RecursiveWF (k + 3) a)
@@ -688,10 +688,10 @@ theorem dominated_child_coefficients_below_parent [LargeCardinals.{u}] (k : Nat)
       · exact dropOne_lt_of_lt (hb.recursiveWF hc).wf hn.wf (bound b hb hm)
   · rcases (Term.le_iff_eq_or_lt _ _).mp he with he | he
     · rw [he]; exact bound b hb hm
-    · exact lemma_6_1.{u}.2.1 _ _ _ (H_coefficient_wf v _ ha.wf hz) (hb.recursiveWF hc).wf hn.wf
+    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v _ ha.wf hz) (hb.recursiveWF hc).wf hn.wf
         he (bound b hb hm)
 
-theorem inherited_omega_dominated_support [LargeCardinals.{u}] (k : Nat)
+theorem inherited_omega_dominated_support (k : Nat)
     (xs : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hfz : V.fnz xs = some i) (hd : domF (V.get0 xs i) = .omega)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (n : Nat) (hnat : 0 < n)
@@ -772,7 +772,7 @@ theorem inherited_omega_dominated_support [LargeCardinals.{u}] (k : Nat)
       rw [hf, heR, ← topNode, H_topNode_above_Omega k _ hnChild0 v hOmega] at hz
       exact lift (fun z hz => heH ▸ hz) (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
 
-theorem inherited_omega_dominated_relative_above [LargeCardinals.{u}] (k : Nat)
+theorem inherited_omega_dominated_relative_above (k : Nat)
     (xs : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hfz : V.fnz xs = some i) (hd : domF (V.get0 xs i) = .omega)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (n : Nat) (hnat : 0 < n)
@@ -874,7 +874,7 @@ theorem inherited_omega_dominated_relative_above [LargeCardinals.{u}] (k : Nat)
             have hChildLt := (convert_order k _ _ hnChildD hcD hnChild (hcoords i)).mp
               (fund_lt (V.get0 xs i) _ hc0)
             have hOwnW := ((Term.wf_psi_iff _ _).mp hwOld).2.1
-            have hNewOwn := lemma_6_1.{u}.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
+            have hNewOwn := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
             rw [heFund]
             exact (psi_argument_lt_iff _ _ hwNew).mpr (dropOne_lt_of_lt hnChild.wf hOwnW hNewOwn)
           · exact dominated_child_coefficients_below_parent k xs i _ _ hsD (Dim_ofNatD _ _) ht hs hn
@@ -922,7 +922,7 @@ open kumakuma.GeneralImageOmegaSpine
 
 universe u
 
-theorem Omega_fund_at_label_cut_invariant [LargeCardinals.{u}] (k : Nat) : ∀ (s : multi.T),
+theorem Omega_fund_at_label_cut_invariant (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s →
     ∀ {q : V multi.T}, domF s = .Omega q →
     ∀ (κ : Term), CutFund k (.P q .Z) κ →
@@ -1068,7 +1068,7 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem Omega_label_cutFund [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
+theorem Omega_label_cutFund (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q) :
     ∃ κ, CutFund k (.P q .Z) κ := by
@@ -1107,7 +1107,7 @@ open kumakuma.GeneralImageDominatedCoefficients
 
 universe u
 
-theorem closed_of_updated_or_bounded [LargeCardinals.{u}] (k : Nat) (v : Term)
+theorem closed_of_updated_or_bounded (k : Nat) (v : Term)
     (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
     (hn : RecursiveWF (k + 3) (T.fund s t))
     (hhead : Term.head (convert (k + 3) (code s)) ≠ Term.one)
@@ -1160,7 +1160,7 @@ theorem closed_of_updated_or_bounded [LargeCardinals.{u}] (k : Nat) (v : Term)
         · exact dropOne_lt_of_lt hw.wf hn.wf hl
   · exact hBound z hex
 
-theorem parent_Omega_updated_or_support [LargeCardinals.{u}] (k : Nat)
+theorem parent_Omega_updated_or_support (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1242,7 +1242,7 @@ theorem parent_Omega_updated_or_support [LargeCardinals.{u}] (k : Nat)
     · exact Or.inl (lift (fun z hz => heH ▸ hz) hu)
     · exact Or.inr hex
 
-theorem topNode_relative_of_updated_or_bounded [LargeCardinals.{u}] (k : Nat)
+theorem topNode_relative_of_updated_or_bounded (k : Nat)
     (a t : multi.T) (haD : Dim (k + 3) a) (htD : Dim (k + 3) t)
     (hr : Recursive a) (ha : RecursiveWF (k + 3) a)
     {q : V multi.T} (hd : domF a = .Omega q)
@@ -1318,7 +1318,7 @@ theorem topNode_relative_of_updated_or_bounded [LargeCardinals.{u}] (k : Nat)
         · exact dropOne_lt_of_lt hw.wf hn.wf hl
   · exact hBound z hex
 
-theorem parent_Omega_relative_of_updated_or_bounded [LargeCardinals.{u}] (k : Nat)
+theorem parent_Omega_relative_of_updated_or_bounded (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1437,7 +1437,7 @@ theorem parent_Omega_relative_of_updated_or_bounded [LargeCardinals.{u}] (k : Na
           have hChildLt := (convert_order k _ _ (Dim_fund _ _ hchildDim htD) hchildDim hnChild
             (hcoords i)).mp (fund_lt (V.get0 xs i) t hc0)
           have hOwnW := ((Term.wf_psi_iff _ _).mp hwOld).2.1
-          have hNewOwn := lemma_6_1.{u}.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
+          have hNewOwn := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
           have hDropOwn := dropOne_lt_of_lt hnChild.wf hOwnW hNewOwn
           rw [heFund]
           exact (psi_argument_lt_iff _ _ hwNew).mpr hDropOwn
@@ -1482,7 +1482,7 @@ theorem parent_Omega_relative_of_updated_or_bounded [LargeCardinals.{u}] (k : Na
       rw [hsource]
       exact htop
 
-theorem inserted_coefficient_bound_at_self [LargeCardinals.{u}]
+theorem inserted_coefficient_bound_at_self
     (cut a b : Term) (ha : Term.wf a = true) (hb : Term.wf b = true)
     (hb0 : b ≠ .zero) (hSelf : Term.H cut cut = [])
     (hH : Term.allLt (Term.H cut a) a = true) (hNext : Term.lt a b = true)
@@ -1491,11 +1491,11 @@ theorem inserted_coefficient_bound_at_self [LargeCardinals.{u}]
   · rw [he]; exact (zero_lt_iff _).mpr hb0
   · rw [he]; exact hNext
   · rw [he]; exact dropOne_lt_of_lt ha hb hNext
-  · exact lemma_6_1.{u}.2.1 _ _ _ (H_coefficient_wf cut _ ha he) ha hb
+  · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf cut _ ha he) ha hb
       ((Term.allLt_iff _ _).mp hH z he) hNext
   · rw [hSelf] at he; cases he
 
-theorem Omega_fund_parametric_support [LargeCardinals.{u}] (k : Nat) : ∀ (s : multi.T),
+theorem Omega_fund_parametric_support (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s →
     ∀ {q : V multi.T}, domF s = .Omega q →
     ∀ (cut : Term), CutFund k (.P q .Z) cut → ∀ (t : multi.T), Dim (k + 3) t → t ≠ .Z →
@@ -1571,7 +1571,7 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem Omega_fund_relative_of_bounded_parameter [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_fund_relative_of_bounded_parameter (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut) (v : Term) (hvR : Term.isRT v = true)
@@ -1632,7 +1632,7 @@ theorem Omega_fund_relative_of_bounded_parameter [LargeCardinals.{u}] (k : Nat) 
         hs0 hn0 (fun a ha => sum_subterm_gap xs b t hb (Omega_head_mass_pos xs b hr hd) hd ha)
         (InsertedCoefficient v cut (convert (k + 3) (code t))) hBound hcoef hSource
 
-theorem Omega_fund_closed_at_cut_of_wf [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_fund_closed_at_cut_of_wf (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut) (hCut : Term.lt Term.bigOmega cut = true)
@@ -1653,7 +1653,7 @@ theorem Omega_fund_closed_at_cut_of_wf [LargeCardinals.{u}] (k : Nat) (s : multi
   intro z hz
   exact inserted_coefficient_bound_at_self cut _ _ ht.wf hn.wf hn0 hc.selfEmpty hT hNext hz
 
-theorem Omega_fund_at_label_cut_closed [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_fund_at_label_cut_closed (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut) (hCut : Term.lt Term.bigOmega cut = true)
@@ -1668,7 +1668,7 @@ theorem Omega_fund_at_label_cut_closed [LargeCardinals.{u}] (k : Nat) (s : multi
   exact ⟨hn, Omega_fund_closed_at_cut_of_wf k s hsD hr hs hd cut hc hCut hSource t htD ht hT hn
     ((convert_order k _ _ htD (Dim_fund _ _ hsD htD) ht hn).mp hNext)⟩
 
-theorem Omega_iter_at_label_cut [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_iter_at_label_cut (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -1682,7 +1682,7 @@ theorem Omega_iter_at_label_cut [LargeCardinals.{u}] (k : Nat) (s : multi.T)
   · subst cut
     exact all_Omega_iter_closed k s hsD hr hs hd ((H_omega_bound_iff_subterms k s hsD hs hr).mp hSource) n
   have hCut : Term.lt Term.bigOmega cut = true := by
-    rcases lemma_6_1.{u}.2.2 Term.bigOmega cut Term.wf_bigOmega hc.cutWf with h | h | h
+    rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega cut Term.wf_bigOmega hc.cutWf with h | h | h
     · exact h
     · exact False.elim (he h.symm)
     · rw [kumakuma.CountableTarget.regular_not_below_omega hc.regular] at h; cases h
@@ -1755,7 +1755,7 @@ theorem Omega_label_subterm_lift (s : multi.T)
   | inherit xs i _ _ _ _ ih => exact Subterm.trans ih (Subterm.coordinate xs .Z i)
   | tail xs b _ _ ih => exact Subterm.trans ih (Subterm.tail xs b)
 
-theorem Omega_label_coefficient_lift [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_label_coefficient_lift (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (v : Term) (hvR : Term.isRT v = true) (hv : Term.wf v = true)
@@ -1796,15 +1796,15 @@ theorem Omega_label_coefficient_lift [LargeCardinals.{u}] (k : Nat) (s : multi.T
       have hVw : Term.lt v w = true := by
         rcases (Term.le_iff_eq_or_lt _ _).mp hVL with he | he
         · simpa only [← he] using hLw
-        · exact lemma_6_1.{u}.2.1 _ _ _ hv hL hw he hLw
+        · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hv hL hw he hLw
       have hwV : Term.lt w v = false := by
         cases he : Term.lt w v with
         | false => rfl
         | true =>
-          have hh := lemma_6_1.{u}.2.1 _ _ _ hw hv hw he hVw
+          have hh := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hw hv hw he hVw
           rw [lt_self] at hh; cases hh
       by_cases hskip : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = true
-      · have hLpred := target_le_trans hL hs.wf ((sem_of_wf.{u} hv).isR_pred hvR).1
+      · have hLpred := target_le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
           (cofinality_image_le k _ hsD hr hs hdParent) hskip
         rw [H_eq_nil_of_le_pred v _ hvR hv hL hLpred] at hz; cases hz
       have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false := by
@@ -1828,7 +1828,7 @@ theorem Omega_label_coefficient_lift [LargeCardinals.{u}] (k : Nat) (s : multi.T
     rw [convert_P]
     exact H_assemble_right v _ _ (ih hsD.tail hbr hbw z hz)
 
-theorem Omega_cut_dominated_below_label [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_cut_dominated_below_label (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -1851,7 +1851,7 @@ theorem Omega_cut_dominated_below_label [LargeCardinals.{u}] (k : Nat) (s : mult
   · exact Or.inr (Or.inr ⟨a, Omega_label_subterm_lift s hd ha,
       hmem.elim (fun h => Or.inl (embed _ h)) (fun h => Or.inr (embed _ h)), hbound⟩)
 
-theorem Omega_iter_coefficient_support_at_label_cut [LargeCardinals.{u}]
+theorem Omega_iter_coefficient_support_at_label_cut
     (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -1881,7 +1881,7 @@ theorem Omega_iter_coefficient_support_at_label_cut [LargeCardinals.{u}]
     · exact Or.inl (UpdatedCoefficient.dominated k v s t hsD hInv.1 hs
         ((hInvF.2 v hvR hv hOmega hAbove).1 z hz))
     have hVL : Term.le v (convert (k + 3) (code (.P q .Z))) = true := by
-      rcases lemma_6_1.{u}.2.2 v _ hv hL with he | he | he
+      rcases kumakuma.JaegerFacts.jaeger_order.2.2 v _ hv hL with he | he | he
       · simp [Term.le, he]
       · simp [Term.le, he]
       · exact False.elim (hAbove he)
@@ -1972,7 +1972,7 @@ theorem Omega_label_mass_le (s : multi.T)
     have h2 := mass_P xs b
     omega
 
-theorem Omega_cut_bound_after_update [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_cut_bound_after_update (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -2014,7 +2014,7 @@ theorem Omega_cut_bound_after_update [LargeCardinals.{u}] (k : Nat) (s : multi.T
     · exact (Term.allLt_iff _ _).mp hSource _ he
     · rcases (Term.le_iff_eq_or_lt _ _).mp hle with he | he
       · rw [he]; exact oldBound a ha hmem
-      · exact lemma_6_1.{u}.2.1 _ _ _ (H_coefficient_wf v cut hc.cutWf hz)
+      · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v cut hc.cutWf hz)
           (ha.recursiveWF hs).wf hs.wf he (oldBound a ha hmem)
   rcases H_convert_source k v (T.fund (.P q .Z) .Z) hBase with he | ⟨a, ha, he⟩
   · rw [he]; exact (zero_lt_iff _).mpr hn0
@@ -2035,7 +2035,7 @@ theorem Omega_cut_bound_after_update [LargeCardinals.{u}] (k : Nat) (s : multi.T
     · exact hNew
     · exact dropOne_lt_of_lt haw.wf hn.wf hNew
 
-theorem Omega_fund_at_label_cut_relative [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_fund_at_label_cut_relative (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -2055,11 +2055,11 @@ theorem Omega_fund_at_label_cut_relative [LargeCardinals.{u}] (k : Nat) (s : mul
   intro v hvR hv hSource hT
   by_cases ht0 : t = .Z
   · subst t; exact (zero_fund_invariant k s hsD hr hs).2.2 v hvR hv hSource
-  rcases lemma_6_1.{u}.2.2 Term.bigOmega v Term.wf_bigOmega hv with hOmega | he | hOmega
+  rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega v Term.wf_bigOmega hv with hOmega | he | hOmega
   · by_cases hAbove : Term.lt (convert (k + 3) (code (.P q .Z))) v = true
     · exact (hInv.2 v hvR hv hOmega hAbove).2 hSource
     have hVL : Term.le v (convert (k + 3) (code (.P q .Z))) = true := by
-      rcases lemma_6_1.{u}.2.2 v _ hv (Omega_label_recursiveWF k s hs hd).wf with he | he | he
+      rcases kumakuma.JaegerFacts.jaeger_order.2.2 v _ hv (Omega_label_recursiveWF k s hs hd).wf with he | he | he
       · simp [Term.le, he]
       · simp [Term.le, he]
       · exact False.elim (hAbove he)
@@ -2073,7 +2073,7 @@ theorem Omega_fund_at_label_cut_relative [LargeCardinals.{u}] (k : Nat) (s : mul
     · rw [he]; exact (zero_lt_iff _).mpr hn0
     · rw [he]; exact hNextImage
     · rw [he]; exact dropOne_lt_of_lt ht.wf hn.wf hNextImage
-    · exact lemma_6_1.{u}.2.1 _ _ _ (H_coefficient_wf v _ ht.wf he) ht.wf hn.wf
+    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v _ ht.wf he) ht.wf hn.wf
         ((Term.allLt_iff _ _).mp hT _ he) hNextImage
     · exact Omega_cut_bound_after_update k s hsD hr hs hd cut hc v hvR hv hOmega hVL hSource t htD ht0
         hn z he
@@ -2083,7 +2083,7 @@ theorem Omega_fund_at_label_cut_relative [LargeCardinals.{u}] (k : Nat) (s : mul
         ((H_omega_bound_iff_subterms k t htD ht htr).mp hT) hNext)
   · rw [kumakuma.CountableTarget.regular_not_below_omega hvR] at hOmega; cases hOmega
 
-theorem Omega_iter_at_label_cut_relative [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_iter_at_label_cut_relative (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)

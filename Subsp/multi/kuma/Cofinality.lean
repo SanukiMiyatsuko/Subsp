@@ -67,7 +67,7 @@ theorem H_inacc_succ_support (v : Term) (n : Nat) (a : Term) {z : Term}
     rw [kumakuma.OT2.H_succTerm]
     exact List.mem_append_left _ hz
 
-theorem topPair_predecessor_lt [LargeCardinals.{u}] (n : Nat) (h b : Term)
+theorem topPair_predecessor_lt (n : Nat) (h b : Term)
     (hh : Term.wf h = true) (hb : Term.wf b = true) :
     Term.lt (topPair n h b) (topPair n h (succTerm b)) = true := by
   rw [topPair_order n hh hb hh (succTerm_wf hb)]
@@ -75,7 +75,7 @@ theorem topPair_predecessor_lt [LargeCardinals.{u}] (n : Nat) (h b : Term)
   rw [lt_succTerm_eq_le hb hb]
   simp [Term.le]
 
-theorem H_topPair_predecessor_support [LargeCardinals.{u}] (v : Term)
+theorem H_topPair_predecessor_support (v : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (n : Nat) (h b : Term)
     (hh : Term.wf h = true) (hb : Term.wf b = true)
     (hi : Term.wf (.inacc n (dropOne h)) = true)
@@ -85,7 +85,7 @@ theorem H_topPair_predecessor_support [LargeCardinals.{u}] (v : Term)
       z = dropOne b ∧ dropOne (succTerm b) ∈ Term.H v (topPair n h (succTerm b)) := by
   have hn := topPair_successor_predecessor n h b hi hb hw
   have hl := topPair_predecessor_lt n h b hh hb
-  have hp := (sem_of_wf.{u} hv).isR_pred hvR
+  have hp := (kumakuma.JaegerFacts.predR_facts hv hvR)
   have heOld : topPair n h (succTerm b) = .psi (pairCut n h) (dropOne (succTerm b)) := by
     by_cases hh0 : h = .zero <;> simp only [topPair, hh0, succTerm_ne_zero, ↓reduceIte, pairCut]
   by_cases hs : Term.le (topPair n h (succTerm b)) (Term.predR v) = true
@@ -163,7 +163,7 @@ theorem exists_nonzero_of_mass {xs : V multi.T} (hm : 0 < vectorMass xs) :
   rw [vectorMass_eq_zero xs hz] at hm
   exact Nat.lt_irrefl 0 hm
 
-theorem Omega_image_head_ne_one [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_image_head_ne_one (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {v : V multi.T} (hd : domF s = .Omega v) :
     Term.head (convert (k + 3) (code s)) ≠ Term.one := by
@@ -196,7 +196,7 @@ theorem sum_subterm_gap (xs : V multi.T) (b t : multi.T)
       exact Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm hab) (ihb he)
   exact hgen ha rfl
 
-theorem closed_of_updated_coefficients [LargeCardinals.{u}] (k : Nat) (v : Term)
+theorem closed_of_updated_coefficients (k : Nat) (v : Term)
     (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
     (hn : RecursiveWF (k + 3) (T.fund s t))
     (hhead : Term.head (convert (k + 3) (code s)) ≠ Term.one)
@@ -245,7 +245,7 @@ theorem closed_of_updated_coefficients [LargeCardinals.{u}] (k : Nat) (v : Term)
       · exact hl
       · exact dropOne_lt_of_lt hw.wf hn.wf hl
 
-theorem Omega_image_drop [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_image_drop (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {v : V multi.T} (hd : domF s = .Omega v) :
     dropOne (convert (k + 3) (code s)) = convert (k + 3) (code s) :=
@@ -278,7 +278,7 @@ theorem H_topNode_above_Omega (k : Nat) (a : multi.T) (ha : a ≠ .Z)
   rw [convert_topNode k a ha, Term.H]
   simp only [show k + 1 ≠ 0 from by omega, ↓reduceIte, Term.hOne, hv, ite_self, List.nil_append]
 
-theorem H_topNode_Omega [LargeCardinals.{u}] (k : Nat) (a : multi.T) (haD : Dim (k + 3) a)
+theorem H_topNode_Omega (k : Nat) (a : multi.T) (haD : Dim (k + 3) a)
     (hr : Recursive a) (ha : RecursiveWF (k + 3) a)
     {q : V multi.T} (hd : domF a = .Omega q)
     (v : Term) (hv : Term.lt Term.bigOmega v = true) :
@@ -294,7 +294,7 @@ theorem topNode_child_subterm_gap (k : Nat) (a t : multi.T) (haD : Dim (k + 3) a
   have hm := kumakuma.SourceCoefficientGap.mass_lt_of_subterm hz
   omega
 
-theorem topNode_relative_of_child_support [LargeCardinals.{u}] (k : Nat)
+theorem topNode_relative_of_child_support (k : Nat)
     (a t : multi.T) (haD : Dim (k + 3) a) (htD : Dim (k + 3) t)
     (hr : Recursive a) (ha : RecursiveWF (k + 3) a)
     {q : V multi.T} (hd : domF a = .Omega q)
@@ -438,7 +438,7 @@ theorem H_lower_zeros_above_Omega (v : Term) (hv : Term.lt Term.bigOmega v = tru
       · simp only [step, ↓reduceIte, hj, Term.H]
     · simp only [step, ha, ↓reduceIte]
 
-theorem cofinality_image_le [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
+theorem cofinality_image_le (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hr : Recursive s) (hs : RecursiveWF (k + 3) s) {q : V multi.T}
     (hd : domF s = .Omega q) :
     Term.le (convert (k + 3) (code (.P q .Z))) (convert (k + 3) (code s)) = true := by
@@ -503,7 +503,7 @@ theorem layerCut_lt_of_context_lt (n : Nat) (a b : Term)
     change Term.lt (regular n a) b = true
     rwa [regular_lt_context hp hbf]
 
-theorem step_predecessor_cut_lt [LargeCardinals.{u}] (n : Nat) (a c : Term)
+theorem step_predecessor_cut_lt (n : Nat) (a c : Term)
     (ha : Above (n + 1) a) (hc : Term.wf c = true)
     (hw : Term.wf (step (n + 1) a (succTerm c)) = true) :
     Term.lt (layerCut n (step (n + 1) a c)) (step (n + 1) a (succTerm c)) = true := by
@@ -517,7 +517,7 @@ theorem step_predecessor_cut_lt [LargeCardinals.{u}] (n : Nat) (a c : Term)
     by_cases ha0 : a = .zero <;> simp [step, ha0, succTerm_ne_zero, Term.fT, regular]
   exact layerCut_lt_of_context_lt n _ _ (step_shape _ ha) (by rw [hf]; omega) hlt
 
-theorem step_successor_relative_support [LargeCardinals.{u}] (v : Term)
+theorem step_successor_relative_support (v : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (n : Nat) (a b : Term)
     (ha : Above n a) (hb : Term.wf b = true)
     (hw : Term.wf (step n a (succTerm b)) = true) {z : Term}
@@ -548,7 +548,7 @@ theorem step_successor_relative_support [LargeCardinals.{u}] (v : Term)
         · exact Or.inl h
         · exact Or.inr ⟨Or.inr h, Or.inr hs⟩
 
-theorem lower_regular_cofinal_support [LargeCardinals.{u}] (v : Term)
+theorem lower_regular_cofinal_support (v : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (hOmega : Term.lt Term.bigOmega v = true)
     (j m : Nat) (xs ys : List Term) (a c t : Term) (him : m + 1 < j)
     (hctx : Context j a) (hc : Term.wf c = true)
@@ -584,14 +584,14 @@ theorem lower_regular_cofinal_support [LargeCardinals.{u}] (v : Term)
       have hpreCtx : Context (m + 1) pre := step_shape _ (context_above hctx)
       have hcutW := layerCut_wf m pre (context_above hpreCtx) hpreW
       have hcutLt : Term.lt (layerCut m pre) v = true :=
-        lemma_6_1.{u}.2.1 _ _ _ hcutW hOldW hv (step_predecessor_cut_lt m a c (context_above hctx) hc hOldW) hOldLt
+        kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hcutW hOldW hv (step_predecessor_cut_lt m a c (context_above hctx) hc hOldW) hOldLt
       rw [lower_succ, hy, lower_succ, hyt,
         H_lower_zeros_above_Omega v hOmega m ys _ hzeroNew] at hz
       have hpreMem := H_step_of_layerCut_lt v hOmega m pre t hcutLt hz
       rw [heOld]
       exact step_successor_relative_support v hvR hv (m + 1) a c (context_above hctx) hc hOldW hpreMem
 
-theorem topPair_predecessor_cut_lt [LargeCardinals.{u}] (k : Nat) (h c : Term)
+theorem topPair_predecessor_cut_lt (k : Nat) (h c : Term)
     (hh : Term.wf h = true) (hc : Term.wf c = true) :
     Term.lt (layerCut k (topPair (k + 1) h c)) (topPair (k + 1) h (succTerm c)) = true := by
   have hf : Term.fT (topPair (k + 1) h (succTerm c)) = k + 1 := by
@@ -636,7 +636,7 @@ open kumakuma.SourceFundGap
 
 universe u
 
-theorem H_fund_regular_cofinal_support [LargeCardinals.{u}] (k m : Nat)
+theorem H_fund_regular_cofinal_support (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (t : multi.T)
@@ -738,7 +738,7 @@ theorem H_fund_regular_cofinal_support [LargeCardinals.{u}] (k m : Nat)
       have hwOld : Term.wf old = true := heOld ▸ hs.wf
       have hwPre : Term.wf pre = true := topPair_successor_predecessor (k + 1) h c hi hp.wf hwOld
       have hwCut := layerCut_wf k pre (context_above (topPair_context _ _ _)) hwPre
-      have hCutLt : Term.lt (layerCut k pre) v = true := lemma_6_1.{u}.2.1 _ _ _ hwCut hwOld hv
+      have hCutLt : Term.lt (layerCut k pre) v = true := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hwCut hwOld hv
         (topPair_predecessor_cut_lt k h c hh hp.wf) (heOld ▸ hlt)
       rw [newSame (k + 2) (by omega) (by omega), newP, lower_succ, newT,
         H_lower_zeros_above_Omega v hOmega k newArgs _ newZero] at hz
@@ -754,7 +754,7 @@ theorem H_fund_regular_cofinal_support [LargeCardinals.{u}] (k m : Nat)
       rw [← heOldFull] at hmem
       exact liftSupport hmem
 
-theorem H_fund_regular_single_small [LargeCardinals.{u}] (k m : Nat)
+theorem H_fund_regular_single_small (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
     (hother : ∀ i, i ≠ m + 1 → V.get0 xs i = .Z)
@@ -860,7 +860,7 @@ theorem H_fund_regular_single_small [LargeCardinals.{u}] (k m : Nat)
     have hCutW := layerCut_wf m (step (m + 1) .zero c)
       (context_above (step_shape _ (Or.inl rfl))) hPreW
     have hCutLt : Term.lt (layerCut m (step (m + 1) .zero c)) v = true :=
-      lemma_6_1.{u}.2.1 _ _ _ hCutW hOldW hv
+      kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hCutW hOldW hv
         (step_predecessor_cut_lt m .zero c (Or.inl rfl) hp.wf hOldW) (heOld ▸ hlt)
     rw [convert_positive_layers k zs (m + 1) (by omega) hib highNew] at hz
     change z ∈ Term.H v (lower (m + 1) newArgs (step (m + 1) .zero _)) at hz
@@ -873,7 +873,7 @@ theorem H_fund_regular_single_small [LargeCardinals.{u}] (k m : Nat)
     · cases he
     · exact fromP (Or.inr he)
 
-theorem updated_coefficient_lt_old [LargeCardinals.{u}] (k : Nat) (v : Term)
+theorem updated_coefficient_lt_old (k : Nat) (v : Term)
     (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
     (hhead : Term.head (convert (k + 3) (code s)) ≠ Term.one)
     (hzero : convert (k + 3) (code s) ≠ .zero)
@@ -903,7 +903,7 @@ theorem updated_coefficient_lt_old [LargeCardinals.{u}] (k : Nat) (v : Term)
       · exact hl
       · exact dropOne_lt_of_lt hw.wf hs.wf hl
 
-theorem fund_regular_cofinal_relative_of_wf [LargeCardinals.{u}] (k m : Nat)
+theorem fund_regular_cofinal_relative_of_wf (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
     (i j : Nat) (hij : i ≠ j) (hi : V.get0 xs i ≠ .Z) (hj : V.get0 xs j ≠ .Z)
@@ -924,7 +924,7 @@ theorem fund_regular_cofinal_relative_of_wf [LargeCardinals.{u}] (k m : Nat)
     hsZ hnZ (fun a ha => principal_subterm_gap xs i j hij hi hj hd t ha)
     (fun z hz => H_fund_regular_cofinal_support k m xs hsD hf hdom hs t v hvR hv hOmega hlt hz) hH
 
-theorem fund_regular_cofinal_relative_all_of_wf [LargeCardinals.{u}] (k m : Nat)
+theorem fund_regular_cofinal_relative_all_of_wf (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -969,7 +969,7 @@ theorem fund_regular_cofinal_relative_all_of_wf [LargeCardinals.{u}] (k m : Nat)
       · exact hl
       · exact dropOne_lt_of_lt ha.wf hn.wf hl
 
-theorem fund_regular_cofinal_relative_all [LargeCardinals.{u}] (k m : Nat)
+theorem fund_regular_cofinal_relative_all (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1005,7 +1005,7 @@ open kumakuma.SourceOmegaInvariant
 
 universe u
 
-theorem le_psi_index_bound [LargeCardinals.{u}] (n : Nat) (a b l : Term)
+theorem le_psi_index_bound (n : Nat) (a b l : Term)
     (hl : Term.wf l = true) (hw : Term.wf (.psi (.inacc n a) b) = true)
     (hle : Term.le l (.psi (.inacc n a) b) = true) :
     Term.lt l (.inacc n a) = true := by
@@ -1013,7 +1013,7 @@ theorem le_psi_index_bound [LargeCardinals.{u}] (n : Nat) (a b l : Term)
   have hroot : Term.lt (.psi (.inacc n a) b) (.inacc n a) = true := by simp [Term.lt, Term.fT]
   rcases (Term.le_iff_eq_or_lt _ _).mp hle with he | he
   · rw [he]; exact hroot
-  · exact lemma_6_1.{u}.2.1 _ _ _ hl hw hp.2.1 he hroot
+  · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hl hw hp.2.1 he hroot
 
 theorem step_psi_of_drop (n : Nat) (a c : Term)
     (hc : c ≠ .zero) (hd : dropOne c = c) :
@@ -1023,7 +1023,7 @@ theorem step_psi_of_drop (n : Nat) (a c : Term)
   · simp [step, layerCut, regular, ha, hc, hd]
 
 
-theorem Omega_principal_image_ne_low [LargeCardinals.{u}] (k : Nat)
+theorem Omega_principal_image_ne_low (k : Nat)
     (xs : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hs : RecursiveWF (k + 3) (.P xs .Z))
     {q : V multi.T} (hd : domF (.P xs .Z) = .Omega q) :
@@ -1040,7 +1040,7 @@ theorem Omega_principal_image_ne_low [LargeCardinals.{u}] (k : Nat)
   rw [hsource] at hd
   exact SourceFundOrder.outer_not_Omega ho q hd
 
-theorem step_replace_cofinal_wf [LargeCardinals.{u}] (n : Nat)
+theorem step_replace_cofinal_wf (n : Nat)
     (a c t l : Term) (ha : Above n a) (ht : Term.wf t = true)
     (hc : c ≠ .zero) (hd : dropOne c = c) (hl : Term.wf l = true)
     (hle : Term.le l (step n a c) = true)
@@ -1065,7 +1065,7 @@ theorem step_replace_cofinal_wf [LargeCardinals.{u}] (n : Nat)
     rw [hnew]
     exact (Term.wf_psi_iff _ _).mpr ⟨hp.1, hp.2.1, dropOne_wf ht, H_drop_bound _ t ht hH⟩
 
-theorem topPair_replace_cofinal_wf [LargeCardinals.{u}] (n : Nat) (hn : 0 < n)
+theorem topPair_replace_cofinal_wf (n : Nat) (hn : 0 < n)
     (a c t l : Term) (hi : Term.wf (.inacc n (dropOne a)) = true)
     (ht : Term.wf t = true) (hc : c ≠ .zero) (hd : dropOne c = c)
     (hl : Term.wf l = true) (hle : Term.le l (topPair n a c) = true)
@@ -1086,7 +1086,7 @@ theorem topPair_replace_cofinal_wf [LargeCardinals.{u}] (n : Nat) (hn : 0 < n)
     rw [heNew]
     exact (Term.wf_psi_iff _ _).mpr ⟨hp.1, hp.2.1, dropOne_wf ht, H_drop_bound _ t ht hH⟩
 
-theorem lower_replace_cofinal_wf [LargeCardinals.{u}] (j cut : Nat)
+theorem lower_replace_cofinal_wf (j cut : Nat)
     (hj : cut < j) (xs ys : List Term) (a c t l : Term)
     (hctx : Context j a) (ht : Term.wf t = true) (hc : c ≠ .zero)
     (hd : dropOne c = c) (hl : Term.wf l = true)
@@ -1131,7 +1131,7 @@ theorem lower_replace_cofinal_wf [LargeCardinals.{u}] (j cut : Nat)
         (step_replace_cofinal_wf cut a c t l (context_above hctx) ht hc hd hl hle hcut hrel hw)
 
 
-theorem principal_replace_cofinal_recursiveWF [LargeCardinals.{u}] (k : Nat)
+theorem principal_replace_cofinal_recursiveWF (k : Nat)
     (xs : V multi.T) (i : Nat) (hib : i ≤ k + 1) (hsD : Dim (k + 3) (.P xs .Z))
     (hlow : ∀ j, j < i → V.get0 xs j = .Z)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (a : multi.T)
@@ -1229,7 +1229,7 @@ open kumakuma.SourceFundGap
 
 universe u
 
-theorem H_psi_replacement_support [LargeCardinals.{u}] (v w c t : Term)
+theorem H_psi_replacement_support (v w c t : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true)
     (hw : Term.wf (.psi w c) = true) (hn : Term.wf (.psi w (dropOne t)) = true)
     (hlt : Term.lt (.psi w (dropOne t)) (.psi w c) = true) {z : Term}
@@ -1238,7 +1238,7 @@ theorem H_psi_replacement_support [LargeCardinals.{u}] (v w c t : Term)
       (z = dropOne t ∨ z ∈ Term.H v t) ∧ c ∈ Term.H v (.psi w c) ∧
         (∀ a, a ∈ Term.H v c → a ∈ Term.H v (.psi w c)) := by
   by_cases hskip : Term.le (.psi w c) (Term.predR v) = true
-  · have hp := (sem_of_wf.{u} hv).isR_pred hvR
+  · have hp := (kumakuma.JaegerFacts.predR_facts hv hvR)
     have hle := target_le_trans hn hw hp.1 (by simp [Term.le, hlt]) hskip
     rw [H_eq_nil_of_le_pred v _ hvR hv hn hle] at hz
     cases hz
@@ -1398,7 +1398,7 @@ theorem lastVec_of_low {k : Nat} {xs : V multi.T} (hl : xs.length = k + 3)
     · exact hlow j hjl
     · exact V.get0_ge xs j (by omega)
 
-theorem parent_Omega_updated_support [LargeCardinals.{u}] (k : Nat)
+theorem parent_Omega_updated_support (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1475,7 +1475,7 @@ theorem parent_Omega_updated_support [LargeCardinals.{u}] (k : Nat)
     rw [heNew, H_topNode_above_Omega k _ (domOmega_fund_ne_zero _ t hdq) v hOmega] at hz
     exact lift (fun z hz => heH ▸ hz) (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
 
-theorem parent_Omega_relative_of_child_support [LargeCardinals.{u}] (k : Nat)
+theorem parent_Omega_relative_of_child_support (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1589,7 +1589,7 @@ theorem parent_Omega_relative_of_child_support [LargeCardinals.{u}] (k : Nat)
           have hChildLt := (convert_order k _ _ (Dim_fund _ _ hchildDim htD) hchildDim hnChild
             (hcoords i)).mp (fund_lt (V.get0 xs i) t hc0)
           have hOwnW := ((Term.wf_psi_iff _ _).mp hwOld).2.1
-          have hNewOwn := lemma_6_1.{u}.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
+          have hNewOwn := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
           have hDropOwn := dropOne_lt_of_lt hnChild.wf hOwnW hNewOwn
           rw [heFund]
           exact (psi_argument_lt_iff _ _ hwNew).mpr hDropOwn
@@ -1653,7 +1653,7 @@ open kumakuma.SourceOmegaTail
 
 universe u
 
-theorem Omega_fund_cofinal_invariant [LargeCardinals.{u}] (k : Nat) : ∀ (s : multi.T),
+theorem Omega_fund_cofinal_invariant (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s →
     ∀ {q : V multi.T}, domF s = .Omega q →
     ∀ (t : multi.T), Dim (k + 3) t → RecursiveWF (k + 3) t →
@@ -1765,7 +1765,7 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem all_Omega_iter_closed [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
+theorem all_Omega_iter_closed (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (hsub : ∀ a, Subterm a s → a < s) (n : Nat) :
@@ -1828,7 +1828,7 @@ theorem lower_selected_step_context (j cut : Nat) (hj : cut < j) (xs ys : List T
       · rw [lower_succ, hx]; exact lower_keep cut xs _ (step_ne_zero_of_argument cut a c hc) hzeroOld
       · rw [lower_succ, hy]
 
-theorem H_topPair_zero_support [LargeCardinals.{u}] (v : Term)
+theorem H_topPair_zero_support (v : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (n : Nat) (h c : Term)
     (hh : Term.wf h = true) (hc : Term.wf c = true) (hc0 : c ≠ .zero)
     (hi : Term.wf (.inacc n (dropOne h)) = true)
@@ -1844,7 +1844,7 @@ theorem H_topPair_zero_support [LargeCardinals.{u}] (v : Term)
   have heOld : topPair n h c = .psi (pairCut n h) (dropOne c) := by
     by_cases hh0 : h = .zero <;> simp [topPair, pairCut, hh0, hc0]
   by_cases hs : Term.le (topPair n h c) (Term.predR v) = true
-  · have hp := (sem_of_wf.{u} hv).isR_pred hvR
+  · have hp := (kumakuma.JaegerFacts.predR_facts hv hvR)
     have hle := target_le_trans hn hw hp.1 (by simp [Term.le, hl]) hs
     rw [H_eq_nil_of_le_pred v _ hvR hv hn hle] at hz; cases hz
   · have hcH : z ∈ Term.H v (pairCut n h) := by
@@ -1862,7 +1862,7 @@ theorem H_topPair_zero_support [LargeCardinals.{u}] (v : Term)
     · exact List.mem_cons_of_mem _ (List.mem_append_right _ hcH)
 
 
-theorem zero_relative_of_updated_support [LargeCardinals.{u}] (k : Nat)
+theorem zero_relative_of_updated_support (k : Nat)
     (s : multi.T) (hsD : Dim (k + 3) s) (hs : RecursiveWF (k + 3) s)
     (hn : RecursiveWF (k + 3) (T.fund s .Z))
     (v : Term) (hhead : Term.head (convert (k + 3) (code s)) ≠ Term.one)
@@ -1898,7 +1898,7 @@ theorem zero_relative_of_updated_support [LargeCardinals.{u}] (k : Nat)
       · exact haNew
       · exact dropOne_lt_of_lt haW.wf hn.wf haNew
 
-theorem parent_zero_updated_support [LargeCardinals.{u}] (k : Nat)
+theorem parent_zero_updated_support (k : Nat)
     (xs : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hlow : ∀ j, j < i → V.get0 xs j = .Z)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (hc0 : V.get0 xs i ≠ .Z)
@@ -2063,7 +2063,7 @@ theorem parent_zero_updated_support [LargeCardinals.{u}] (k : Nat)
       · rw [heNew, H_topNode_above_Omega k _ hzC v hOmega] at hz
         exact lift (fun z hz => heH ▸ hz) (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
 
-theorem regular_zero_updated_support [LargeCardinals.{u}] (k m : Nat)
+theorem regular_zero_updated_support (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hfz : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
     (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -2168,7 +2168,7 @@ theorem regular_zero_updated_support [LargeCardinals.{u}] (k m : Nat)
       rw [← heO, ← heOld] at ho
       exact liftSupport ho
 
-theorem zero_relative_allcuts [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
+theorem zero_relative_allcuts (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     (hn : RecursiveWF (k + 3) (T.fund s .Z))
     (hcoef : ∀ v, Term.isRT v = true → Term.wf v = true → Term.lt Term.bigOmega v = true →
@@ -2177,7 +2177,7 @@ theorem zero_relative_allcuts [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD 
     (hH : Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true) :
     Term.allLt (Term.H v (convert (k + 3) (code (T.fund s .Z))))
       (convert (k + 3) (code (T.fund s .Z))) = true := by
-  rcases lemma_6_1.{u}.2.2 Term.bigOmega v Term.wf_bigOmega hv with hOmega | he | hOmega
+  rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega v Term.wf_bigOmega hv with hOmega | he | hOmega
   · by_cases hh : Term.head (convert (k + 3) (code s)) = Term.one
     · obtain ⟨n, he⟩ := head_one_nat hs.wf hh
       have hsNat : s = ofNatD (k + 3) (n + 1) := convert_injective k s _ hsD (Dim_ofNatD _ _) hs
@@ -2196,7 +2196,7 @@ theorem zero_relative_allcuts [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD 
   · rw [kumakuma.CountableTarget.regular_not_below_omega hvR] at hOmega
     cases hOmega
 
-theorem zero_fund_invariant [LargeCardinals.{u}] (k : Nat) : ∀ (s : multi.T), Dim (k + 3) s →
+theorem zero_fund_invariant (k : Nat) : ∀ (s : multi.T), Dim (k + 3) s →
     Recursive s → RecursiveWF (k + 3) s →
     RecursiveWF (k + 3) (T.fund s .Z) ∧
       (∀ v, Term.isRT v = true → Term.wf v = true → Term.lt Term.bigOmega v = true →
@@ -2324,7 +2324,7 @@ open kumakuma.GeneralImageOmegaContext
 
 universe u
 
-theorem omega_image_head_ne_one [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
+theorem omega_image_head_ne_one (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hs : RecursiveWF (k + 3) s) (hd : domF s = .omega) :
     Term.head (convert (k + 3) (code s)) ≠ Term.one := by
   intro hh
@@ -2373,7 +2373,7 @@ theorem positive_principal_subterm_gap (xs : V multi.T)
       exact Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm hab) (ihb he)
   exact hgen ha rfl
 
-theorem omega_relative_allcuts [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
+theorem omega_relative_allcuts (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hr : Recursive s) (hs : RecursiveWF (k + 3) s) (hd : domF s = .omega)
     (n : Nat) (hn : RecursiveWF (k + 3) (T.fund s (ofNatD (k + 3) n)))
     (hAbove : ∀ v, Term.isRT v = true → Term.wf v = true → Term.lt Term.bigOmega v = true →
@@ -2384,7 +2384,7 @@ theorem omega_relative_allcuts [LargeCardinals.{u}] (k : Nat) (s : multi.T) (hsD
     (hH : Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true) :
     Term.allLt (Term.H v (convert (k + 3) (code (T.fund s (ofNatD (k + 3) n)))))
       (convert (k + 3) (code (T.fund s (ofNatD (k + 3) n)))) = true := by
-  rcases lemma_6_1.{u}.2.2 Term.bigOmega v Term.wf_bigOmega hv with hlt | he | hlt
+  rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega v Term.wf_bigOmega hv with hlt | he | hlt
   · exact hAbove v hvR hv hlt hH
   · subst v
     exact H_convert_bound_of_subterms k Term.bigOmega _ (Dim_fund _ _ hsD (Dim_ofNatD _ _)) hn

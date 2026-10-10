@@ -11,13 +11,13 @@ open kumakuma.GeneralImageWFInvariant
 
 universe u
 
-theorem H_subset_of_comparable_cuts [LargeCardinals.{u}] (w v t : Term)
+theorem H_subset_of_comparable_cuts (w v t : Term)
     (hwR : Term.isRT w = true) (hw : Term.wf w = true)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (ht : Term.wf t = true)
     (hcut : Term.le w v = true) (hpred : Term.le (Term.predR w) (Term.predR v) = true)
     {z : Term} (hz : z ∈ Term.H v t) : z = .zero ∨ z ∈ Term.H w t := by
-  have hpw := (sem_of_wf.{u} hw).isR_pred hwR
-  have hpv := (sem_of_wf.{u} hv).isR_pred hvR
+  have hpw := (kumakuma.JaegerFacts.predR_facts hw hwR)
+  have hpv := (kumakuma.JaegerFacts.predR_facts hv hvR)
   induction t with
   | zero => cases hz
   | add a b iha ihb =>
@@ -49,7 +49,7 @@ theorem H_subset_of_comparable_cuts [LargeCardinals.{u}] (w v t : Term)
       · have hcv : Term.lt c v = true := by
           rcases (Term.le_iff_eq_or_lt _ _).mp hcut with he | he
           · rw [← he]; exact hcw
-          · exact lemma_6_1.{u}.2.1 _ _ _ hp.2.1 hw hv hcw he
+          · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hp.2.1 hw hv hcw he
         simp only [hcw, ↓reduceIte]
         rw [Term.H] at hz
         split at hz
@@ -67,7 +67,7 @@ theorem H_subset_of_comparable_cuts [LargeCardinals.{u}] (w v t : Term)
           · exact Or.inl he
           · exact Or.inr (List.mem_cons_of_mem _ (List.mem_append_right _ he))
 
-theorem H_bound_of_comparable_cuts [LargeCardinals.{u}] (w v t : Term)
+theorem H_bound_of_comparable_cuts (w v t : Term)
     (hwR : Term.isRT w = true) (hw : Term.wf w = true)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (ht : Term.wf t = true)
     (hcut : Term.le w v = true) (hpred : Term.le (Term.predR w) (Term.predR v) = true)
@@ -104,7 +104,7 @@ open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 
 universe u
 
-theorem regular_lower_label_cut_context [LargeCardinals.{u}] (k m : Nat) (hmk : m ≤ k)
+theorem regular_lower_label_cut_context (k m : Nat) (hmk : m ≤ k)
     (q : V multi.T) (hqD : Dim (k + 3) (.P q .Z))
     (hfz : V.fnz q = some (m + 1)) (hdOne : domF (V.get0 q (m + 1)) = .one)
     (hr : Recursive (.P q .Z)) (hs : RecursiveWF (k + 3) (.P q .Z)) :
@@ -153,7 +153,7 @@ theorem regular_lower_label_cut_context [LargeCardinals.{u}] (k m : Nat) (hmk : 
   · simp only [layerCut, ha0, ↓reduceIte, Term.predR, succTerm_ne_zero,
       predT_succTerm haw, show ¬Term.fT a ≤ m from Nat.not_le.mpr (ha.resolve_left ha0)]
 
-theorem principal_Omega_slot_context [LargeCardinals.{u}] (k : Nat)
+theorem principal_Omega_slot_context (k : Nat)
     (xs q : V multi.T) (i : Nat) (hib : i ≤ k) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) :
@@ -193,7 +193,7 @@ theorem principal_Omega_slot_context [LargeCardinals.{u}] (k : Nat)
     rwa [heBase, ite_eq_right hc] at this
 
 
-theorem layerCut_le_of_context_le [LargeCardinals.{u}] (i m : Nat) (him : i ≤ m)
+theorem layerCut_le_of_context_le (i m : Nat) (him : i ≤ m)
     (c a : Term) (hc : Above i c) (ha : Above m a) (ha0 : a ≠ .zero)
     (hcw : Term.wf c = true) (haw : Term.wf a = true) (hca : Term.le c a = true) :
     Term.le (layerCut i c) (layerCut m a) = true ∧
@@ -231,7 +231,7 @@ theorem layerCut_le_of_context_le [LargeCardinals.{u}] (i m : Nat) (him : i ≤ 
           change Term.lt a (regular m a) = true
           rw [context_lt_regular hfa (above_principal hfa)]
           simp [Term.le]
-        have hlt := lemma_6_1.{u}.2.1 _ _ _ hcutC haw hcutA hregLt haLt
+        have hlt := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hcutC haw hcutA hregLt haLt
         simp [Term.le, hlt]
   · rw [hPredA]
     by_cases hc0 : c = .zero
@@ -243,7 +243,7 @@ theorem layerCut_le_of_context_le [LargeCardinals.{u}] (i m : Nat) (him : i ≤ 
           predT_succTerm hcw, show ¬Term.fT c ≤ i from Nat.not_le.mpr (hc.resolve_left hc0)]
       rwa [hPredC]
 
-theorem layerCut_comparable_of_erased_le [LargeCardinals.{u}] (i m : Nat) (him : i ≤ m)
+theorem layerCut_comparable_of_erased_le (i m : Nat) (him : i ≤ m)
     (c a : Term) (hc : Above i c) (ha : Above m a)
     (hcw : Term.wf c = true) (haw : Term.wf a = true)
     (hca : Term.le (if c = .zero then Term.one else c) (if a = .zero then Term.one else a) = true) :
@@ -268,7 +268,7 @@ theorem layerCut_comparable_of_erased_le [LargeCardinals.{u}] (i m : Nat) (him :
     · rw [hc0]; simp only [Term.le, (zero_lt_iff _).mpr ha0, Bool.or_true]
     · simpa only [ite_eq_right hc0, ite_eq_right ha0] using hca
 
-theorem context_bound_diagonal_source_closed [LargeCardinals.{u}] (k m : Nat) (hmk : m ≤ k)
+theorem context_bound_diagonal_source_closed (k m : Nat) (hmk : m ≤ k)
     (xs q : V multi.T) (i : Nat) (him : i ≤ m) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hqf : V.fnz q = some (m + 1)) (hqOne : domF (V.get0 q (m + 1)) = .one)
@@ -398,7 +398,7 @@ open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 
 universe u
 
-theorem pairCut_image_comparable [LargeCardinals.{u}] (k : Nat) (h b : multi.T)
+theorem pairCut_image_comparable (k : Nat) (h b : multi.T)
     (hhD : Dim (k + 3) h) (hbD : Dim (k + 3) b)
     (hh : RecursiveWF (k + 3) h) (hb : RecursiveWF (k + 3) b) (hle : h ≤ b) :
     Term.le (pairCut (k + 1) (convert (k + 3) (code h)))
@@ -449,7 +449,7 @@ theorem highest_consecutive_parent_bound (k : Nat) (xs : V multi.T) (b : multi.T
   · rw [get0_lastVec, ite_eq_right hpk] at hp
     exact absurd hp (T.not_lt_Z _)
 
-theorem principal_middle_Omega_cut [LargeCardinals.{u}] (k : Nat)
+theorem principal_middle_Omega_cut (k : Nat)
     (xs q : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (k + 1)) (hdq : domF (V.get0 xs (k + 1)) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) :
@@ -482,7 +482,7 @@ theorem principal_middle_Omega_cut [LargeCardinals.{u}] (k : Nat)
   have hp := (Term.wf_psi_iff _ _).mp (heOld ▸ hs.wf)
   exact ⟨heOld, hp.2.1, hp.2.2.2⟩
 
-theorem highest_consecutive_source_closed [LargeCardinals.{u}] (k : Nat)
+theorem highest_consecutive_source_closed (k : Nat)
     (xs q : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (k + 1)) (hdq : domF (V.get0 xs (k + 1)) = .Omega q)
     (hqf : V.fnz q = some (k + 2)) (hqOne : domF (V.get0 q (k + 2)) = .one) (hdiag : xs < q)
@@ -549,7 +549,7 @@ theorem strict_highest_diagonal_branch (k : Nat) (xs q : V multi.T) (b : multi.T
   · rw [get0_lastVec, ite_eq_left rfl]
     exact (kumakuma.SourceSuccessor.lt_succ_iff_le (k + 3) _ b).2 (Or.inl hhigh)
 
-theorem diagonal_selector_below_highest [LargeCardinals.{u}] (k : Nat)
+theorem diagonal_selector_below_highest (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (hdiag : xs < q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) : i ≤ k + 1 := by
@@ -559,7 +559,7 @@ theorem diagonal_selector_below_highest [LargeCardinals.{u}] (k : Nat)
   subst heI
   exact no_diagonal_highest k xs hsD hs ((Recursive_P.1 hr).1 _) hf hdq hdiag
 
-theorem strict_highest_parent_index [LargeCardinals.{u}] (k : Nat)
+theorem strict_highest_parent_index (k : Nat)
     (xs q : V multi.T) (i : Nat) (hi : i ≤ k) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (b : multi.T) (hbD : Dim (k + 3) b) (hb : RecursiveWF (k + 3) b)
@@ -616,7 +616,7 @@ theorem strict_highest_parent_index [LargeCardinals.{u}] (k : Nat)
         simp only [layerCut, hc0, ↓reduceIte]
         change Term.lt (regular i c) (convert (k + 3) (code (topNode k b))) = true
         rwa [regular_lt_context (above_principal (hca.resolve_left hc0)) (by rw [hBft]; omega)]
-      have hwCut := lemma_6_1.{u}.2.1 _ _ _ hp.2.1 hB.wf hCutW hwB hBlt
+      have hwCut := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hp.2.1 hB.wf hCutW hwB hBlt
       simp only [Term.le, hwCut, Bool.or_true]
   · rw [hPred]
     by_cases hc0 : c = .zero
@@ -628,7 +628,7 @@ theorem strict_highest_parent_index [LargeCardinals.{u}] (k : Nat)
       rw [hPredW]
       simp only [Term.le, hcBound, Bool.or_true]
 
-theorem strict_highest_diagonal_source_closed [LargeCardinals.{u}] (k : Nat)
+theorem strict_highest_diagonal_source_closed (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (b : multi.T)
     (heQ : q = lastVec (k + 2) (kumakuma.SourceSuccessor.succ (k + 3) b))
@@ -666,33 +666,6 @@ theorem strict_highest_diagonal_source_closed [LargeCardinals.{u}] (k : Nat)
     exact highest_consecutive_source_closed k xs q hsD hf hdq hqf hqOne hdiag hr hs
 
 end kumakuma.GeneralImageStrictHighestDiagonal
-
-namespace kumakuma.GeneralImageCutTransport
-
-open OCF.Jaeger OCF.Ordinal
-open OCF.Jaeger.Term
-open kumakuma.GeneralImageWFInvariant kumakuma.GeneralImageCoefficients
-
-universe u
-
-theorem H_bound_iff_C [LargeCardinals.{u}] (v t a : Term)
-    (hvR : Term.isRT v = true) (hv : Term.wf v = true)
-    (ht : Term.wf t = true) (ha : Term.wf a = true) :
-    Term.allLt (Term.H v t) a = true ↔ C (V.{u} v) (V a) (V t) := by
-  have sv := sem_of_wf.{u} hv
-  have hreg : IsRegBelowΛ₀ (V.{u} v) := ⟨sv.isR_iff.mp hvR, sv.lt_Λ₀⟩
-  rw [lemma_5_6 hreg (sem_of_wf.{u} ht).T]
-  constructor
-  · intro h x hx
-    obtain ⟨z, hz, rfl⟩ := (H_iff hvR hv ht x).mp hx
-    exact (lt_iff_V (H_wf hvR hv ht hz) ha).mp ((Term.allLt_iff _ _).mp h z hz)
-  · intro h
-    apply (Term.allLt_iff _ _).mpr
-    intro z hz
-    exact (lt_iff_V (H_wf hvR hv ht hz) ha).mpr
-      (h _ ((H_iff hvR hv ht _).mpr ⟨z, hz, rfl⟩))
-
-end kumakuma.GeneralImageCutTransport
 
 namespace kumakuma.GeneralImageCriticalDiagonal
 
@@ -782,7 +755,7 @@ open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 
 universe u
 
-theorem closed_diagonal_selector_bound [LargeCardinals.{u}] (k : Nat)
+theorem closed_diagonal_selector_bound (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hdiag : xs < q) (hr : Recursive (.P xs .Z))
@@ -796,7 +769,7 @@ theorem closed_diagonal_fund_eq (xs q : V multi.T) (i : Nat)
       .P (V.set xs i (multi.T.iter (T.fund (V.get0 xs i)) (ofNatD lam (n + 1)))) .Z :=
   fund_diag hf hdq hdiag _
 
-theorem closed_diagonal_recursiveWF [LargeCardinals.{u}] (k : Nat)
+theorem closed_diagonal_recursiveWF (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (hdiag : xs < q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -815,7 +788,7 @@ theorem closed_diagonal_recursiveWF [LargeCardinals.{u}] (k : Nat)
   · exact Omega_image_drop k _ hcD hcr hcw hdq
   · exact hIter.2
 
-theorem closed_diagonal_relative [LargeCardinals.{u}] (k : Nat)
+theorem closed_diagonal_relative (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (hdiag : xs < q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -836,7 +809,7 @@ theorem closed_diagonal_relative [LargeCardinals.{u}] (k : Nat)
       (fun v hvR hv hOmega hH => diagonal_parent_relative_above k xs i q hsD hf hdq hdiag hr hs
         (n + 1) (by omega) hn v hvR hv hOmega hH) v hvR hv hH
 
-theorem closed_diagonal_dominated_support [LargeCardinals.{u}] (k : Nat)
+theorem closed_diagonal_dominated_support (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (hdiag : xs < q)
     (cut : Term) (hc : CutFund k (.P q .Z) cut)
@@ -959,7 +932,7 @@ theorem terminal_successor_fund_zero (k m : Nat) (q : V multi.T)
     T.fund (.P q .Z) .Z = .P (V.set q (m + 1) b) .Z :=
   regular_fund_zero_shape k m q hqf hqOne b hb
 
-theorem principal_higher_Omega_cut_image [LargeCardinals.{u}] (k : Nat)
+theorem principal_higher_Omega_cut_image (k : Nat)
     (xs q : V multi.T) (i : Nat) (hi : i ≤ k + 1) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) :
@@ -989,7 +962,7 @@ theorem high_not_below_empty_psi (n : Nat) (p b : Term)
       simp only [Term.fT] at hfn
       simp [Term.lt, Term.fT, hfn, show ¬j < n by omega, show ¬j = n by omega]
 
-theorem H_self_of_cut_below_zero_context [LargeCardinals.{u}] (w v a t : Term)
+theorem H_self_of_cut_below_zero_context (w v a t : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (ha : Term.wf a = true)
     (hp : Term.wf (.psi w t) = true) (hPred : Term.predR v = a)
     (hWA : Term.le w a = true) (hAV : Term.lt a v = true)
@@ -998,16 +971,16 @@ theorem H_self_of_cut_below_zero_context [LargeCardinals.{u}] (w v a t : Term)
   have hwv : Term.lt w v = true := by
     rcases (Term.le_iff_eq_or_lt _ _).mp hWA with he | he
     · rwa [he]
-    · exact lemma_6_1.{u}.2.1 _ _ _ hw.2.1 ha hv he hAV
+    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hw.2.1 ha hv he hAV
   have hpred : Term.le (Term.predR w) (Term.predR v) = true := by
     rw [hPred]
-    have hlt := lemma_6_1.{u}.2.1 _ _ _ ((sem_of_wf.{u} hw.2.1).isR_pred hw.1).1
+    have hlt := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ((kumakuma.JaegerFacts.predR_facts hw.2.1 hw.1)).1
       hp ha (psi_above_predR w t hp) hPA
     simp only [Term.le, hlt, Bool.or_true]
   exact H_bound_of_comparable_cuts w v t hw.1 hw.2.1 hvR hv hw.2.2.1
     (by simp only [Term.le, hwv, Bool.or_true]) hpred hw.2.2.2
 
-theorem high_le_step_context [LargeCardinals.{u}] (j : Nat) (a b p : Term)
+theorem high_le_step_context (j : Nat) (a b p : Term)
     (ha : Above j a) (hw : Term.wf (step j a b) = true)
     (hp : Term.wf p = true) (hjp : j < Term.fT p)
     (hle : Term.le p (step j a b) = true) : Term.le p a = true := by
@@ -1039,7 +1012,7 @@ theorem high_le_step_context [LargeCardinals.{u}] (j : Nat) (a b p : Term)
         simp only [Term.fT, regular] at hf; omega
       · rwa [context_lt_psi_regular (dropOne b) hwa (above_principal (ha.resolve_left ha0)) hp hjp hw] at he
 
-theorem step_context_le [LargeCardinals.{u}] (j : Nat) (a b : Term)
+theorem step_context_le (j : Nat) (a b : Term)
     (ha : Above j a) (hw : Term.wf (step j a b) = true) : Term.le a (step j a b) = true := by
   by_cases ha0 : a = .zero
   · rw [ha0]; exact kumakuma.OT2.zero_le _
@@ -1052,7 +1025,7 @@ theorem step_context_le [LargeCardinals.{u}] (j : Nat) (a b : Term)
         simp [Term.le]
       simp only [Term.le, hlt, Bool.or_true]
 
-theorem lower_context_le [LargeCardinals.{u}] (j : Nat) (xs : List Term) (a : Term)
+theorem lower_context_le (j : Nat) (xs : List Term) (a : Term)
     (ha : Context j a) (hw : Term.wf (lower j xs a) = true) :
     Term.le a (lower j xs a) = true := by
   induction j generalizing a with
@@ -1076,7 +1049,7 @@ open kumakuma.GeneralImageHigherSparseDiagonal kumakuma.GeneralImageSharedLowerC
 open kumakuma.GeneralImageRegularDiagonal kumakuma.GeneralImageCofinalityBounds
 open kumakuma.GeneralImageCofinalityCoefficients kumakuma.GeneralImageCofinalityInheritance
 open kumakuma.GeneralImageParametricCut kumakuma.GeneralImageLabelCut kumakuma.GeneralImageOmegaSpine
-open kumakuma.GeneralImageCutTransport kumakuma.GeneralImageRelativePredecessor
+open kumakuma.GeneralImageRelativePredecessor
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 open kumakuma.GeneralImageOmegaCoefficients kumakuma.GeneralImageMiddleSums
@@ -1089,7 +1062,7 @@ open kumakuma.GeneralImageLimitSupport kumakuma.GeneralImageHighestContextDiagon
 
 universe u
 
-theorem Omega_label_relative_bound [LargeCardinals.{u}] (k : Nat) (s : multi.T)
+theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     {q : V multi.T} (hd : domF s = .Omega q)
     (v B : Term) (hvR : Term.isRT v = true) (hv : Term.wf v = true)
@@ -1117,7 +1090,7 @@ theorem Omega_label_relative_bound [LargeCardinals.{u}] (k : Nat) (s : multi.T)
         (Omega_image_drop k _ hcD hcr hcw hdq) (Omega_principal_image_ne_low k xs i hsD hs hdParent)
       have hwP := (Term.wf_psi_iff _ _).mp (heOld ▸ hs.wf)
       by_cases hskip : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = true
-      · have hLpred := target_le_trans hL hs.wf ((sem_of_wf.{u} hv).isR_pred hvR).1
+      · have hLpred := target_le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
           (cofinality_image_le k _ hsD hr hs hdParent) hskip
         rw [H_eq_nil_of_le_pred v _ hvR hv hL hLpred]
         rfl
@@ -1127,17 +1100,13 @@ theorem Omega_label_relative_bound [LargeCardinals.{u}] (k : Nat) (s : multi.T)
       by_cases hcut : Term.lt w v = true
       · have hWH : Term.allLt (Term.H v w) B = true := by
           simpa only [Term.H, hskipF, hcut, Bool.false_eq_true, ↓reduceIte] using hH
-        apply (H_bound_iff_C v _ B hvR hv hL hB).mpr
-        have sw := sem_of_wf.{u} hwP.2.1
         have hLw : Term.lt (convert (k + 3) (code (.P q .Z))) w = true := by
           cases w with
           | zero | add | psi => cases hwP.1
           | inacc n a =>
             exact le_psi_index_bound n a _ _ hL (heOld ▸ hs.wf)
               (heOld ▸ cofinality_image_le k _ hsD hr hs hdParent)
-        exact C_lt_reg ⟨sw.isR_iff.mp hwP.1, sw.lt_Λ₀⟩
-          ((lt_iff_V hL hwP.2.1).mp hLw) ((lt_iff_V hwP.2.1 hv).mp hcut)
-          ((H_bound_iff_C v w B hvR hv hwP.2.1 hB).mp hWH)
+        exact kumakuma.JaegerFacts.H_downward hv hvR hB _ w hL hwP.2.1 hLw hcut hWH
       · have hcutF : Term.lt w v = false := by cases he : Term.lt w v <;> simp_all
         have hChild : Term.allLt (Term.H v (convert (k + 3) (code (V.get0 xs i)))) B = true := by
           apply (Term.allLt_iff _ _).mpr; intro z hz
@@ -1163,7 +1132,7 @@ theorem Omega_label_relative_bound [LargeCardinals.{u}] (k : Nat) (s : multi.T)
     rw [convert_P]
     exact H_assemble_right v _ _ hz
 
-theorem regular_le_step_context [LargeCardinals.{u}] (j : Nat) (a b w : Term)
+theorem regular_le_step_context (j : Nat) (a b w : Term)
     (ha : Above j a) (hw : Term.wf (step j a b) = true)
     (hwr : Term.isRT w = true) (hww : Term.wf w = true) (hf : j ≤ Term.fT w)
     (hle : Term.le w (step j a b) = true) : Term.le w a = true := by
@@ -1214,7 +1183,7 @@ theorem regular_le_step_context [LargeCardinals.{u}] (j : Nat) (a b w : Term)
               decide_true, decide_false, Bool.true_and, Bool.false_and, Bool.or_false] using hua
         simp only [Term.le, hwa, Bool.or_true]
 
-theorem regular_le_lower_context [LargeCardinals.{u}] (j : Nat) (xs : List Term) (a w : Term)
+theorem regular_le_lower_context (j : Nat) (xs : List Term) (a w : Term)
     (ha : Context j a) (hw : Term.wf (lower j xs a) = true)
     (hwr : Term.isRT w = true) (hww : Term.wf w = true) (hj : j ≤ Term.fT w + 1)
     (hle : Term.le w (lower j xs a) = true) : Term.le w a = true := by
@@ -1228,7 +1197,7 @@ theorem regular_le_lower_context [LargeCardinals.{u}] (j : Nat) (xs : List Term)
     exact regular_le_step_context j a _ w ha' hstep hwr hww (by omega)
       (ih _ hshape hw (by omega) hle)
 
-theorem regular_le_topPair_base [LargeCardinals.{u}] (n : Nat) (h c w : Term)
+theorem regular_le_topPair_base (n : Nat) (h c w : Term)
     (hh : Term.wf h = true) (hc : c ≠ .zero)
     (hwr : Term.isRT w = true) (hww : Term.wf w = true) (hf : Term.fT w = n)
     (hle : Term.le w (topPair n h c) = true) :
@@ -1252,7 +1221,7 @@ theorem regular_le_topPair_base [LargeCardinals.{u}] (n : Nat) (h c w : Term)
       simpa only [Term.le, Term.lt, Term.inacc.injEq, true_and, Nat.lt_irrefl, ↓reduceIte] using hle
 
 
-theorem middle_cut_le_zero_of_le_label [LargeCardinals.{u}] (k : Nat)
+theorem middle_cut_le_zero_of_le_label (k : Nat)
     (q : V multi.T) (hqD : Dim (k + 3) (.P q .Z))
     (hqf : V.fnz q = some (k + 1)) (hqOne : domF (V.get0 q (k + 1)) = .one)
     (hr : Recursive (.P q .Z)) (hs : RecursiveWF (k + 3) (.P q .Z))
@@ -1319,7 +1288,7 @@ theorem middle_cut_le_zero_of_le_label [LargeCardinals.{u}] (k : Nat)
       simpa only [topPair, hh0, ↓reduceIte] using hlt
     simp only [Term.le, hBaseLt, Bool.or_true]
 
-theorem higher_cut_le_zero_of_le_label [LargeCardinals.{u}] (k m : Nat) (hmk : m + 1 ≤ k)
+theorem higher_cut_le_zero_of_le_label (k m : Nat) (hmk : m + 1 ≤ k)
     (q : V multi.T) (hqD : Dim (k + 3) (.P q .Z))
     (hqf : V.fnz q = some (m + 1)) (hqOne : domF (V.get0 q (m + 1)) = .one)
     (hr : Recursive (.P q .Z)) (hs : RecursiveWF (k + 3) (.P q .Z))
@@ -1359,7 +1328,7 @@ theorem higher_cut_le_zero_of_le_label [LargeCardinals.{u}] (k m : Nat) (hmk : m
   rw [heFund, heA]
   exact target_le_trans hw hcw (heA ▸ hAw) hWC (lower_context_le _ _ c hctx (heA ▸ hAw))
 
-theorem higher_source_closed [LargeCardinals.{u}] (k m : Nat)
+theorem higher_source_closed (k m : Nat)
     (xs q : V multi.T) (i : Nat) (hmi : m < i) (hi : i ≤ k + 1) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hqf : V.fnz q = some (m + 1)) (hqOne : domF (V.get0 q (m + 1)) = .one)
@@ -1381,7 +1350,7 @@ theorem higher_source_closed [LargeCardinals.{u}] (k m : Nat)
   have hPsi := heOld ▸ hs.wf
   have hp := (Term.wf_psi_iff _ _).mp hPsi
   have hOmega : Term.lt Term.bigOmega w = true := by
-    rcases lemma_6_1.{u}.2.2 Term.bigOmega w Term.wf_bigOmega hp.2.1 with he | he | he
+    rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega w Term.wf_bigOmega hp.2.1 with he | he | he
     · exact he
     · have hft := congrArg Term.fT he
       simp only [Term.bigOmega, Term.fT, hf'] at hft; omega
@@ -1411,23 +1380,19 @@ theorem higher_source_closed [LargeCardinals.{u}] (k m : Nat)
         exact middle_cut_le_zero_of_le_label k q hlD hqf hqOne hlr hlw w hp.1 hp.2.1
           (by rw [hf']; omega) hle
     have hLW : Term.lt (convert (k + 3) (code (.P q .Z))) w = true := by
-      rcases lemma_6_1.{u}.2.2 _ _ hlw.wf hp.2.1 with he | he | he
+      rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ hlw.wf hp.2.1 with he | he | he
       · exact he
       · exact False.elim (hnotLabel (by rw [← he]; simp [Term.le]))
       · exact False.elim (hnotLabel (by simp only [Term.le, he, Bool.or_true]))
-    have sw := sem_of_wf.{u} hp.2.1
     have hLP : Term.lt (convert (k + 3) (code (.P q .Z)))
-        (.psi w (convert (k + 3) (code (V.get0 xs i)))) = true := by
-      apply (lt_iff_V hlw.wf hPsi).mpr
-      exact (theorem_4_9 ⟨sw.isR_iff.mp hp.1, sw.lt_Λ₀⟩ _ _).mp
-        ⟨(H_bound_iff_C w _ _ hp.1 hp.2.1 hlw.wf hcw.wf).mp hLH,
-          (lt_iff_V hlw.wf hp.2.1).mp hLW⟩
+        (.psi w (convert (k + 3) (code (V.get0 xs i)))) = true :=
+      OCF.Jaeger.Term.lt_psi_of_H hPsi _ hlw.wf hLH hLW
     have hPL : Term.lt (.psi w (convert (k + 3) (code (V.get0 xs i))))
         (convert (k + 3) (code (.P q .Z))) = true := by
       rw [← heOld]
       exact (convert_order k _ _ hsD hlD hs hlw).mp
         (T.lt_trans hbound (fund_lt _ .Z (by intro he; cases he)))
-    have hbad := lemma_6_1.{u}.2.1 _ _ _ hlw.wf hPsi hlw.wf hLP hPL
+    have hbad := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hlw.wf hPsi hlw.wf hLP hPL
     rw [lt_self] at hbad; cases hbad
   have hAV : Term.lt a (layerCut m a) = true := by
     simp only [layerCut, ha0, ↓reduceIte]

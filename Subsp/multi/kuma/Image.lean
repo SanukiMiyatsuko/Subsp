@@ -482,22 +482,23 @@ theorem generated_reify (d lam : Nat) (s : OTD d) (hw : width (code s.val) ≤ l
           have h := ih (k + 1) (by omega) lam u hwu
           rwa [padTo_congr hc] at h
 
-noncomputable def coordinateWitness (q : Classes) : AllOT :=
-  ⟨width (representative q), padTo (width (representative q)) (dimensionWitness q).2.val,
-    generated_reify _ _ (dimensionWitness q).2 (Nat.le_of_eq (by rw [representative_spec]))⟩
+theorem exists_width_witness (q : Classes) : HasDimensionWitness (width (representative q)) q := by
+  obtain ⟨lam, s, hs⟩ := exists_dimension q
+  have hc : code s.val = representative q := by rw [← hs]; rfl
+  exact ⟨⟨padTo (width (representative q)) s.val,
+    generated_reify _ _ s (Nat.le_of_eq (by rw [hc]))⟩,
+    ((class_eq_iff _ ⟨lam, s⟩).mpr (code_padTo _ _)).trans hs⟩
 
-theorem coordinateWitness_spec (q : Classes) : classOf (coordinateWitness q) = q := by
-  apply classCode_injective
-  show code (padTo _ (dimensionWitness q).2.val) = classCode q
-  rw [code_padTo]
-  exact representative_spec q
-
-theorem minDimension_eq_width (q : Classes) : minDimension q = width (representative q) := by
-  apply Nat.le_antisymm
-  · exact dimensionWitness_minimal q (coordinateWitness q) (coordinateWitness_spec q)
-  · have h := width_code_le (dimensionWitness q).2.property.dim
-    rw [representative_spec q] at h
-    exact h
+theorem hasDimensionWitness_iff (q : Classes) (lam : Nat) :
+    HasDimensionWitness lam q ↔ width (representative q) ≤ lam := by
+  constructor
+  · intro h
+    obtain ⟨s, hs⟩ := h
+    have hc : code s.val = representative q := by rw [← hs]; rfl
+    rw [← hc]
+    exact width_code_le s.property.dim
+  · intro h
+    exact hasDimensionWitness_mono h (exists_width_witness q)
 
 end kumakuma.CodeReification
 
@@ -619,16 +620,16 @@ theorem indicesBelow_below_boundary {k : Nat} (hk : 0 < k) (t : WFBelowOmega)
     (ht : IndicesBelow k t.val) : Term.lt t.val (boundary k) = true :=
   outer_below_boundary hk (CountableTarget.target_outer t) ht
 
-private theorem wf_lt_trans [LargeCardinals.{u}] {a b c : Term}
+private theorem wf_lt_trans {a b c : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
     (hab : Term.lt a b = true) (hbc : Term.lt b c = true) : Term.lt a c = true :=
-  lemma_6_1.{u}.2.1 a b c ha hb hc hab hbc
+  kumakuma.JaegerFacts.jaeger_order.2.1 a b c ha hb hc hab hbc
 
 private theorem head_lt_psi (t v b : Term) :
     Term.lt (Term.head t) (.psi v b) = Term.lt t (.psi v b) := by
   cases t <;> simp only [Term.head, Term.lt]
 
-private theorem tail_below_psi [LargeCardinals.{u}] {a b v c : Term}
+private theorem tail_below_psi {a b v c : Term}
     (hw : Term.wf (.add a b) = true) (hp : Term.wf (.psi v c) = true)
     (hlt : Term.lt a (.psi v c) = true) : Term.lt b (.psi v c) = true := by
   have h := (Term.wf_add_iff a b).mp hw
@@ -667,7 +668,7 @@ private theorem high_psi_not_below_collapse {n k : Nat} (hn : k ≤ n) (a b : Te
   · rw [he, TargetArithmetic.lt_self]; simp
   · simp [he]
 
-private theorem lower_psi_below_collapse_subscript [LargeCardinals.{u}]
+private theorem lower_psi_below_collapse_subscript
     {n k : Nat} (hn : n < k) {a b : Term} (hw : Term.wf (.inacc n a) = true)
     (hlt : Term.lt (.psi (.inacc n a) b) (collapse k) = true) :
     Term.lt a (collapse k) = true := by
@@ -689,7 +690,7 @@ private theorem H_omega_inacc_psi (n : Nat) (a b : Term) :
       b :: (Term.H Term.bigOmega b ++ Term.H Term.bigOmega (.inacc n a)) := by
   simp [Term.H, Term.predR, Term.bigOmega, Term.le, Term.lt, CountableTarget.lt_zero]
 
-theorem indicesBelow_of_collapse_bounds [LargeCardinals.{u}] {k : Nat}
+theorem indicesBelow_of_collapse_bounds {k : Nat}
     (t : Term) : Term.wf t = true → Term.lt t (collapse k) = true →
     (∀ z, z ∈ Term.H Term.bigOmega t → Term.lt z (collapse k) = true) →
     IndicesBelow k t := by
@@ -739,7 +740,7 @@ theorem indicesBelow_of_collapse_bounds [LargeCardinals.{u}] {k : Nat}
           exact Or.inr (Or.inl hz))
       exact ⟨ihv h.2.1 hv hHv, ihb h.2.2.1 hb hHb⟩
 
-theorem wf_below_boundary_indicesBelow [LargeCardinals.{u}] {k : Nat} (hk : 0 < k)
+theorem wf_below_boundary_indicesBelow {k : Nat} (hk : 0 < k)
     (t : Term) : Term.wf t = true → Term.lt t (boundary k) = true → IndicesBelow k t := by
   induction t with
   | zero => intro _ _; trivial
@@ -763,15 +764,15 @@ theorem wf_below_boundary_indicesBelow [LargeCardinals.{u}] {k : Nat} (hk : 0 < 
     have hH : ∀ z, z ∈ Term.H Term.bigOmega a → Term.lt z (collapse k) = true := by
       intro z hz
       have hzlt := (Term.allLt_iff _ _).mp h.2.2.2 z hz
-      have hzwf := H_wf.{u} h.1 h.2.1 h.2.2.1 hz
+      have hzwf := kumakuma.JaegerFacts.H_mem_wf _ _ h.2.2.1 _ hz
       exact wf_lt_trans hzwf h.2.2.1 (collapse_wf k) hzlt ha
     exact ⟨⟨hk, trivial⟩, indicesBelow_of_collapse_bounds a h.2.2.1 ha hH⟩
 
-theorem indicesBelow_iff_below_boundary [LargeCardinals.{u}] {k : Nat} (hk : 0 < k)
+theorem indicesBelow_iff_below_boundary {k : Nat} (hk : 0 < k)
     (t : WFBelowOmega) : IndicesBelow k t.val ↔ Term.lt t.val (boundary k) = true :=
   ⟨indicesBelow_below_boundary hk t, wf_below_boundary_indicesBelow hk t.val t.property.1⟩
 
-theorem indicesBelow_initial [LargeCardinals.{u}] {k : Nat} (hk : 0 < k)
+theorem indicesBelow_initial {k : Nat} (hk : 0 < k)
     (s t : WFBelowOmega) (hst : Term.lt s.val t.val = true)
     (ht : IndicesBelow k t.val) : IndicesBelow k s.val := by
   apply (indicesBelow_iff_below_boundary hk s).mpr

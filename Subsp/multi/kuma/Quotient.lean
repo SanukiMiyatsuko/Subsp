@@ -1,6 +1,7 @@
 import Subsp.multi.Lex
 import Subsp.multi.kuma.nt
 import Subsp.OCF.Jaeger.Notation
+import Subsp.multi.kuma.JaegerFacts
 
 /-! Codes of `multi` source terms, fixed-dimension source terms, the OT terms of each
 dimension and their classes, their order, and the basic finite translations.
@@ -745,43 +746,6 @@ theorem exists_dimension (q : Classes) :
     ∃ lam, ∃ s : OTD lam, classOf ⟨lam, s⟩ = q := by
   obtain ⟨⟨lam, s⟩, h⟩ := exists_rep q
   exact ⟨lam, s, h⟩
-
-private theorem exists_least (p : Nat → Prop) (h : ∃ n, p n) :
-    ∃ n, p n ∧ ∀ m, p m → n ≤ m := by
-  classical
-  obtain ⟨n, hn⟩ := h
-  induction n using Nat.strongRecOn with
-  | ind n ih =>
-    by_cases hsm : ∃ m, m < n ∧ p m
-    · obtain ⟨m, hmn, hm⟩ := hsm
-      exact ih m hmn hm
-    · exact ⟨n, hn, fun m hm => Nat.le_of_not_gt (fun hmn => hsm ⟨m, hmn, hm⟩)⟩
-
-private theorem exists_minDimension (q : Classes) :
-    ∃ lam, (∃ s : OTD lam, classOf ⟨lam, s⟩ = q) ∧
-      ∀ m, (∃ s : OTD m, classOf ⟨m, s⟩ = q) → lam ≤ m :=
-  exists_least _ (exists_dimension q)
-
-noncomputable def minDimension (q : Classes) : Nat :=
-  Classical.choose (exists_minDimension q)
-
-theorem minDimension_spec (q : Classes) :
-    ∃ s : OTD (minDimension q), classOf ⟨minDimension q, s⟩ = q :=
-  (Classical.choose_spec (exists_minDimension q)).1
-
-noncomputable def dimensionWitness (q : Classes) : AllOT :=
-  ⟨minDimension q, Classical.choose (minDimension_spec q)⟩
-
-theorem dimensionWitness_spec (q : Classes) : classOf (dimensionWitness q) = q :=
-  Classical.choose_spec (minDimension_spec q)
-
-theorem dimensionWitness_minimal (q : Classes) (s : AllOT)
-    (h : classOf s = q) : (dimensionWitness q).1 ≤ s.1 := by
-  exact (Classical.choose_spec (exists_minDimension q)).2 s.1 ⟨s.2, h⟩
-
-theorem representative_spec (q : Classes) :
-    code (dimensionWitness q).2.val = representative q := by
-  exact congrArg classCode (dimensionWitness_spec q)
 
 def noTrailingZero : List Code → Bool
   | [] => true

@@ -217,7 +217,7 @@ theorem convert_ne_zero_of_ne {k : Nat} {a : multi.T} (ha : a ≠ .Z) :
     convert (k + 3) (code a) ≠ .zero :=
   fun he => ha ((kumakuma.GeneralImageOmegaCoefficients.convert_eq_zero_iff _ _).1 he)
 
-theorem virtual_replace [LargeCardinals.{u}] (k : Nat) (ys : V multi.T) (hl : ys.length = k + 3)
+theorem virtual_replace (k : Nat) (ys : V multi.T) (hl : ys.length = k + 3)
     (r : Nat) (hr0 : 0 < r) (hrk : r ≤ k + 1)
     (hlow : ∀ j, j < r → V.get0 ys j = .Z)
     (c a : multi.T) (hc0 : c ≠ .Z) (ha0 : a ≠ .Z)
@@ -265,7 +265,7 @@ theorem lift_congr (xs ys : V multi.T) (j j' r : Nat)
   · rw [ite_eq_left hl, ite_eq_left hl]; exact hhigh l hl
   · rw [ite_eq_right hl, ite_eq_right hl, hj]
 
-theorem VecUC_replace_min [LargeCardinals.{u}] (k : Nat) (xs : V multi.T) (hxl : xs.length = k + 3)
+theorem VecUC_replace_min (k : Nat) (xs : V multi.T) (hxl : xs.length = k + 3)
     (i : Nat) (hlow : ∀ j, j < i → V.get0 xs j = .Z) (huc : VecUC k xs)
     (hc0 : V.get0 xs i ≠ .Z) (a : multi.T) (ha : RecursiveWF (k + 3) a)
     (hrel : ∀ r : Nat, i < r → r ≤ k + 1 → a ≠ .Z → ∀ w,
@@ -382,7 +382,7 @@ universe u
 set_option maxRecDepth 10000
 set_option maxHeartbeats 1500000
 
-theorem critical_virtual_closed [LargeCardinals.{u}] (k m : Nat) (hm0 : 0 < m)
+theorem critical_virtual_closed (k m : Nat) (hm0 : 0 < m)
     (ys q : V multi.T) (hysD : Dim (k + 3) (.P ys .Z))
     (hqf : V.fnz q = some (m + 1)) (hqOne : domF (V.get0 q (m + 1)) = .one)
     (b : multi.T) (hb : V.get0 q (m + 1) = kumakuma.SourceSuccessor.succ (k + 3) b)
@@ -458,7 +458,7 @@ theorem critical_virtual_closed [LargeCardinals.{u}] (k m : Nat) (hm0 : 0 < m)
     rw [heTop] at hTop
     exact ⟨_, hc, hTop⟩
 
-theorem diagonal_closed [LargeCardinals.{u}] (k : Nat)
+theorem diagonal_closed (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (hdiag : xs < q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) (huc : VecUC k xs) :
@@ -549,7 +549,7 @@ theorem UCTree.domain (k : Nat) {s : multi.T} (hc : UCTree k s) : domF s = .omeg
   | inherit xs i hf hdi => exact domF_omega hf hdi
   | tail xs b hb _ ih => rw [domF_tail xs hb]; exact ih
 
-theorem ucTree_fund_invariant [LargeCardinals.{u}] (k : Nat) {s : multi.T}
+theorem ucTree_fund_invariant (k : Nat) {s : multi.T}
     (hc : UCTree k s) (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
     (n : Nat) :
     RecursiveWF (k + 3) (T.fund s (ofNatD (k + 3) n)) ∧
@@ -660,7 +660,7 @@ theorem ucTree_fund_invariant [LargeCardinals.{u}] (k : Nat) {s : multi.T}
           (kumakuma.SourceCountableInvariant.omega_head_mass_pos xs b hr hd) (ofNatD_succ_ne _ _) ha)
         (hcoef v hvR hv hOmega) hH
 
-theorem tree_of_UC [LargeCardinals.{u}] (k : Nat) : ∀ (s : multi.T),
+theorem tree_of_UC (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s → UC k s → domF s = .omega → UCTree k s
   | .Z, _, _, _, _, hd => by rw [domF_Z] at hd; cases hd
   | .P xs b, hsD, hr, hs, huc, hd => by
@@ -772,7 +772,7 @@ theorem upper_le_of_not_lt (xs q : V multi.T) (r : Nat) (hnd : ¬ xs < q) :
       intro l hl'
       exact habove l (by omega)
 
-theorem upper_context [LargeCardinals.{u}] (k r : Nat) (hr : r ≤ k) (xs : V multi.T)
+theorem upper_context (k r : Nat) (hr : r ≤ k) (xs : V multi.T)
     (hsD : Dim (k + 3) (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) :
     ∃ a, Above r a ∧ Term.wf a = true ∧
       RecursiveWF (k + 3) (.P (upperVec xs r) .Z) ∧
@@ -870,7 +870,7 @@ theorem principal_top_image (k : Nat) (xs : V multi.T) :
   rw [convert_principal, principal_as_layers, converted_coordinate xs (k + 2),
     converted_coordinate xs (k + 1)]
 
-theorem topPair_lt_pairCut [LargeCardinals.{u}] (n : Nat) (h m : Term) (hh : Term.wf h = true) :
+theorem topPair_lt_pairCut (n : Nat) (h m : Term) (hh : Term.wf h = true) :
     Term.lt (topPair n h m) (pairCut n h) = true := by
   by_cases hm0 : m = .zero
   · by_cases hh0 : h = .zero
@@ -880,7 +880,7 @@ theorem topPair_lt_pairCut [LargeCardinals.{u}] (n : Nat) (h m : Term) (hh : Ter
       simp [Term.le]
   · simp [topPair, pairCut, hm0, Term.lt, Term.fT]
 
-theorem principal_lt_pairCut [LargeCardinals.{u}] (k : Nat) (xs : V multi.T)
+theorem principal_lt_pairCut (k : Nat) (xs : V multi.T)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) :
     Term.lt (convert (k + 3) (code (.P xs .Z)))
       (pairCut (k + 1) (convert (k + 3) (code (V.get0 xs (k + 2))))) = true := by
@@ -889,14 +889,14 @@ theorem principal_lt_pairCut [LargeCardinals.{u}] (k : Nat) (xs : V multi.T)
   exact lower_lt_inacc (k + 1) (k + 1) (Nat.le_refl _) _ _ _ (topPair_context _ _ _)
     (topPair_lt_pairCut _ _ _ (hcoords _).wf)
 
-theorem term_lt_of_lt_of_le [LargeCardinals.{u}] {a b c : Term}
+theorem term_lt_of_lt_of_le {a b c : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
     (hab : Term.lt a b = true) (hbc : Term.le b c = true) : Term.lt a c = true := by
   rcases (Term.le_iff_eq_or_lt _ _).mp hbc with he | hl
   · rw [← he]; exact hab
-  · exact lemma_6_1.{u}.2.1 _ _ _ ha hb hc hab hl
+  · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ha hb hc hab hl
 
-theorem uc_image_le_of_le [LargeCardinals.{u}] (k : Nat) (s t : multi.T)
+theorem uc_image_le_of_le (k : Nat) (s t : multi.T)
     (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t)
     (hs : RecursiveWF (k + 3) s) (ht : RecursiveWF (k + 3) t) (h : s ≤ t) :
     Term.le (convert (k + 3) (code s)) (convert (k + 3) (code t)) = true := by
@@ -905,7 +905,7 @@ theorem uc_image_le_of_le [LargeCardinals.{u}] (k : Nat) (s t : multi.T)
     simp [Term.le, this]
   · rw [code_congr he]; simp [Term.le]
 
-theorem lift_image_layer [LargeCardinals.{u}] (k r : Nat) (hr0 : 0 < r) (hr : r ≤ k)
+theorem lift_image_layer (k r : Nat) (hr0 : 0 < r) (hr : r ≤ k)
     (xs : V multi.T) (hxl : xs.length = k + 3) (j : Nat) (hj : V.get0 xs j ≠ .Z) (a : Term)
     (heIns : ∀ t : multi.T, t ≠ .Z →
       convert (k + 3) (code (.P (V.set (upperVec xs r) r t) .Z)) =
@@ -927,7 +927,7 @@ theorem lift_image_top (k : Nat) (xs : V multi.T) (hxl : xs.length = k + 3) (j :
     rw [converted_coordinate (lift xs j (k + 1)) l, lift_low xs j (k + 1) l hr hl, convert_Z])]
   simp [topPair, pairCut, hy]
 
-theorem nondiagonal_virtual_cut_above_label [LargeCardinals.{u}] (k : Nat)
+theorem nondiagonal_virtual_cut_above_label (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (hnd : ¬ xs < q)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (r : Nat) (hir : i < r)
@@ -1001,7 +1001,7 @@ def TopOK (k : Nat) (q : V multi.T) (t : multi.T) : Prop :=
     ∀ r : Nat, m < r → r ≤ k + 1 →
       RecursiveWF (k + 3) (.P (lift (V.set q m t) m r) .Z)
 
-theorem VecUC_replace_zero_fund [LargeCardinals.{u}] (k : Nat) (xs : V multi.T)
+theorem VecUC_replace_zero_fund (k : Nat) (xs : V multi.T)
     (i : Nat) (hxl : xs.length = k + 3) (hlow : ∀ j, j < i → V.get0 xs j = .Z) (huc : VecUC k xs)
     (hc0 : V.get0 xs i ≠ .Z) (hcD : Dim (k + 3) (V.get0 xs i)) (hcr : Recursive (V.get0 xs i))
     (hcw : RecursiveWF (k + 3) (V.get0 xs i)) :
@@ -1010,7 +1010,7 @@ theorem VecUC_replace_zero_fund [LargeCardinals.{u}] (k : Nat) (xs : V multi.T)
   exact VecUC_replace_min k xs hxl i hlow huc hc0 _ hz.1
     (fun _ _ _ _ w _ hwR hww hH => hz.2.2 w hwR hww hH)
 
-theorem UC_fund_Omega [LargeCardinals.{u}] (k : Nat) : ∀ (s : multi.T),
+theorem UC_fund_Omega (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s → UC k s →
     ∀ {q : V multi.T}, domF s = .Omega q →
     ∀ (κ : Term), CutFund k (.P q .Z) κ →

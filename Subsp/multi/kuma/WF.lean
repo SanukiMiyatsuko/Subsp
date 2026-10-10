@@ -208,7 +208,7 @@ theorem Dim_hd {d : Nat} {s : multi.T} (h : Dim d s) : Dim d (T.hd s) := by
   | Z => exact h
   | P xs b => exact Dim_P h.length h.coord (Dim_Z d)
 
-theorem image_le_of_le [LargeCardinals.{u}] (k : Nat) (s t : multi.T)
+theorem image_le_of_le (k : Nat) (s t : multi.T)
     (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t)
     (hs : RecursiveWF (k + 3) s) (ht : RecursiveWF (k + 3) t) (h : s ≤ t) :
     Term.le (DimensionImage.convert (k + 3) (code s))
@@ -219,7 +219,7 @@ theorem image_le_of_le [LargeCardinals.{u}] (k : Nat) (s t : multi.T)
   · exact Or.inl (congrArg (fun a => DimensionImage.convert (k + 3) (code a))
       (eq_of_compare_eq hsD htD h))
 
-theorem target_le_trans [LargeCardinals.{u}] {a b c : Term}
+theorem target_le_trans {a b c : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
     (hab : Term.le a b = true) (hbc : Term.le b c = true) : Term.le a c = true := by
   apply (Term.le_iff_eq_or_lt _ _).mpr
@@ -227,9 +227,9 @@ theorem target_le_trans [LargeCardinals.{u}] {a b c : Term}
   · exact (Term.le_iff_eq_or_lt _ _).mp hbc
   · rcases (Term.le_iff_eq_or_lt _ _).mp hbc with rfl | hbc
     · exact Or.inr hab
-    · exact Or.inr (lemma_6_1.{u}.2.1 _ _ _ ha hb hc hab hbc)
+    · exact Or.inr (kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ha hb hc hab hbc)
 
-theorem replace_tail_recursiveWF [LargeCardinals.{u}] (k : Nat)
+theorem replace_tail_recursiveWF (k : Nat)
     (xs : V multi.T) (b c : multi.T) (hsD : Dim (k + 3) (.P xs b)) (hcD : Dim (k + 3) c)
     (hs : RecursiveWF (k + 3) (.P xs b)) (hc : RecursiveWF (k + 3) c)
     (hb : b ≠ .Z) (hcb : c < b) : RecursiveWF (k + 3) (.P xs c) := by
@@ -256,7 +256,7 @@ theorem replace_tail_recursiveWF [LargeCardinals.{u}] (k : Nat)
     rw [convert_P, OT2.assemble, ite_eq_right hcnz]
     exact (Term.wf_add_iff _ _).mpr ⟨principal_isPrin _ _, hpwf, hc.wf, hcnz, hnew⟩
 
-theorem fund_nonzero_tail_recursiveWF [LargeCardinals.{u}] (k : Nat)
+theorem fund_nonzero_tail_recursiveWF (k : Nat)
     (xs : V multi.T) (b t : multi.T) (hsD : Dim (k + 3) (.P xs b)) (htD : Dim (k + 3) t)
     (hs : RecursiveWF (k + 3) (.P xs b)) (hb : b ≠ .Z)
     (hc : RecursiveWF (k + 3) (T.fund b t)) :
@@ -447,7 +447,7 @@ def PrincipalFundClosure (k : Nat) : Prop :=
     RecursiveWF (k + 3) (.P xs .Z) →
     ∀ n, RecursiveWF (k + 3) (T.fund (.P xs .Z) (ofNatD (k + 3) n))
 
-theorem fundClosure_iff_principal [LargeCardinals.{u}] (k : Nat) :
+theorem fundClosure_iff_principal (k : Nat) :
     FundClosure k ↔ PrincipalFundClosure k := by
   constructor
   · intro h xs ho hw n
@@ -473,7 +473,7 @@ def LimitLowFundClosure (k : Nat) : Prop :=
     (domF a = .omega ∨ ∃ v, domF a = .Omega v) →
     ∀ n, RecursiveWF (k + 3) (T.fund (.P (lowVec (k + 2) a) .Z) (ofNatD (k + 3) n))
 
-theorem principalFundClosure_iff_limit_low [LargeCardinals.{u}] (k : Nat) :
+theorem principalFundClosure_iff_limit_low (k : Nat) :
     PrincipalFundClosure k ↔ LimitLowFundClosure k := by
   constructor
   · intro h a ho hw _ n
@@ -494,7 +494,7 @@ theorem principalFundClosure_iff_limit_low [LargeCardinals.{u}] (k : Nat) :
       | omega => exact h a ho hw (Or.inl hd) n
       | Omega v => exact h a ho hw (Or.inr ⟨v, hd⟩) n
 
-theorem fundClosure_iff_limit_low [LargeCardinals.{u}] (k : Nat) :
+theorem fundClosure_iff_limit_low (k : Nat) :
     FundClosure k ↔ LimitLowFundClosure k :=
   (fundClosure_iff_principal k).trans (principalFundClosure_iff_limit_low k)
 
@@ -521,7 +521,7 @@ theorem original_wf_of_closure (k : Nat) (hc : FundClosure k)
     Term.wf (DimensionImage.convert (k + 3) (code s)) = true :=
   (original_recursiveWF_of_closure k hc s hs).wf
 
-theorem original_order_of_closure [LargeCardinals.{u}] (k : Nat) (hc : FundClosure k)
+theorem original_order_of_closure (k : Nat) (hc : FundClosure k)
     (s t : multi.T) (hs : DOT (k + 3) s) (ht : DOT (k + 3) t) :
     s < t ↔ Term.lt (DimensionImage.convert (k + 3) (code s))
       (DimensionImage.convert (k + 3) (code t)) = true :=
@@ -724,16 +724,13 @@ theorem class_not_lower_indices (k : Nat) (q : Classes)
     (hd : kumakuma.GeneralImageEmbedding.ambient (representative q) = k + 4) :
     ¬ IndicesBelow (k + 2) (kumakuma.GeneralImageEmbedding.classConversion q) := by
   intro h
-  let s := kumakuma.GeneralImageEmbedding.fixedWitness (k + 4) q
+  obtain ⟨s, he⟩ := kumakuma.GeneralImageEmbedding.exists_fixedWitness (k + 4) q
     (by rw [← hd]; exact Nat.le_max_right 3 _)
-  have he : code s.val = representative q :=
-    kumakuma.GeneralImageEmbedding.fixedWitness_code _ _ _
-  rw [kumakuma.GeneralImageEmbedding.class_fixed_value (k + 4) q hd] at h
+  rw [kumakuma.GeneralImageEmbedding.class_fixed_value (k + 4) q hd s he] at h
   have hw := width_of_indices (k + 1) s.val s.property.dim h
   rw [he] at hw
   unfold kumakuma.GeneralImageEmbedding.ambient at hd
   omega
-
 
 theorem source_lt_of_ambient_lt (q r : Classes)
     (hd : kumakuma.GeneralImageEmbedding.ambient (representative q) <
@@ -753,19 +750,17 @@ theorem source_lt_of_ambient_lt (q r : Classes)
     unfold kumakuma.GeneralImageEmbedding.ambient at hd
     omega
   have hq : HasDimensionWitness (k + 1) q := by
-    apply (hasDimensionWitness_iff _ _).mpr
-    rw [minDimension_eq_width]
-    exact hqw
+    exact (hasDimensionWitness_iff _ _).mpr hqw
   have hqb := kumakuma.DimensionCut.dimension_witness_below_boundary hq
   rcases classLT_total (kumakuma.DimensionCut.boundaryClass k) r with hl | hl | he
   · exact classLT_trans hqb hl
   · have hr := (kumakuma.DimensionCut.dimension_witness_iff_below_boundary k r).mpr hl
     have hw := (hasDimensionWitness_iff r (k + 1)).mp hr
-    rw [minDimension_eq_width, hrw] at hw
+    rw [hrw] at hw
     omega
   · simpa only [he] using hqb
 
-theorem target_lt_of_ambient_lt [LargeCardinals.{u}] (q r : Classes)
+theorem target_lt_of_ambient_lt (q r : Classes)
     (hd : kumakuma.GeneralImageEmbedding.ambient (representative q) <
       kumakuma.GeneralImageEmbedding.ambient (representative r))
     (hq : Term.wf (kumakuma.GeneralImageEmbedding.classConversion q) = true)
@@ -781,14 +776,14 @@ theorem target_lt_of_ambient_lt [LargeCardinals.{u}] (q r : Classes)
   have hidx : IndicesBelow (k + 2) (kumakuma.GeneralImageEmbedding.classConversion q) := by
     apply (kumakuma.GeneralImageEmbedding.indices_convert (representative q)).mono
     omega
-  rcases lemma_6_1.{u}.2.2 _ _ hq hr with hl | he | hl
+  rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ hq hr with hl | he | hl
   · exact hl
   · exact False.elim (hnot (he ▸ hidx))
   · exact False.elim (hnot (indicesBelow_initial (by omega : 0 < k + 2)
       ⟨_, hr, kumakuma.GeneralImageEmbedding.class_below r⟩
       ⟨_, hq, kumakuma.GeneralImageEmbedding.class_below q⟩ hl hidx))
 
-theorem different_ambient_order [LargeCardinals.{u}] (q r : Classes)
+theorem different_ambient_order (q r : Classes)
     (hd : kumakuma.GeneralImageEmbedding.ambient (representative q) <
       kumakuma.GeneralImageEmbedding.ambient (representative r))
     (hq : Term.wf (kumakuma.GeneralImageEmbedding.classConversion q) = true)
@@ -797,7 +792,7 @@ theorem different_ambient_order [LargeCardinals.{u}] (q r : Classes)
       (kumakuma.GeneralImageEmbedding.classConversion r) = true :=
   ⟨fun _ => target_lt_of_ambient_lt q r hd hq hr, fun _ => source_lt_of_ambient_lt q r hd⟩
 
-theorem global_certificate_of_fundClosure [LargeCardinals.{u}]
+theorem global_certificate_of_fundClosure
     (hc : ∀ k, kumakuma.GeneralImageWFInvariant.FundClosure k) :
     kumakuma.GeneralImageEmbedding.GlobalCertificate := by
   have hw : ∀ q : Classes,
@@ -831,7 +826,7 @@ theorem global_certificate_of_fundClosure [LargeCardinals.{u}]
         rw [h] at hf
         cases hf
 
-theorem global_certificate_of_limit_low [LargeCardinals.{u}]
+theorem global_certificate_of_limit_low
     (hc : ∀ k, kumakuma.GeneralImageWFInvariant.LimitLowFundClosure k) :
     kumakuma.GeneralImageEmbedding.GlobalCertificate :=
   global_certificate_of_fundClosure
@@ -1859,7 +1854,7 @@ theorem convert_principal (d : Nat) (xs : V multi.T) :
   rw [convert_P, convert_Z]
   simp only [kumakuma.OT2.assemble, ↓reduceIte]
 
-theorem principal_image_ne_one [LargeCardinals.{u}] (k : Nat)
+theorem principal_image_ne_one (k : Nat)
     (xs : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (hn : V.get0 xs i ≠ .Z) :
     convert (k + 3) (code (.P xs .Z)) ≠ Term.one := by
@@ -1873,7 +1868,7 @@ theorem principal_image_ne_one [LargeCardinals.{u}] (k : Nat)
   apply hn
   rw [hx, get0_zeros]
 
-theorem lt_inacc_drop [LargeCardinals.{u}] (n : Nat) (a : Term)
+theorem lt_inacc_drop (n : Nat) (a : Term)
     (ha : Term.wf a = true) (hi : Term.wf (.inacc n (dropOne a)) = true) :
     Term.lt a (.inacc n (dropOne a)) = true := by
   by_cases hh : Term.head a = Term.one
@@ -1882,11 +1877,10 @@ theorem lt_inacc_drop [LargeCardinals.{u}] (n : Nat) (a : Term)
     simpa only [he] using
       nat_lt_of_head_ne hi (by intro h; cases h) (by intro h; cases h) (m + 1)
   · rw [dropOne_of_head_ne hh] at hi ⊢
-    apply (lt_iff_V.{u} ha hi).mpr
-    exact (sem_of_wf.{u} hi).inacc_ok n a rfl
+    exact OCF.Jaeger.Term.lt_inacc_self hi
 
 
-theorem no_diagonal_highest [LargeCardinals.{u}] (k : Nat)
+theorem no_diagonal_highest (k : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hs : RecursiveWF (k + 3) (.P xs .Z))
     (hr : kumakuma.SourceRecursiveDescending.Recursive (V.get0 xs (k + 2)))

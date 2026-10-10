@@ -1538,14 +1538,7 @@ theorem hasDimensionWitness_mono {lam m : Nat} (h : lam ≤ m) {q : Classes}
   obtain ⟨s, hs⟩ := hq
   exact ⟨promoteOT h s, (classOf_promoteOT h s).trans hs⟩
 
-theorem hasDimensionWitness_iff (q : Classes) (lam : Nat) :
-    HasDimensionWitness lam q ↔ minDimension q ≤ lam := by
-  constructor
-  · intro h
-    obtain ⟨s, hs⟩ := h
-    exact dimensionWitness_minimal q ⟨lam, s⟩ hs
-  · intro h
-    exact hasDimensionWitness_mono h (minDimension_spec q)
+
 
 end kumakuma.OTQuotient
 
@@ -1897,36 +1890,34 @@ theorem dimension_witness_iff_below_boundary (k : Nat) (q : Classes) :
   constructor
   · exact dimension_witness_below_boundary
   · intro hq
-    apply (hasDimensionWitness_iff q (k + 1)).mpr
-    apply Nat.le_of_not_gt
-    intro hn
-    obtain ⟨s, hs⟩ := minDimension_spec q
-    generalize hd : minDimension q = d at s hs
-    cases d with
-    | zero => omega
-    | succ d =>
-      cases d with
-      | zero => omega
-      | succ m =>
-        have hkm : k ≤ m := by omega
-        have hm : ClassLT q (boundaryClass m) := by
-          by_cases he : k = m
-          · simpa only [he] using hq
-          · have hkdim : k + 2 ≤ m + 1 := by omega
-            have hkw : HasDimensionWitness (m + 1) (boundaryClass k) :=
-              hasDimensionWitness_mono hkdim ⟨(boundaryElement k).2, rfl⟩
-            exact classLT_trans hq (dimension_witness_below_boundary hkw)
-        rw [← hs] at hm
-        change compareCode (code s.val) (code (dimensionBound m)) = .lt at hm
-        rw [compareCode_code] at hm
-        obtain ⟨u, hu⟩ := isOT_below_dimensionBound s.property hm
-        have he : classOf ⟨m + 1, u⟩ = q := by
-          rw [← hs]
-          apply (class_eq_iff _ _).mpr
-          show code u.val = code s.val
-          rw [← hu, code_padTo]
-        have hmin := dimensionWitness_minimal q ⟨m + 1, u⟩ he
-        change minDimension q ≤ m + 1 at hmin
-        omega
+    obtain ⟨d, s, hs⟩ := exists_dimension q
+    induction d using Nat.strongRecOn with
+    | ind d ih =>
+      by_cases hdk : d ≤ k + 1
+      · exact hasDimensionWitness_mono hdk ⟨s, hs⟩
+      · cases d with
+        | zero => exact absurd (Nat.zero_le (k + 1)) hdk
+        | succ d =>
+          cases d with
+          | zero => exact absurd (by omega : 1 ≤ k + 1) hdk
+          | succ m =>
+            have hkm : k ≤ m := by omega
+            have hm : ClassLT q (boundaryClass m) := by
+              by_cases he : k = m
+              · simpa only [he] using hq
+              · have hkdim : k + 2 ≤ m + 1 := by omega
+                have hkw : HasDimensionWitness (m + 1) (boundaryClass k) :=
+                  hasDimensionWitness_mono hkdim ⟨(boundaryElement k).2, rfl⟩
+                exact classLT_trans hq (dimension_witness_below_boundary hkw)
+            rw [← hs] at hm
+            change compareCode (code s.val) (code (dimensionBound m)) = .lt at hm
+            rw [compareCode_code] at hm
+            obtain ⟨u, hu⟩ := isOT_below_dimensionBound s.property hm
+            have he : classOf ⟨m + 1, u⟩ = q := by
+              rw [← hs]
+              apply (class_eq_iff _ _).mpr
+              show code u.val = code s.val
+              rw [← hu, code_padTo]
+            exact ih (m + 1) (by omega) u he
 
 end kumakuma.DimensionCut
