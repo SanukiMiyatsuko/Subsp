@@ -100,6 +100,17 @@ def UpdatedCoefficient (k : Nat) (v : Term) (s t : multi.T) (z : Term) : Prop :=
       (z = convert (k + 3) (code (T.fund a t)) ∨
         z = dropOne (convert (k + 3) (code (T.fund a t))))
 
+/-- Updated coefficients of a subterm whose coefficients embed lift to the term. -/
+theorem UpdatedCoefficient.lift {k : Nat} {v : Term} {c s t : multi.T} {z : Term}
+    (hcs : GeneralImageCoefficients.Subterm c s)
+    (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code c)) →
+      z ∈ Term.H v (convert (k + 3) (code s)))
+    (hc : UpdatedCoefficient k v c t z) : UpdatedCoefficient k v s t z := by
+  rcases hc with he | ho | ⟨a, ha, hw, ho, he⟩
+  · exact Or.inl he
+  · exact Or.inr (Or.inl (embed _ ho))
+  · exact Or.inr (Or.inr ⟨a, ha.trans hcs, hw, ho.imp (embed _) (embed _), he⟩)
+
 end kumakuma.GeneralImageMiddleCofinality
 
 namespace kumakuma.GeneralImageMiddleSums
@@ -1317,16 +1328,6 @@ theorem parent_Omega_updated_or_support (k : Nat)
   have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
     fund_nondiag hf hdq (not_diag_of_dom hf hdq hd) t
   have hnChild := child_fund_recursiveWF hf hdq (not_diag_of_dom hf hdq hd) hn
-  have lift (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code (V.get0 xs i))) →
-      z ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) {z : Term} :
-      UpdatedCoefficient k v (V.get0 xs i) t z ∨ extra z →
-        UpdatedCoefficient k v (.P xs .Z) t z ∨ extra z := by
-    rintro ((he | ho | ⟨a, ha, hw, ho, he⟩) | hex)
-    · exact Or.inl (Or.inl he)
-    · exact Or.inl (Or.inr (Or.inl (embed _ ho)))
-    · exact Or.inl (Or.inr (Or.inr ⟨a, Subterm.trans ha (Subterm.coordinate xs .Z i), hw,
-        ho.imp (embed _) (embed _), he⟩))
-    · exact Or.inr hex
   intro z hz
   by_cases hib : i ≤ k + 1
   · obtain ⟨w, heOld, heNew⟩ := principal_replacement_psi_images k xs i hib
@@ -1345,7 +1346,8 @@ theorem parent_Omega_updated_or_support (k : Nat)
     · exact Or.inl (Or.inr (Or.inl (heOld ▸ ho)))
     · exact Or.inl (Or.inr (Or.inr ⟨V.get0 xs i, Subterm.coordinate xs .Z i, hnChild,
         Or.inl (heOld ▸ hroot), Or.inr he⟩))
-    · exact lift (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
+    · exact (hcoef z hzChild).imp_left
+        (UpdatedCoefficient.lift (Subterm.coordinate xs .Z i) fun z hz => heOld ▸ hchild z hz)
   · have hi : i = k + 2 := by have := hsD.length; omega
     subst hi
     have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) :=
@@ -1357,7 +1359,8 @@ theorem parent_Omega_updated_or_support (k : Nat)
       rw [show multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) from congrArg (multi.T.P · .Z) he]
       exact H_topNode_Omega k _ hchildDim hchildR (hcoords _) hdq v hOmega
     rw [heNew, H_topNode_above_Omega k _ (domOmega_fund_ne_zero _ t hdq) v hOmega] at hz
-    exact lift (fun z hz => heH ▸ hz) (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
+    exact (hcoef z (kumakuma.OT2.mem_H_dropOne hz)).imp_left
+      (UpdatedCoefficient.lift (Subterm.coordinate xs .Z (k + 2)) fun z hz => heH ▸ hz)
 
 theorem parent_Omega_relative_of_updated_or_bounded (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
@@ -1724,14 +1727,6 @@ theorem parent_zero_updated_support (k : Nat)
     rwa [V.get0_set_same xs i _ hil] at this
   have hcNZ : convert (k + 3) (code (V.get0 xs i)) ≠ .zero :=
     fun he => hc0 ((convert_eq_zero_iff _ _).1 he)
-  have lift (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code (V.get0 xs i))) →
-      z ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) {z : Term}
-      (hc : UpdatedCoefficient k v (V.get0 xs i) .Z z) : UpdatedCoefficient k v (.P xs .Z) .Z z := by
-    rcases hc with he | ho | ⟨a, ha, hw, ho, he⟩
-    · exact Or.inl he
-    · exact Or.inr (Or.inl (embed _ ho))
-    · exact Or.inr (Or.inr ⟨a, Subterm.trans ha (Subterm.coordinate xs .Z i), hw,
-        ho.elim (fun h => Or.inl (embed _ h)) (fun h => Or.inr (embed _ h)), he⟩)
   intro z hz
   by_cases hIsLow : convert (k + 3) (code (.P xs .Z)) =
       .psi Term.bigOmega (convert (k + 3) (code (V.get0 xs i)))
@@ -1770,7 +1765,8 @@ theorem parent_zero_updated_support (k : Nat)
         · rcases he with he | hzChild
           · exact Or.inr (Or.inr ⟨V.get0 xs i, Subterm.coordinate xs .Z i, hnChild,
               Or.inl (heOld ▸ hroot), Or.inr he⟩)
-          · exact lift (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
+          · exact UpdatedCoefficient.lift (Subterm.coordinate xs .Z i)
+              (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
       · have heZero : T.fund (V.get0 xs i) .Z = .Z :=
           (convert_eq_zero_iff _ _).1 (Decidable.not_not.mp hnewNZ)
         let ys := V.set xs i .Z
@@ -1855,7 +1851,8 @@ theorem parent_zero_updated_support (k : Nat)
         rw [heNew, hzC, topNode, hVec, H_low_empty_above_Omega v hOmega] at hz
         cases hz
       · rw [heNew, H_topNode_above_Omega k _ hzC v hOmega] at hz
-        exact lift (fun z hz => heH ▸ hz) (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
+        exact UpdatedCoefficient.lift (Subterm.coordinate xs .Z (k + 2)) (fun z hz => heH ▸ hz)
+          (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
 
 theorem regular_zero_updated_support (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))

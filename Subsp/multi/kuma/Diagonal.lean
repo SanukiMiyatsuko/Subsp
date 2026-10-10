@@ -849,15 +849,7 @@ theorem closed_diagonal_dominated_support (k : Nat)
     rcases H_psi_replacement_support v w _ _ hvR hv (heOld ▸ hs.wf) (heFund ▸ hn.wf) hlt hz
       with ⟨_, ho⟩ | ⟨he, hroot, hchild⟩
     · exact Or.inr (Or.inl (heOld ▸ ho))
-    · have lift (ho : DominatedCoefficient k v (V.get0 xs i) z) :
-          DominatedCoefficient k v (.P xs .Z) z := by
-        rcases ho with he | ho | ⟨c, hcs, hmem, hbound⟩
-        · exact Or.inl he
-        · exact Or.inr (Or.inl (heOld ▸ hchild _ ho))
-        · exact Or.inr (Or.inr ⟨c, Subterm.trans hcs (Subterm.coordinate xs .Z i),
-            hmem.elim (fun h => Or.inl (heOld ▸ hchild _ h)) (fun h => Or.inr (heOld ▸ hchild _ h)),
-            hbound⟩)
-      have rootBound (hl : Term.lt z (convert (k + 3) (code (V.get0 xs i))) = true) :
+    · have rootBound (hl : Term.lt z (convert (k + 3) (code (V.get0 xs i))) = true) :
           DominatedCoefficient k v (.P xs .Z) z :=
         Or.inr (Or.inr ⟨V.get0 xs i, Subterm.coordinate xs .Z i, Or.inl (heOld ▸ hroot),
           by simp [Term.le, hl]⟩)
@@ -865,7 +857,8 @@ theorem closed_diagonal_dominated_support (k : Nat)
       · apply rootBound; rw [he]; exact dropOne_lt_of_lt ha.wf (hcoords i).wf haLt
       · rcases Omega_iter_coefficient_support_at_label_cut k _ hcD hcr (hcoords i) hdq cut hc hSource
             v hvR hv hOmega (n + 1) he with ho | ho
-        · exact lift ho
+        · exact DominatedCoefficient.lift (Subterm.coordinate xs .Z i)
+            (fun _ h => heOld ▸ hchild _ h) ho
         · exact rootBound ho
 
 end kumakuma.GeneralImageClosedDiagonal

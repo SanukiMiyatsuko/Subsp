@@ -573,6 +573,16 @@ def DominatedCoefficient (k : Nat) (v : Term) (s : multi.T) (z : Term) : Prop :=
         dropOne (convert (k + 3) (code a)) ∈ Term.H v (convert (k + 3) (code s))) ∧
       Term.le z (convert (k + 3) (code a)) = true
 
+theorem DominatedCoefficient.lift {k : Nat} {v : Term} {c s : multi.T} {z : Term}
+    (hcs : Subterm c s)
+    (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code c)) →
+      z ∈ Term.H v (convert (k + 3) (code s)))
+    (hc : DominatedCoefficient k v c z) : DominatedCoefficient k v s z := by
+  rcases hc with he | ho | ⟨a, ha, hmA, hle⟩
+  · exact Or.inl he
+  · exact Or.inr (Or.inl (embed _ ho))
+  · exact Or.inr (Or.inr ⟨a, ha.trans hcs, hmA.imp (embed _) (embed _), hle⟩)
+
 theorem UpdatedCoefficient.dominated (k : Nat) (v : Term)
     (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
     {z : Term} (hc : UpdatedCoefficient k v s t z) : DominatedCoefficient k v s z := by
@@ -712,14 +722,6 @@ theorem inherited_omega_dominated_support (k : Nat)
     fun he => hc0 ((convert_eq_zero_iff _ _).1 he)
   have hnNZ : convert (k + 3) (code (T.fund (V.get0 xs i) (ofNatD (k + 3) n))) ≠ .zero :=
     fun he => hnChild0 ((convert_eq_zero_iff _ _).1 he)
-  have lift (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code (V.get0 xs i))) →
-      z ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) {z : Term}
-      (hc : DominatedCoefficient k v (V.get0 xs i) z) : DominatedCoefficient k v (.P xs .Z) z := by
-    rcases hc with he | ho | ⟨a, ha, hmA, hle⟩
-    · exact Or.inl he
-    · exact Or.inr (Or.inl (embed _ ho))
-    · exact Or.inr (Or.inr ⟨a, Subterm.trans ha (Subterm.coordinate xs .Z i),
-        hmA.elim (fun h => Or.inl (embed _ h)) (fun h => Or.inr (embed _ h)), hle⟩)
   intro z hz
   by_cases hIsLow : convert (k + 3) (code (.P xs .Z)) =
       .psi Term.bigOmega (convert (k + 3) (code (V.get0 xs i)))
@@ -745,7 +747,8 @@ theorem inherited_omega_dominated_support (k : Nat)
           rw [he]
           have hl := (convert_order k _ _ hnChildD hcD hnChild (hcoords i)).mp (fund_lt _ _ hc0)
           simp [Term.le, dropOne_lt_of_lt hnChild.wf (hcoords i).wf hl]
-        · exact lift (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
+        · exact DominatedCoefficient.lift (Subterm.coordinate xs .Z i)
+            (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
     · have hi : i = k + 2 := by omega
       subst hi
       have heOld : multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) :=
@@ -755,7 +758,8 @@ theorem inherited_omega_dominated_support (k : Nat)
           Term.H v (convert (k + 3) (code (V.get0 xs (k + 2)))) := by
         rw [heOld, H_topNode_above_Omega k _ hc0 v hOmega, hdrop]
       rw [hf, heR, ← topNode, H_topNode_above_Omega k _ hnChild0 v hOmega] at hz
-      exact lift (fun z hz => heH ▸ hz) (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
+      exact DominatedCoefficient.lift (Subterm.coordinate xs .Z (k + 2)) (fun z hz => heH ▸ hz)
+        (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
 
 theorem inherited_omega_dominated_relative_above (k : Nat)
     (xs : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
