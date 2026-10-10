@@ -609,10 +609,10 @@ theorem fund_outer {k : Nat} {s : multi.T} (hs : Outer k s) (t : multi.T) :
 theorem isOT_outer_aux {lam : Nat} {s : multi.T} (h : DOT lam s) :
     ∀ k, lam = k + 1 → Outer k s := by
   induction h with
-  | base_0 n => intro k e; omega
+  | base_0 n => intro k e; omega_c
   | base_succ lam n =>
     intro k e
-    obtain rfl : lam = k := by omega
+    obtain rfl : lam = k := by omega_c
     exact Outer.cons _ _ Outer.zero
   | step lam s _ n ih =>
     intro k e
@@ -784,18 +784,8 @@ theorem zero_lt_iff (t : Term) : Term.lt .zero t = true ↔ t ≠ .zero := by
   cases t <;> simp [Term.lt]
 
 theorem one_le_principal {t : Term} (hp : Term.isPrin t = true) (hw : Term.wf t = true) :
-    Term.le Term.one t = true := by
-  cases t with
-  | zero | add => cases hp
-  | inacc n b =>
-    cases n <;> cases b <;> simp [Term.le, Term.one, Term.bigOmega, Term.lt, Term.fT]
-  | psi u b =>
-    have hu := ((Term.wf_psi_iff u b).mp hw).1
-    cases u with
-    | zero | add | psi => cases hu
-    | inacc n c =>
-      cases n <;> cases c <;> cases b <;>
-        simp [Term.le, Term.one, Term.bigOmega, Term.lt, Term.fT, CountableTarget.lt_zero]
+    Term.le Term.one t = true :=
+  OCF.Jaeger.Term.one_le_prin hw hp
 
 theorem principal_not_lt_one {t : Term} (hp : Term.isPrin t = true) (hw : Term.wf t = true) :
     Term.lt t Term.one = false := by
@@ -1413,10 +1403,15 @@ theorem dimensionTop_fund (k : Nat) (x : multi.T) :
   show _ = if j = (lastVec k x).length then .Z else V.get0 (lastVec k x) j
   rw [lastVec_length]
   by_cases hjk : j = k
-  · subst hjk; simp [get0_lastVec]
+  · subst hjk
+    rw [ite_eq_left rfl, ite_eq_right (Nat.ne_of_lt (Nat.lt_succ_self j)), get0_lastVec,
+      ite_eq_left rfl]
   · by_cases hj1 : j = k + 1
-    · subst hj1; simp [get0_lastVec, fund_one]
-    · simp [get0_lastVec, hjk, hj1]
+    · subst hj1
+      rw [ite_eq_right hjk, ite_eq_left rfl, ite_eq_left rfl, get0_lastVec, ite_eq_left rfl]
+      exact fund_one _
+    · rw [ite_eq_right hjk, ite_eq_right hj1, ite_eq_right hj1, get0_lastVec, get0_lastVec,
+        ite_eq_right hj1, ite_eq_right hjk]
 
 theorem code_dimensionTop_fund (k : Nat) (x : multi.T) :
     code (T.fund (dimensionTop k) x) = code (.P (lastVec k x) .Z) := by
@@ -1823,10 +1818,10 @@ theorem LF_positive (k n : Nat) : towerD (k + 1) (n + 1) ≠ .Z := by
 theorem generated_small_aux {lam : Nat} {s : multi.T} (h : DOT lam s) :
     ∀ k, lam = k + 2 → s < dimensionBound k → ∃ u, DOT (k + 1) u ∧ padTo (k + 2) u = s := by
   induction h with
-  | base_0 n => intro k e; omega
+  | base_0 n => intro k e; omega_c
   | base_succ lam n =>
     intro k e hl
-    obtain rfl : lam = k + 1 := by omega
+    obtain rfl : lam = k + 1 := by omega_c
     match n with
     | 0 => exact padded_small_argument (a := towerD (k + 2) 0) (Or.inl rfl)
     | 1 => exact padded_small_argument (a := towerD (k + 2) 1) (Or.inr (LF_one (k + 1)))

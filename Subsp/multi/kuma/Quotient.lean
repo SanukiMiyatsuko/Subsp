@@ -2,6 +2,7 @@ import Subsp.multi.Lex
 import Subsp.multi.kuma.nt
 import Subsp.OCF.Jaeger.Notation
 import Subsp.multi.kuma.JaegerFacts
+import Subsp.multi.kuma.Decide
 
 /-! Codes of `multi` source terms, fixed-dimension source terms, the OT terms of each
 dimension and their classes, their order, and the basic finite translations.

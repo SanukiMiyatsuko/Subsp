@@ -19,8 +19,6 @@ open kumakuma.GeneralImageUniformClosure kumakuma.GeneralImageUniformContext
 open kumakuma.GeneralImageUniformPreservation
 open kumakuma.GeneralImageLimitBranches kumakuma.GeneralImageHighestDiagonal
 
-universe u
-
 set_option maxRecDepth 10000
 
 /-- The pivot of a strict vector comparison, with equal coordinates above it (fixed dimension). -/
@@ -536,20 +534,20 @@ theorem diagonal_topOK (k : Nat)
   have hqW := Omega_label_recursiveWF k _ hcw hdq
   have hxl := hsD.length
   have hql := hqD.length
-  have hil : i < k + 3 := by have := fnz_lt_length hf; omega
+  have hil : i < k + 3 := by have := fnz_lt_length hf; omega_c
   have hib := kumakuma.GeneralImageClosedDiagonal.closed_diagonal_selector_bound k xs q i hsD hf hdq
     hdiag hr hs
-  rw [lift_rplc_eq_upper q m r hmr (by omega)]
+  rw [lift_rplc_eq_upper q m r hmr (by omega_c)]
   have hneq : ∀ j, V.get0 xs i ≠ V.get0 q j := by
     intro j he
     have hmass := kumakuma.GeneralImageLabelClosure.Omega_label_mass_le (V.get0 xs i) hdq
     have hidx := mass_idx_lt q .Z j
     rw [he] at hmass
-    omega
+    omega_c
   by_cases hag : ∀ l, r < l → V.get0 xs l = V.get0 q l
   · rcases Nat.lt_trichotomy i r with hir | hir | hir
     · have he : V.set (upperVec q r) r (V.get0 xs i) = lift xs i r := by
-        rw [lift_eq_upper_rplc xs i r (by omega)]
+        rw [lift_eq_upper_rplc xs i r (by omega_c)]
         congr 1
         apply V.eq_of_get0 _ _ (by rw [upperVec_length, upperVec_length, hxl, hql])
         intro l
@@ -562,35 +560,35 @@ theorem diagonal_topOK (k : Nat)
     · have he : V.set (upperVec q r) r (V.get0 xs i) = xs := by
         apply V.eq_of_get0 _ _ (by rw [V.length_set, upperVec_length, hxl, hql])
         intro l
-        rw [V.get0_set _ r _ l (by rw [upperVec_length]; omega), get0_upperVec]
+        rw [V.get0_set _ r _ l (by rw [upperVec_length]; omega_c), get0_upperVec]
         by_cases hl : l = r
         · rw [ite_eq_left hl, hl, hir]
         · rw [ite_eq_right hl]
           by_cases hlr : r < l
           · rw [ite_eq_left hlr]; exact (hag l hlr).symm
-          · rw [ite_eq_right hlr]; exact (hlow l (by omega)).symm
+          · rw [ite_eq_right hlr]; exact (hlow l (by omega_c)).symm
       rw [he]; exact hs
     · exact False.elim (hneq i (hag i hir))
   · obtain ⟨p, hp, hhigh⟩ := lt_pivot_eq hsD hqD hdiag
     have hpr : r < p := by
-      apply Classical.byContradiction; intro hpr
+      apply Decidable.byContradiction; intro hpr
       apply hag
       intro l hl
-      exact hhigh l (by omega)
+      exact hhigh l (by omega_c)
     have hpi : i ≤ p := by
-      apply Classical.byContradiction; intro hpi
+      apply Decidable.byContradiction; intro hpi
       apply hneq i
-      exact hhigh i (by omega)
+      exact hhigh i (by omega_c)
     by_cases hir : i ≤ r
     · have hvx : RecursiveWF (k + 3) (.P (lift xs i r) .Z) := by
         rcases Nat.lt_or_eq_of_le hir with hlt | heq
         · exact huc i r hlt hrk hc0
-        · rw [← heq, lift_self_of_low xs i (by omega) hlow]; exact hs
-      exact topOK_same_layer k xs q hsD hqD i r p hrk (by omega) hpr hp hhigh hc0 hs hqW hvx
+        · rw [← heq, lift_self_of_low xs i (by omega_c) hlow]; exact hs
+      exact topOK_same_layer k xs q hsD hqD i r p hrk (by omega_c) hpr hp hhigh hc0 hs hqW hvx
     · by_cases hpe : p = i
       · rw [hpe] at hp hhigh
-        exact False.elim (higher_equal_context_false k xs q i hsD hf hdq (by omega) hib hr hs hhigh hp)
-      · exact topOK_higher k xs q hsD hqD i r p (by omega) (by omega) hib (by omega) hp hhigh hlow hc0
+        exact False.elim (higher_equal_context_false k xs q i hsD hf hdq (by omega_c) hib hr hs hhigh hp)
+      · exact topOK_higher k xs q hsD hqD i r p (by omega_c) (by omega_c) hib (by omega_c) hp hhigh hlow hc0
           hs hqW
 
 end kumakuma.GeneralImageUniformTop
@@ -609,8 +607,6 @@ open kumakuma.GeneralImageUniformTop kumakuma.BinaryTranslation kumakuma.General
 open kumakuma.GeneralImageCofinalityBounds kumakuma.GeneralImageCountableRecursion
 open kumakuma.GeneralImageLimitBranches kumakuma.GeneralImageClosedDiagonal kumakuma.TargetArithmetic
 open kumakuma.GeneralImageLimitSupport
-
-universe u
 
 set_option maxRecDepth 10000
 
@@ -929,10 +925,10 @@ theorem UC_basis (k n : Nat) :
 theorem generated_invariant (k : Nat) {lam : Nat} {s : multi.T}
     (hs : DOT lam s) : lam = k + 3 → RecursiveWF (k + 3) s ∧ UC k s := by
   induction hs with
-  | base_0 n => intro e; omega
+  | base_0 n => intro e; omega_c
   | base_succ lam n =>
     intro e
-    have hl : lam = k + 2 := by omega
+    have hl : lam = k + 2 := by omega_c
     subst hl
     exact ⟨basis_recursiveWF k n, UC_basis k n⟩
   | step lam s hs n ih =>

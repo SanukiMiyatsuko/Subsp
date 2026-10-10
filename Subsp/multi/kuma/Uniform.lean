@@ -12,8 +12,6 @@ open kumakuma.GeneralImageCoefficients kumakuma.BinaryTranslation kumakuma.Targe
 open kumakuma.GeneralImageCofinalityCoefficients kumakuma.GeneralImageRelativePredecessor
 open kumakuma.GeneralImageCriticalZeroDiagonal kumakuma.GeneralImageLimitSupport
 
-universe u
-
 /-- The virtual vector moving coordinate `j` of `xs` to slot `r` and erasing everything below. -/
 def lift (xs : V multi.T) (j r : Nat) : V multi.T :=
   vOf (fun l => if r < l then V.get0 xs l else if l = r then V.get0 xs j else .Z) xs.length
@@ -377,8 +375,6 @@ open kumakuma.GeneralImageZeroFund kumakuma.GeneralImageCountableLayers kumakuma
 open kumakuma.GeneralImageOmegaCoefficients kumakuma.SourceFundGap kumakuma.GeneralImageUpperOmega
 open kumakuma.GeneralImageCofinalityCoefficients
 
-universe u
-
 set_option maxRecDepth 10000
 set_option maxHeartbeats 1500000
 
@@ -473,9 +469,9 @@ theorem diagonal_closed (k : Nat)
   have hqD := Dim_Omega_label (hsD.coord i) hdq
   obtain ⟨j, hjPos, hqf, hqOne⟩ := domOmega_regular (V.get0 xs i) hdq
   cases j with
-  | zero => omega
+  | zero => omega_c
   | succ m =>
-    have hmk : m ≤ k + 1 := by have := fnz_lt_length hqf; rw [hqD.length] at this; omega
+    have hmk : m ≤ k + 1 := by have := fnz_lt_length hqf; rw [hqD.length] at this; omega_c
     by_cases hmi : m < i
     · exact higher_source_closed k m xs q i hmi hib hsD hf hdq hqf hqOne
         (higher_selector_zero_label_bound k m xs q i hmi hsD hf hdq hqf hqOne hd).1 hr hs
@@ -484,25 +480,25 @@ theorem diagonal_closed (k : Nat)
         by_cases hml : i ≤ k
         · exact context_bound_diagonal_source_closed k i hml xs q i (Nat.le_refl _) hsD hf hdq hqf
             hqOne (consecutive_diagonal_context_bound k i xs q hsD hf hdq hqf hqOne hdiag) hr hs
-        · have heM : i = k + 1 := by omega
+        · have heM : i = k + 1 := by omega_c
           rw [heM] at hf hdq hqf hqOne ⊢
           exact highest_consecutive_source_closed k xs q hsD hf hdq hqf hqOne hdiag hr hs
-      · have him : i < m := by omega
+      · have him : i < m := by omega_c
         obtain ⟨b, hb⟩ := dom_one_succ (V.get0 q (m + 1)) (hqD.coord _) hqOne
         by_cases hcrit : V.get0 xs (m + 1) = b ∧ ∀ j, m + 1 < j → V.get0 xs j = V.get0 q j
         · have hv := huc i m him hmk hc0
-          have hmx : m < xs.length := by omega
-          have hres := critical_virtual_closed k m (by omega) (lift xs i m) q
+          have hmx : m < xs.length := by omega_c
+          have hres := critical_virtual_closed k m (by omega_c) (lift xs i m) q
             (Dim_lift hsD i m hmx) hqf hqOne b hb
-            (by rw [lift_high xs i m (m + 1) hmx (by omega)]; exact hcrit.1)
-            (fun j hj => by rw [lift_high xs i m j hmx (by omega)]; exact hcrit.2 j hj)
+            (by rw [lift_high xs i m (m + 1) hmx (by omega_c)]; exact hcrit.1)
+            (fun j hj => by rw [lift_high xs i m j hmx (by omega_c)]; exact hcrit.2 j hj)
             (by rw [lift_at xs i m hmx]; exact hcr) (by rw [lift_at xs i m hmx]; exact hdq) hv
           rw [lift_at xs i m hmx] at hres
           exact hres
         · by_cases hml : m ≤ k
-          · exact context_bound_diagonal_source_closed k m hml xs q i (by omega) hsD hf hdq hqf hqOne
+          · exact context_bound_diagonal_source_closed k m hml xs q i (by omega_c) hsD hf hdq hqf hqOne
               (noncritical_diagonal_context_bound k m xs q i hsD hqD hf hqf hqOne b hb hdiag hcrit) hr hs
-          · have heM : m = k + 1 := by omega
+          · have heM : m = k + 1 := by omega_c
             subst heM
             obtain ⟨c, heQ⟩ := highest_regular_label_shape k q hqD hqf hqOne
             have heBC : b = c := by
@@ -521,7 +517,7 @@ theorem diagonal_closed (k : Nat)
                   exact kumakuma.GeneralImageRelativePredecessor.Dim_of_oplus h
                 exact eq_of_norm_eq (hsD.coord _) hbD ((compareT_eq_iff _ _).1 he)
               · intro j hj
-                rw [V.get0_ge xs j (by omega), V.get0_ge q j (by rw [hqD.length]; omega)]
+                rw [V.get0_ge xs j (by omega_c), V.get0_ge q j (by rw [hqD.length]; omega_c)]
 
 inductive UCTree (k : Nat) : multi.T → Prop
   | successor (xs : V multi.T) (b : multi.T)
@@ -707,8 +703,6 @@ open kumakuma.GeneralImageRegularLimit kumakuma.GeneralImageHeadCuts
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.SourceFundOrder
 open kumakuma.GeneralImageUniformClosure kumakuma.GeneralImageSharedTopPair
 open kumakuma.GeneralImageCofinalityBounds
-
-universe u
 
 /-- The coordinates of `xs` strictly above slot `r`, with zeros below. -/
 def upperVec (xs : V multi.T) (r : Nat) : V multi.T :=
@@ -991,8 +985,6 @@ open kumakuma.GeneralImageLayerOrder kumakuma.GeneralImagePrincipalOrder kumakum
 open kumakuma.GeneralImageCoefficients kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 open kumakuma.GeneralImageOmegaSpine kumakuma.GeneralImageLabelCut kumakuma.GeneralImageZeroFund
 open kumakuma.GeneralImageUniformClosure kumakuma.GeneralImageUniformContext
-
-universe u
 
 set_option maxRecDepth 10000
 

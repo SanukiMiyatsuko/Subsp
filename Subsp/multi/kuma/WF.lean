@@ -8,8 +8,6 @@ namespace kumakuma.GeneralImageWFInvariant
 open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.CountableSource kumakuma.DimensionCut
 open kumakuma.GeneralImageEmbedding kumakuma.GeneralImageRawOrder
 
-universe u
-
 theorem recursive_zero (d : Nat) : RecursiveWF d .Z := RecursiveWF_Z d
 
 theorem code_ofNatD_one (lam : Nat) : code (ofNatD lam 1) = UserImage.oneCode := by
@@ -502,10 +500,10 @@ theorem generated_recursiveWF_aux (k : Nat) (hc : FundClosure k)
     {lam : Nat} {s : multi.T} (hs : DOT lam s) :
     lam = k + 3 → RecursiveWF (k + 3) s := by
   induction hs with
-  | base_0 n => intro e; omega
+  | base_0 n => intro e; omega_c
   | base_succ lam n =>
     intro e
-    obtain rfl : lam = k + 2 := by omega
+    obtain rfl : lam = k + 2 := by omega_c
     exact basis_recursiveWF k n
   | step lam s hs n ih =>
     intro e
@@ -536,8 +534,6 @@ open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.CodeReification
 open kumakuma.BinaryTranslation kumakuma.TargetIndexCuts kumakuma.DimensionImage
 open kumakuma.GeneralImageTopPair kumakuma.GeneralImageLayerOrder
 open kumakuma.GeneralImagePrincipalOrder kumakuma.GeneralImageRawOrder
-
-universe u
 
 theorem indices_drop_iff {k : Nat} (hk : 0 < k) (t : Term) :
     IndicesBelow k (dropOne t) ↔ IndicesBelow k t := by
@@ -742,13 +738,13 @@ theorem source_lt_of_ambient_lt (q r : Classes)
     unfold kumakuma.GeneralImageEmbedding.ambient at hd
     dsimp [k]
     unfold kumakuma.GeneralImageEmbedding.ambient
-    omega
+    omega_c
   have hqw : width (representative q) ≤ k + 1 := by
     have h := Nat.le_max_right 3 (width (representative q))
     change width (representative q) ≤ kumakuma.GeneralImageEmbedding.ambient (representative q) at h
     dsimp [k]
     unfold kumakuma.GeneralImageEmbedding.ambient at hd
-    omega
+    omega_c
   have hq : HasDimensionWitness (k + 1) q := by
     exact (hasDimensionWitness_iff _ _).mpr hqw
   have hqb := kumakuma.DimensionCut.dimension_witness_below_boundary hq
@@ -757,7 +753,7 @@ theorem source_lt_of_ambient_lt (q r : Classes)
   · have hr := (kumakuma.DimensionCut.dimension_witness_iff_below_boundary k r).mpr hl
     have hw := (hasDimensionWitness_iff r (k + 1)).mp hr
     rw [hrw] at hw
-    omega
+    omega_c
   · simpa only [he] using hqb
 
 theorem target_lt_of_ambient_lt (q r : Classes)
@@ -840,8 +836,6 @@ open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.CountableSource
 open kumakuma.GeneralImageEmbedding kumakuma.GeneralImageRawOrder
 open kumakuma.GeneralImageWFInvariant kumakuma.BinaryTranslation
 open kumakuma.DimensionCut kumakuma.TargetArithmetic
-
-universe u
 
 theorem H_mul_principal_support (d : Nat) (xs : V multi.T) (lam : Nat) (u : Term) :
     ∀ (n : Nat) {z : Term}, z ∈ Term.H u (DimensionImage.convert d
@@ -1846,8 +1840,6 @@ open kumakuma.GeneralImageCoefficients kumakuma.TargetArithmetic kumakuma.Binary
 open kumakuma.DimensionCut kumakuma.GeneralImageLimitBranches
 open kumakuma.CountableSource
 open kumakuma.GeneralImageLayerOrder kumakuma.GeneralImagePrincipalOrder kumakuma.GeneralImageTopPair
-
-universe u
 
 theorem convert_principal (d : Nat) (xs : V multi.T) :
     convert d (code (.P xs .Z)) = principal d (arguments d (trim (codes xs))) := by

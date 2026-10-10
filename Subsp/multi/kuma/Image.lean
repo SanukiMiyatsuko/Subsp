@@ -462,24 +462,24 @@ theorem generated_reify (d lam : Nat) (s : OTD d) (hw : width (code s.val) ≤ l
     by_cases hd : d ≤ lam
     · exact isOT_promote hd s.property
     · cases d with
-      | zero => omega
+      | zero => omega_c
       | succ d =>
         cases d with
         | zero =>
-          have hl : lam = 0 := by omega
+          have hl : lam = 0 := by omega_c
           subst lam
           obtain ⟨n, he⟩ :=
             FiniteCorrespondence.zero_dimension_exhaustive (padTo 0 s.val) (Dim_padTo_width hw)
           rw [he]
           exact FiniteCorrespondence.ofNat_isOT_zero n
         | succ k =>
-          have hlo : width (code s.val) ≤ k + 1 := Nat.le_trans hw (by omega)
+          have hlo : width (code s.val) ≤ k + 1 := Nat.le_trans hw (by omega_c)
           have hs : s.val < dimensionBound k :=
             outer_fit_below (isOT_outer s.property) s.property.dim hlo
           obtain ⟨u, hu⟩ := DimensionCut.isOT_below_dimensionBound s.property hs
           have hc : code u.val = code s.val := by rw [← hu, code_padTo]
           have hwu : width (code u.val) ≤ lam := by rw [hc]; exact hw
-          have h := ih (k + 1) (by omega) lam u hwu
+          have h := ih (k + 1) (by omega_c) lam u hwu
           rwa [padTo_congr hc] at h
 
 theorem exists_width_witness (q : Classes) : HasDimensionWitness (width (representative q)) q := by
@@ -545,8 +545,6 @@ end kumakuma.DimensionImage
 namespace kumakuma.TargetIndexCuts
 
 open OCF.Jaeger
-
-universe u
 
 def IndicesBelow (k : Nat) : Term → Prop
   | .zero => True
@@ -985,8 +983,6 @@ end kumakuma.SourceFundOrder
 namespace kumakuma.DimensionImage
 
 open OCF.Jaeger kumakuma.OTQuotient kumakuma.BinaryTranslation
-
-universe u
 
 theorem lower_keep (k : Nat) (xs : List Term) (h : Term) (hh : h ≠ .zero)
     (hz : ∀ i, i < k → xs[i]?.getD .zero = .zero) : lower k xs h = h := by

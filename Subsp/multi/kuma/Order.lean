@@ -129,8 +129,6 @@ namespace kumakuma.GeneralImageTopPair
 
 open OCF.Jaeger kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 
-universe u
-
 def topPair (n : Nat) (h m : Term) : Term :=
   if m = .zero then
     if h = .zero then .zero else .inacc n (dropOne h)
@@ -270,8 +268,6 @@ namespace kumakuma.GeneralImageLayerOrder
 
 open OCF.Jaeger kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 open kumakuma.GeneralImageTopPair
-
-universe u
 
 def regular (n : Nat) (a : Term) : Term := .inacc n (succTerm a)
 
@@ -589,8 +585,6 @@ namespace kumakuma.GeneralImagePrincipalOrder
 open OCF.Jaeger kumakuma.DimensionImage kumakuma.GeneralImageTopPair
 open kumakuma.GeneralImageLayerOrder
 
-universe u
-
 def Context (k : Nat) (a : Term) : Prop := a = .zero ∨ (Term.isPrin a = true ∧ k ≤ Term.fT a)
 
 def lexArgs : Nat → List Term → List Term → Bool
@@ -730,8 +724,6 @@ namespace kumakuma.GeneralImageRawOrder
 
 open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.DimensionImage
 open kumakuma.GeneralImagePrincipalOrder kumakuma.CodeReification
-
-universe u
 
 /-- Every subterm has a well-formed image. -/
 def RecursiveWF (d : Nat) : multi.T → Prop
@@ -1080,8 +1072,6 @@ open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.DimensionImage
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 open kumakuma.GeneralImageTopPair kumakuma.GeneralImageLayerOrder
 open kumakuma.GeneralImagePrincipalOrder kumakuma.GeneralImageRawOrder
-
-universe u
 
 inductive Subterm : multi.T → multi.T → Prop
   | coordinate (xs : V multi.T) (b : multi.T) (i : Nat) : Subterm (V.get0 xs i) (.P xs b)

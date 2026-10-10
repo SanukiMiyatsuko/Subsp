@@ -12,8 +12,6 @@ open kumakuma.GeneralImagePrincipalOrder kumakuma.GeneralImageLayerOrder
 open kumakuma.GeneralImageWFInvariant kumakuma.GeneralImageLimitSupport
 open kumakuma.SourceRecursiveDescending kumakuma.SourceSubtermBounds
 
-universe u
-
 inductive Coefficient (d : Nat) : multi.T → multi.T → Prop
   | root (xs : V multi.T) (b : multi.T) (i : Nat)
       (hi : i + 1 < d) (hn : V.get0 xs i ≠ .Z) : Coefficient d (V.get0 xs i) (.P xs b)
@@ -437,8 +435,6 @@ open kumakuma.SourceFundOrder kumakuma.SourceSubtermBounds kumakuma.GeneralImage
 open kumakuma.CountableSource
 open kumakuma.SourceOmegaTail
 
-universe u
-
 theorem topPair_context (n : Nat) (a b : Term) : Context n (topPair n a b) := by
   rcases topPair_shape n a b with hz | ⟨hp, hf⟩
   · exact Or.inl hz
@@ -799,9 +795,9 @@ theorem CutSpine.fund (i : Nat) : ∀ (s t : multi.T), CutSpine i s → CutSpine
             exact CutSpine.mul_principal i _ (update .Z) t
           | succ m =>
             rw [fund_one_succ hf hd]
-            apply CutSpine.principal_replace i m _ t (update .Z) (by omega)
+            apply CutSpine.principal_replace i m _ t (update .Z) (by omega_c)
             intro he
-            omega
+            omega_c
     · rw [fund_tail xs hb]
       exact CutSpine_P.2 ⟨hs'.1, hs'.2.1, CutSpine.fund i b t hs'.2.2⟩
 termination_by s => s.size
@@ -1031,8 +1027,6 @@ open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.DimensionImage
 open kumakuma.GeneralImageRawOrder kumakuma.GeneralImageWFInvariant
 open kumakuma.GeneralImageLimitBranches kumakuma.GeneralImageRegularLimit
 
-universe u
-
 theorem high_recursive_image (k : Nat) (a : multi.T)
     (hs : RecursiveWF (k + 3) (topNode k a)) : RecursiveWF (k + 3) a := by
   have hh := (RecursiveWF_P.1 hs).1 (k + 2)
@@ -1200,11 +1194,10 @@ theorem zeros_lt_of_nonzero {w xs : V multi.T} (hw : ∀ i, V.get0 w i = .Z)
 theorem numeral_lt_nonzero_head (lam : Nat) (xs : V multi.T) (b : multi.T)
     (hx : 0 < vectorMass xs) (n : Nat) : ofNatD lam n < .P xs b := by
   have hnz : ∃ i, V.get0 xs i ≠ .Z := by
-    apply Classical.byContradiction
-    intro h
-    have hz : ∀ i, V.get0 xs i = .Z := fun i => Classical.byContradiction (fun hi => h ⟨i, hi⟩)
-    rw [vectorMass_eq_zero xs hz] at hx
-    exact Nat.lt_irrefl 0 hx
+    rcases kumakuma.Decide.exists_ne_or_all xs with h | hz
+    · exact h
+    · rw [vectorMass_eq_zero xs hz] at hx
+      exact absurd hx (Nat.lt_irrefl 0)
   cases n with
   | zero => exact T.Z_lt_P _ _
   | succ n =>
@@ -1232,17 +1225,15 @@ theorem zero_successor_fund_subterms (xs : V multi.T)
       .P (V.set xs 0 (T.fund (V.get0 xs 0) (ofNatD lam 1))) .Z := by
     rw [hfone, hchild]
   have hq : ∀ a, Subterm a (.P ys .Z) → a < .P ys .Z := by
-    by_cases hone : ∀ i, V.get0 ys i = .Z
-    · exact zero_principal_subterms hone
-    · have hnz : ∃ i, V.get0 ys i ≠ .Z :=
-        Classical.byContradiction (fun h => hone (fun i => Classical.byContradiction (fun hi => h ⟨i, hi⟩)))
-      have hinc : ofNatD lam 1 < T.fund (.P xs .Z) (ofNatD lam 1) := by
+    rcases kumakuma.Decide.exists_ne_or_all ys with hnz | hone
+    · have hinc : ofNatD lam 1 < T.fund (.P xs .Z) (ofNatD lam 1) := by
         rw [hfone]
         exact T.P_lt_P_of_vlt _ _ (zeros_lt_of_nonzero (get0_zeros lam) hnz)
       have ha0 : V.get0 xs 0 ≠ .Z := (V.fnz_some_spec xs 0 hf).1
       have hh := coordinate_fund_subterms xs 0 (ofNatD lam 1) ha0 hplain hs
         (ofNat_subterms lam 1) hinc
       rwa [hfone] at hh
+    · exact zero_principal_subterms hone
   rw [hfund]
   exact mul_nat_subterms ys hq lam n
 
@@ -1278,8 +1269,6 @@ open kumakuma.GeneralImageLimitSupport
 open kumakuma.GeneralImageLayerOrder kumakuma.GeneralImagePrincipalOrder kumakuma.GeneralImageTopPair
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageCoefficients
 
-universe u
-
 theorem inacc_zero_le (n : Nat) (a : Term) : Term.le (.inacc n .zero) (.inacc n a) = true := by
   cases a <;> simp [Term.le, Term.lt]
 
@@ -1314,8 +1303,6 @@ open kumakuma.GeneralImageLimitBranches kumakuma.GeneralImageLimitSupport
 open kumakuma.GeneralImageLayerOrder kumakuma.GeneralImagePrincipalOrder kumakuma.GeneralImageTopPair
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageCoefficients
 open OCF.Jaeger.Term
-
-universe u
 
 theorem H_eq_nil_of_le_pred (v t : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (ht : Term.wf t = true)
@@ -1638,8 +1625,6 @@ open kumakuma.GeneralImageLayerOrder kumakuma.GeneralImagePrincipalOrder kumakum
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageCoefficients
 open kumakuma.GeneralImageRelativePredecessor
 
-universe u
-
 theorem step_replace_relative_wf (n : Nat) (a c t : Term) (ha : Above n a)
     (hc : Term.wf c = true) (ht : Term.wf t = true) (hdrop : dropOne c = c)
     (hrel : ∀ v, Term.isRT v = true → Term.wf v = true →
@@ -1783,8 +1768,6 @@ open kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.GeneralImageCoefficients kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 
-universe u
-
 theorem psi_argument_lt_iff (v a : Term)
     (hw : Term.wf (.psi v a) = true) :
     Term.lt a (.psi v a) = true ↔ Term.lt a v = true :=
@@ -1852,8 +1835,6 @@ open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.Genera
 open kumakuma.SourceOmegaInvariant
 open kumakuma.GeneralImageHighOmega kumakuma.SourceOmegaHighest
 open OCF.Jaeger.Term
-
-universe u
 
 theorem psi_above_predR (v a : Term)
     (hw : Term.wf (.psi v a) = true) : Term.lt (Term.predR v) (.psi v a) = true :=
@@ -1923,8 +1904,6 @@ open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageC
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant
 open OCF.Jaeger.Term
-
-universe u
 
 def layerCut (n : Nat) (a : Term) : Term := .inacc n (if a = .zero then .zero else succTerm a)
 
@@ -2017,8 +1996,6 @@ open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.Genera
 open kumakuma.SourceOmegaInvariant
 open OCF.Jaeger.Term
 
-universe u
-
 def pairCut (n : Nat) (h : Term) : Term := .inacc n (if h = .zero then .zero else succTerm (dropOne h))
 
 theorem pairCut_regular (n : Nat) (h : Term) : Term.isRT (pairCut n h) = true := by
@@ -2073,8 +2050,6 @@ open kumakuma.GeneralImageSharedTopPair kumakuma.BinaryTranslation kumakuma.Targ
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant
 
-universe u
-
 
 open multi in
 theorem pairCut_image_pred (k : Nat) (h : multi.T) (hne : h ≠ .Z)
@@ -2116,8 +2091,6 @@ open kumakuma.GeneralImageSharedTopPair kumakuma.GeneralImageMiddleRecursion
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageCoefficients
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant
-
-universe u
 
 theorem pairCut_convert_wf (k : Nat) (h : multi.T) (hh : RecursiveWF (k + 3) h) :
     Term.wf (pairCut (k + 1) (convert (k + 3) (code h))) = true := by

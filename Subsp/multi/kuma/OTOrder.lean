@@ -10,8 +10,6 @@ namespace kumakuma.OTOrder
 open multi OCF.Jaeger kumakuma.OTQuotient kumakuma.GeneralImageEmbedding
 open kumakuma.DimensionCut kumakuma.SourceFundOrder kumakuma.CountableSource
 
-universe u
-
 /-! ### Well-foundedness -/
 
 theorem lt_iff_classLT {d : Nat} (s t : OTD d) :

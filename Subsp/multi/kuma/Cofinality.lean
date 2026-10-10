@@ -17,8 +17,6 @@ open kumakuma.GeneralImageCoefficients kumakuma.SourceFundOrder kumakuma.SourceR
 open kumakuma.GeneralImageOmegaCoefficients kumakuma.SourceOmegaInvariant
 open kumakuma.SourceFundGap
 
-universe u
-
 /-- Coordinates after the update at a regular index `m + 1`. -/
 theorem get0_set_set {xs : V multi.T} {m : Nat} (hml : m + 1 < xs.length) (p t : multi.T)
     (i : Nat) : V.get0 (V.set (V.set xs (m + 1) p) m t) i =
@@ -145,8 +143,6 @@ open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.Genera
 open kumakuma.SourceOmegaInvariant kumakuma.SourceOmegaTail
 open kumakuma.SourceFundGap
 
-universe u
-
 theorem undrop_lt_head_ne_one (a s : Term) (ha : Term.wf a = true) (hs : Term.wf s = true)
     (hz : s ≠ .zero) (hh : Term.head s ≠ Term.one)
     (hl : Term.lt (dropOne a) s = true) : Term.lt a s = true := by
@@ -157,11 +153,10 @@ theorem undrop_lt_head_ne_one (a s : Term) (ha : Term.wf a = true) (hs : Term.wf
 
 theorem exists_nonzero_of_mass {xs : V multi.T} (hm : 0 < vectorMass xs) :
     ∃ i, V.get0 xs i ≠ .Z := by
-  apply Classical.byContradiction
-  intro hn
-  have hz : ∀ i, V.get0 xs i = .Z := fun i => Classical.byContradiction (fun hi => hn ⟨i, hi⟩)
-  rw [vectorMass_eq_zero xs hz] at hm
-  exact Nat.lt_irrefl 0 hm
+  rcases kumakuma.Decide.exists_ne_or_all xs with h | hz
+  · exact h
+  · rw [vectorMass_eq_zero xs hz] at hm
+    exact absurd hm (Nat.lt_irrefl 0)
 
 theorem Omega_image_head_ne_one (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
@@ -268,8 +263,6 @@ open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageC
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant kumakuma.SourceOmegaTail
 open kumakuma.SourceFundGap
-
-universe u
 
 theorem H_topNode_above_Omega (k : Nat) (a : multi.T) (ha : a ≠ .Z)
     (v : Term) (hv : Term.lt Term.bigOmega v = true) :
@@ -381,8 +374,6 @@ open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageC
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant kumakuma.SourceOmegaTail
 open kumakuma.SourceFundGap
-
-universe u
 
 theorem Omega_label_recursiveWF (k : Nat) : ∀ (s : multi.T),
     RecursiveWF (k + 3) s → ∀ {q : V multi.T}, domF s = .Omega q → RecursiveWF (k + 3) (.P q .Z)
@@ -633,8 +624,6 @@ open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageC
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant kumakuma.SourceOmegaTail
 open kumakuma.SourceFundGap
-
-universe u
 
 theorem H_fund_regular_cofinal_support (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
@@ -935,14 +924,13 @@ theorem fund_regular_cofinal_relative_all_of_wf (k m : Nat)
         Term.allLt (Term.H v (convert (k + 3) (code (.P xs .Z)))) (convert (k + 3) (code (.P xs .Z))) = true →
         Term.allLt (Term.H v (convert (k + 3) (code (T.fund (.P xs .Z) t))))
           (convert (k + 3) (code (T.fund (.P xs .Z) t))) = true := by
-  classical
   have hi : V.get0 xs (m + 1) ≠ .Z := (V.fnz_some_spec xs _ hf).1
   by_cases hex : ∃ j, m + 1 ≠ j ∧ V.get0 xs j ≠ .Z
   · obtain ⟨j, hij, hj⟩ := hex
     exact fund_regular_cofinal_relative_of_wf k m xs hsD hf hdom (m + 1) j hij hi hj hr hs t htD hn
   · have hother : ∀ j, j ≠ m + 1 → V.get0 xs j = .Z := by
       intro j hj
-      apply Classical.byContradiction
+      apply Decidable.byContradiction
       intro hn
       exact hex ⟨j, fun he => hj he.symm, hn⟩
     have hd : domF (.P xs .Z) = .Omega xs := domF_one_succ hf hdom
@@ -1002,8 +990,6 @@ open kumakuma.GeneralImageRegularCofinality kumakuma.GeneralImageHighOmega
 open kumakuma.GeneralImageCoefficients kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant
-
-universe u
 
 theorem le_psi_index_bound (n : Nat) (a b l : Term)
     (hl : Term.wf l = true) (hw : Term.wf (.psi (.inacc n a) b) = true)
@@ -1227,8 +1213,6 @@ open kumakuma.GeneralImageCoefficients kumakuma.BinaryTranslation kumakuma.Targe
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceFundGap
 
-universe u
-
 theorem H_psi_replacement_support (v w c t : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true)
     (hw : Term.wf (.psi w c) = true) (hn : Term.wf (.psi w (dropOne t)) = true)
@@ -1286,12 +1270,12 @@ theorem lower_selected_step (j cut : Nat) (hj : cut < j) (xs ys : List Term)
     (hsame : ∀ i, cut < i → i < j → ys[i]?.getD .zero = xs[i]?.getD .zero) :
     ∃ b, lower j xs a = step cut b c ∧ lower j ys a = step cut b t := by
   induction j generalizing a with
-  | zero => omega
+  | zero => omega_c
   | succ j ih =>
     by_cases hij : cut < j
-    · rw [lower_succ, lower_succ, hsame j hij (by omega)]
-      exact ih hij _ (fun i hi hik => hsame i hi (by omega))
-    · have he : j = cut := by omega
+    · rw [lower_succ, lower_succ, hsame j hij (by omega_c)]
+      exact ih hij _ (fun i hi hik => hsame i hi (by omega_c))
+    · have he : j = cut := by omega_c
       subst j
       refine ⟨a, ?_, ?_⟩
       · rw [lower_succ, hx]
@@ -1489,7 +1473,6 @@ theorem parent_Omega_relative_of_child_support (k : Nat)
       (convert (k + 3) (code (.P xs .Z))) = true) :
     Term.allLt (Term.H v (convert (k + 3) (code (T.fund (.P xs .Z) t))))
       (convert (k + 3) (code (T.fund (.P xs .Z) t))) = true := by
-  classical
   have hil : i < xs.length := fnz_lt_length hf
   have hik : i < k + 3 := by rw [← hsD.length]; exact hil
   have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
@@ -1517,7 +1500,7 @@ theorem parent_Omega_relative_of_child_support (k : Nat)
       (parent_Omega_updated_support k xs q i hsD hf hdq hr hs hd t htD hn v hvR hv hOmega hcoef) hH
   · have hother : ∀ j, j ≠ i → V.get0 xs j = .Z := by
       intro j hj
-      apply Classical.byContradiction
+      apply Decidable.byContradiction
       intro hz
       exact hex ⟨j, fun he => hj he.symm, hz⟩
     by_cases hib : i ≤ k + 1
@@ -1537,18 +1520,18 @@ theorem parent_Omega_relative_of_child_support (k : Nat)
         have hdom := hd
         rw [he] at hdom
         exact SourceFundOrder.outer_not_Omega ho q hdom
-      have hhigh (j : Nat) (hj : i < j) : V.get0 xs j = .Z := hother j (by omega)
+      have hhigh (j : Nat) (hj : i < j) : V.get0 xs j = .Z := hother j (by omega_c)
       have hdrop := Omega_image_drop k _ hchildDim hchildR (hcoords i) hdq
       have heOld := convert_positive_single k xs i hip hib hlow hhigh hc0
       rw [hdrop] at heOld
       let ys := V.set xs i (T.fund (V.get0 xs i) t)
       have hnewLow (j : Nat) (hj : j < i) : V.get0 ys j = .Z := by
         show V.get0 (V.set xs i _) j = _
-        rw [V.get0_set_ne xs i _ j (by omega)]
+        rw [V.get0_set_ne xs i _ j (by omega_c)]
         exact hlow j hj
       have hnewHigh (j : Nat) (hj : i < j) : V.get0 ys j = .Z := by
         show V.get0 (V.set xs i _) j = _
-        rw [V.get0_set_ne xs i _ j (by omega)]
+        rw [V.get0_set_ne xs i _ j (by omega_c)]
         exact hhigh j hj
       have hnewIdx : V.get0 ys i = T.fund (V.get0 xs i) t := V.get0_set_same xs i _ hil
       have hnewNZ : V.get0 ys i ≠ .Z := hnewIdx ▸ domOmega_fund_ne_zero _ t hdq
@@ -1565,7 +1548,7 @@ theorem parent_Omega_relative_of_child_support (k : Nat)
         have hmA := kumakuma.SourceCoefficientGap.mass_lt_of_subterm ha
         have hmI := vectorMass_get0_le xs i
         rw [gap_Omega _ _ _ hd, mass_P, mass_Z]
-        omega
+        omega_c
       have oldBound (a : multi.T) (ha : Subterm a (V.get0 xs i))
           (hmA : convert (k + 3) (code a) ∈ Term.H v (convert (k + 3) (code (.P xs .Z))) ∨
             dropOne (convert (k + 3) (code a)) ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) :
@@ -1621,7 +1604,7 @@ theorem parent_Omega_relative_of_child_support (k : Nat)
               rcases he with rfl | rfl
               · exact hNew
               · exact dropOne_lt_of_lt haW.wf hn.wf hNew
-    · have hi : i = k + 2 := by omega
+    · have hi : i = k + 2 := by omega_c
       subst hi
       have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
       have hsource : (multi.T.P xs .Z) = topNode k (V.get0 xs (k + 2)) :=
@@ -1650,8 +1633,6 @@ open kumakuma.GeneralImageCoefficients kumakuma.BinaryTranslation kumakuma.Targe
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant
 open kumakuma.SourceOmegaTail
-
-universe u
 
 theorem Omega_fund_cofinal_invariant (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s →
@@ -1806,8 +1787,6 @@ open kumakuma.GeneralImageCoefficients kumakuma.BinaryTranslation kumakuma.Targe
 open kumakuma.SourceFundOrder kumakuma.SourceFundGap kumakuma.SourceRecursiveDescending
 open kumakuma.GeneralImageOmegaCofinality
 
-universe u
-
 theorem lower_selected_step_context (j cut : Nat) (hj : cut < j) (xs ys : List Term)
     (a c t : Term) (hc : c ≠ .zero) (hctx : Context j a)
     (hx : xs[cut]?.getD .zero = c) (hy : ys[cut]?.getD .zero = t)
@@ -1817,12 +1796,12 @@ theorem lower_selected_step_context (j cut : Nat) (hj : cut < j) (xs ys : List T
     ∃ b, Above cut b ∧ lower j xs a = step cut b c ∧
       lower j ys a = lower cut ys (step cut b t) := by
   induction j generalizing a with
-  | zero => omega
+  | zero => omega_c
   | succ j ih =>
     by_cases hij : cut < j
-    · rw [lower_succ, lower_succ, hsame j hij (by omega)]
-      exact ih hij _ (step_shape _ (context_above hctx)) (fun i hi hik => hsame i hi (by omega))
-    · have he : j = cut := by omega
+    · rw [lower_succ, lower_succ, hsame j hij (by omega_c)]
+      exact ih hij _ (step_shape _ (context_above hctx)) (fun i hi hik => hsame i hi (by omega_c))
+    · have he : j = cut := by omega_c
       subst j
       refine ⟨a, context_above hctx, ?_, ?_⟩
       · rw [lower_succ, hx]; exact lower_keep cut xs _ (step_ne_zero_of_argument cut a c hc) hzeroOld
@@ -1941,7 +1920,7 @@ theorem parent_zero_updated_support (k : Nat)
       (by rw [convert_low_principal]; exact hIsLow)
     have heVec : xs = lowVec (k + 2) (V.get0 xs i) := by injection heSource
     have hi0 : i = 0 := by
-      apply Classical.byContradiction
+      apply Decidable.byContradiction
       intro hi
       have hc : V.get0 xs i = V.get0 (lowVec (k + 2) (V.get0 xs i)) i :=
         congrArg (fun us => V.get0 us i) heVec
@@ -1971,7 +1950,7 @@ theorem parent_zero_updated_support (k : Nat)
               Or.inl (heOld ▸ hroot), Or.inr he⟩)
           · exact lift (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
       · have heZero : T.fund (V.get0 xs i) .Z = .Z :=
-          (convert_eq_zero_iff _ _).1 (Classical.not_not.mp hnewNZ)
+          (convert_eq_zero_iff _ _).1 (Decidable.not_not.mp hnewNZ)
         let ys := V.set xs i .Z
         let oldArgs := arguments (k + 3) (trim (codes xs))
         let newArgs := arguments (k + 3) (trim (codes ys))
@@ -1988,12 +1967,12 @@ theorem parent_zero_updated_support (k : Nat)
           intro j hj
           rw [hnew j]
           show convert (k + 3) (code (V.get0 (V.set xs i .Z) j)) = _
-          rw [V.get0_set_ne xs i _ j (by omega), hlow j hj, convert_Z]
+          rw [V.get0_set_ne xs i _ j (by omega_c), hlow j hj, convert_Z]
         have hsame : ∀ j, i < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
           intro j hj _
           rw [hnew j, hold j]
           show convert (k + 3) (code (V.get0 (V.set xs i .Z) j)) = _
-          rw [V.get0_set_ne xs i _ j (by omega)]
+          rw [V.get0_set_ne xs i _ j (by omega_c)]
         have heOld : convert (k + 3) (code (.P xs .Z)) = lower (k + 1) oldArgs
             (topPair (k + 1) (oldArgs[k + 2]?.getD .zero) (oldArgs[k + 1]?.getD .zero)) := by
           rw [convert_principal, principal_as_layers]
@@ -2002,7 +1981,7 @@ theorem parent_zero_updated_support (k : Nat)
           rw [hf, heZero, convert_principal, principal_as_layers]
           change lower (k + 1) newArgs (topPair (k + 1) (newArgs[k + 2]?.getD .zero)
             (newArgs[k + 1]?.getD .zero)) = _
-          rw [hsame (k + 2) (by omega) (by omega)]
+          rw [hsame (k + 2) (by omega_c) (by omega_c)]
         by_cases hi : i = k + 1
         · subst hi
           have hcOld : oldArgs[k + 1]?.getD .zero = convert (k + 3) (code (V.get0 xs (k + 1))) :=
@@ -2021,10 +2000,10 @@ theorem parent_zero_updated_support (k : Nat)
           apply Or.inr; apply Or.inl
           rw [heOld, hcOld, lower_keep (k + 1) oldArgs _ hcTop hzeroOld]
           exact ho
-        · rw [hsame (k + 1) (by omega) (by omega)] at heNew
-          obtain ⟨b, hb, heO, heN⟩ := lower_selected_step_context (k + 1) i (by omega)
+        · rw [hsame (k + 1) (by omega_c) (by omega_c)] at heNew
+          obtain ⟨b, hb, heO, heN⟩ := lower_selected_step_context (k + 1) i (by omega_c)
             oldArgs newArgs _ _ .zero hcNZ (topPair_context _ _ _) (hold i) hnewa hzeroOld hzeroNew
-            (fun j hj hjk => hsame j hj (by omega))
+            (fun j hj hjk => hsame j hj (by omega_c))
           rw [heNew, heN, H_lower_zeros_above_Omega v hOmega _ _ _ hzeroNew] at hz
           have hw := hs.wf
           rw [heOld, heO] at hw
@@ -2039,7 +2018,7 @@ theorem parent_zero_updated_support (k : Nat)
             · have hzB : z ∈ Term.H v b := by simpa only [step, hb0, ↓reduceIte] using hz
               exact H_step_context_of_wf v hvR hv i b _ hb hw hzB
           exact Or.inr (Or.inl ((heOld.trans heO) ▸ ho))
-    · have hi : i = k + 2 := by omega
+    · have hi : i = k + 2 := by omega_c
       subst hi
       have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
       have heOld : multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) :=
@@ -2321,8 +2300,6 @@ open kumakuma.SourceFundOrder kumakuma.SourceFundGap kumakuma.SourceRecursiveDes
 open kumakuma.GeneralImageOmegaCofinality
 open kumakuma.GeneralImageZeroFund
 open kumakuma.GeneralImageOmegaContext
-
-universe u
 
 theorem omega_image_head_ne_one (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hs : RecursiveWF (k + 3) s) (hd : domF s = .omega) :

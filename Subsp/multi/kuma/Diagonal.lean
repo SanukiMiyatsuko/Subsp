@@ -9,8 +9,6 @@ open OCF.Jaeger kumakuma.TargetArithmetic kumakuma.GeneralImageRelativePredecess
 open kumakuma.GeneralImageCoefficients
 open kumakuma.GeneralImageWFInvariant
 
-universe u
-
 theorem H_subset_of_comparable_cuts (w v t : Term)
     (hwR : Term.isRT w = true) (hw : Term.wf w = true)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (ht : Term.wf t = true)
@@ -101,8 +99,6 @@ open kumakuma.GeneralImageDominatedCoefficients kumakuma.GeneralImageOmegaCoeffi
 open kumakuma.GeneralImageLimitSupport
 open kumakuma.GeneralImageLimitBranches
 open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
-
-universe u
 
 theorem regular_lower_label_cut_context (k m : Nat) (hmk : m ≤ k)
     (q : V multi.T) (hqD : Dim (k + 3) (.P q .Z))
@@ -396,8 +392,6 @@ open kumakuma.GeneralImageLimitSupport
 open kumakuma.GeneralImageLimitBranches kumakuma.GeneralImageContextBoundDiagonal
 open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 
-universe u
-
 theorem pairCut_image_comparable (k : Nat) (h b : multi.T)
     (hhD : Dim (k + 3) h) (hbD : Dim (k + 3) b)
     (hh : RecursiveWF (k + 3) h) (hb : RecursiveWF (k + 3) b) (hle : h ≤ b) :
@@ -535,8 +529,6 @@ open kumakuma.GeneralImageLimitBranches kumakuma.GeneralImageContextBoundDiagona
 open kumakuma.GeneralImageHighestContextDiagonal
 open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 
-universe u
-
 theorem strict_highest_diagonal_branch (k : Nat) (xs q : V multi.T) (b : multi.T)
     (hsD : Dim (k + 3) (.P xs .Z))
     (heQ : q = lastVec (k + 2) (kumakuma.SourceSuccessor.succ (k + 3) b))
@@ -554,8 +546,8 @@ theorem diagonal_selector_below_highest (k : Nat)
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q) (hdiag : xs < q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z)) : i ≤ k + 1 := by
   have hik : i < k + 3 := by have := fnz_lt_length hf; rwa [hsD.length] at this
-  apply Classical.byContradiction; intro hi
-  have heI : i = k + 2 := by omega
+  apply Decidable.byContradiction; intro hi
+  have heI : i = k + 2 := by omega_c
   subst heI
   exact no_diagonal_highest k xs hsD hs ((Recursive_P.1 hr).1 _) hf hdq hdiag
 
@@ -753,8 +745,6 @@ open kumakuma.GeneralImageLimitSupport
 open kumakuma.GeneralImageLimitBranches
 open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 
-universe u
-
 theorem closed_diagonal_selector_bound (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
@@ -892,8 +882,6 @@ open kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 open kumakuma.SourceRecursiveDescending
 open kumakuma.SourceFundGap
 
-universe u
-
 theorem psi_wf_of_dropOne (v a : Term) (ha : Term.wf a = true)
     (hw : Term.wf (.psi v (dropOne a)) = true) : Term.wf (.psi v a) = true := by
   by_cases hh : Term.head a = Term.one
@@ -923,8 +911,6 @@ open kumakuma.GeneralImageZeroFund kumakuma.GeneralImageComparableCuts kumakuma.
 open kumakuma.GeneralImageDominatedCoefficients kumakuma.GeneralImageClosedDiagonal
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 open kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
-
-universe u
 
 theorem terminal_successor_fund_zero (k m : Nat) (q : V multi.T)
     (hqf : V.fnz q = some (m + 1)) (hqOne : domF (V.get0 q (m + 1)) = .one)
@@ -1059,8 +1045,6 @@ open kumakuma.GeneralImageZeroFund kumakuma.GeneralImageContextBoundDiagonal
 open kumakuma.GeneralImageSharedContext
 open kumakuma.GeneralImageClosedDiagonal kumakuma.GeneralImageDominatedCoefficients
 open kumakuma.GeneralImageLimitSupport kumakuma.GeneralImageHighestContextDiagonal
-
-universe u
 
 theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
@@ -1337,7 +1321,6 @@ theorem higher_source_closed (k m : Nat)
     ∃ cut, CutFund k (.P q .Z) cut ∧
       Term.allLt (Term.H cut (convert (k + 3) (code (V.get0 xs i))))
         (convert (k + 3) (code (V.get0 xs i))) = true := by
-  classical
   have hcr : Recursive (V.get0 xs i) := (Recursive_P.1 hr).1 i
   have hcw : RecursiveWF (k + 3) (V.get0 xs i) := (RecursiveWF_P.1 hs).1 i
   have hcD : Dim (k + 3) (V.get0 xs i) := hsD.coord i
@@ -1353,11 +1336,11 @@ theorem higher_source_closed (k m : Nat)
     rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega w Term.wf_bigOmega hp.2.1 with he | he | he
     · exact he
     · have hft := congrArg Term.fT he
-      simp only [Term.bigOmega, Term.fT, hf'] at hft; omega
+      simp only [Term.bigOmega, Term.fT, hf'] at hft; omega_c
     · rw [kumakuma.CountableTarget.regular_not_below_omega hp.1] at he; cases he
   have hLH := Omega_label_relative_bound k _ hcD hcr hcw hdq w _ hp.1 hp.2.1 hOmega hcw.wf hp.2.2.2
   obtain ⟨a, ha, haw, heA, hc, hePred⟩ :=
-    regular_lower_label_cut_context k m (by omega) q hlD hqf hqOne hlr hlw
+    regular_lower_label_cut_context k m (by omega_c) q hlD hqf hqOne hlr hlw
   have hParentLt := (convert_order k _ _ hsD hAD hs hA).mp hbound
   have ha0 : a ≠ .zero := by
     intro he
@@ -1367,18 +1350,18 @@ theorem higher_source_closed (k m : Nat)
   have hPA : Term.lt (.psi w (convert (k + 3) (code (V.get0 xs i)))) a = true := by
     rwa [heOld, heA] at hParentLt
   have hWA : Term.le w a = true := by
-    apply Classical.byContradiction; intro hnot
+    apply Decidable.byContradiction; intro hnot
     have hnotLabel : ¬Term.le w (convert (k + 3) (code (.P q .Z))) = true := by
       intro hle
       apply hnot
       rw [← heA]
       by_cases hml : m + 1 ≤ k
       · exact higher_cut_le_zero_of_le_label k m hml q hlD hqf hqOne hlr hlw w hp.1 hp.2.1
-          (by rw [hf']; omega) hle
-      · have hmEq : m = k := by omega
+          (by rw [hf']; omega_c) hle
+      · have hmEq : m = k := by omega_c
         subst m
         exact middle_cut_le_zero_of_le_label k q hlD hqf hqOne hlr hlw w hp.1 hp.2.1
-          (by rw [hf']; omega) hle
+          (by rw [hf']; omega_c) hle
     have hLW : Term.lt (convert (k + 3) (code (.P q .Z))) w = true := by
       rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ hlw.wf hp.2.1 with he | he | he
       · exact he
@@ -1416,8 +1399,6 @@ open kumakuma.GeneralImageRawOrder kumakuma.GeneralImageLimitBranches
 open kumakuma.GeneralImageOmegaSpine
 open kumakuma.GeneralImageHighestContextDiagonal
 open OCF.Jaeger
-
-universe u
 
 theorem vector_interval_above (xs lo ys : V multi.T) (i : Nat)
     (hz : ∀ j, j < i → V.get0 xs j = .Z)
@@ -1508,8 +1489,6 @@ open kumakuma.GeneralImageHigherDiagonal
 open kumakuma.GeneralImageOmegaCoefficients kumakuma.GeneralImageContextBoundDiagonal
 open kumakuma.GeneralImageCofinalityBounds
 open OCF.Jaeger
-
-universe u
 
 theorem higher_selector_not_critical (k m : Nat)
     (xs q : V multi.T) (i : Nat) (hmi : m < i)
