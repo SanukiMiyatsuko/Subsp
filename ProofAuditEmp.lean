@@ -1,10 +1,10 @@
 import Lean
 import Subsp
-import Subsp.multi.new.stop
+import Subsp.multi.emp.stop
 
-/-! Audit every definition and theorem used by the `multi` new system, including generated
+/-! Audit every definition and theorem used by the `multi` emp system, including generated
 proofs: everything must depend only on `propext` and `Quot.sound`.
-Run `lake build Subsp.multi.new.stop`, then `lake env lean ProofAuditNew.lean`.
+Run `lake build Subsp.multi.emp.stop`, then `lake env lean ProofAuditEmp.lean`.
 -/
 
 open Lean Elab Command in
@@ -21,4 +21,4 @@ run_cmd do
   logInfo m!"Audited {names.length} project declarations."
 
 #print axioms NOT_SubNF_order_iso
-#print axioms new.NOTFundLt_iff_lt
+#print axioms emp.NOTFundLt_iff_lt
