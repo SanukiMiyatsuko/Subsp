@@ -157,26 +157,10 @@ theorem virtual_pair_images (k : Nat) (ys : V multi.T) (hl : ys.length = k + 3) 
     converted_coordinate xc j
   have hnew (j : Nat) : newArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 xa j)) :=
     converted_coordinate xa j
-  have holdc : oldArgs[r]?.getD .zero = convert (k + 3) (code c) := by
-    rw [hold r]; show convert (k + 3) (code (V.get0 (V.set ys r c) r)) = _
-    rw [V.get0_set_same ys r c hrl]
-  have hnewa : newArgs[r]?.getD .zero = convert (k + 3) (code a) := by
-    rw [hnew r]; show convert (k + 3) (code (V.get0 (V.set ys r a) r)) = _
-    rw [V.get0_set_same ys r a hrl]
-  have hzeroOld : ∀ j, j < r → oldArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hold j]; show convert (k + 3) (code (V.get0 (V.set ys r c) j)) = _
-    rw [V.get0_set_ne ys r c j (by omega), hlow j hj, convert_Z]
-  have hzeroNew : ∀ j, j < r → newArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hnew j]; show convert (k + 3) (code (V.get0 (V.set ys r a) j)) = _
-    rw [V.get0_set_ne ys r a j (by omega), hlow j hj, convert_Z]
-  have hsame : ∀ j, r < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
-    intro j hj _
-    rw [hnew j, hold j]
-    show convert (k + 3) (code (V.get0 (V.set ys r a) j)) =
-      convert (k + 3) (code (V.get0 (V.set ys r c) j))
-    rw [V.get0_set_ne ys r a j (by omega), V.get0_set_ne ys r c j (by omega)]
+  obtain ⟨holdc, -, hzeroOld, hsameC⟩ := kumakuma.GeneralImageRegularLimit.replace_args k hrl hlow c
+  obtain ⟨hnewa, -, hzeroNew, hsameA⟩ := kumakuma.GeneralImageRegularLimit.replace_args k hrl hlow a
+  have hsame (j : Nat) (hj : r < j) (hjk : j < k + 3) :
+      newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := (hsameA j hj hjk).trans (hsameC j hj hjk).symm
   have heOld : convert (k + 3) (code (.P xc .Z)) = lower (k + 1) oldArgs
       (topPair (k + 1) (oldArgs[k + 2]?.getD .zero) (oldArgs[k + 1]?.getD .zero)) := by
     rw [convert_principal, principal_as_layers]
@@ -191,9 +175,9 @@ theorem virtual_pair_images (k : Nat) (ys : V multi.T) (hl : ys.length = k + 3) 
     have hcOld : oldArgs[k + 1]?.getD .zero = convert (k + 3) (code c) := by rw [← hi, holdc]
     have hcNew : newArgs[k + 1]?.getD .zero = convert (k + 3) (code a) := by rw [← hi, hnewa]
     refine ⟨.inacc (k + 1) (if h = .zero then .zero else succTerm (dropOne h)), ?_, ?_⟩
-    · rw [heOld, hcOld, lower_keep (k + 1) oldArgs _ htopOld (by simpa only [hi] using hzeroOld)]
+    · rw [heOld, hcOld, lower_keep (k + 1) oldArgs _ htopOld (fun j hj => hzeroOld j (by omega))]
       simp only [topPair, hc, ↓reduceIte, h]
-    · rw [heNew, hcNew, lower_keep (k + 1) newArgs _ htopNew (by simpa only [hi] using hzeroNew)]
+    · rw [heNew, hcNew, lower_keep (k + 1) newArgs _ htopNew (fun j hj => hzeroNew j (by omega))]
       simp only [topPair, ha, ↓reduceIte, h]
   · rw [hsame (k + 1) (by omega) (by omega)] at heNew
     obtain ⟨b, hbOld, hbNew⟩ := lower_selected_step (k + 1) r (by omega) oldArgs newArgs _ _ _ hc ha
