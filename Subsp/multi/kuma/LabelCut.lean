@@ -909,120 +909,20 @@ open kumakuma.SourceFundGap
 
 open kumakuma.GeneralImageOmegaSpine
 
-theorem Omega_fund_at_label_cut_invariant (k : Nat) : ∀ (s : multi.T),
-    Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s →
-    ∀ {q : V multi.T}, domF s = .Omega q →
-    ∀ (κ : Term), CutFund k (.P q .Z) κ →
-    ∀ (t : multi.T), Dim (k + 3) t → RecursiveWF (k + 3) t →
-    Term.allLt (Term.H κ (convert (k + 3) (code t))) (convert (k + 3) (code t)) = true →
+theorem Omega_fund_at_label_cut_invariant (k : Nat) (s : multi.T)
+    (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
+    {q : V multi.T} (hd : domF s = .Omega q) (κ : Term) (hcut : CutFund k (.P q .Z) κ)
+    (t : multi.T) (htD : Dim (k + 3) t) (ht : RecursiveWF (k + 3) t)
+    (hHt : Term.allLt (Term.H κ (convert (k + 3) (code t))) (convert (k + 3) (code t)) = true) :
     RecursiveWF (k + 3) (T.fund s t) ∧
       ∀ v, Term.isRT v = true → Term.wf v = true → Term.lt Term.bigOmega v = true →
         Term.lt (convert (k + 3) (code (.P q .Z))) v = true →
         (∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund s t))) → UpdatedCoefficient k v s t z) ∧
         (Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true →
           Term.allLt (Term.H v (convert (k + 3) (code (T.fund s t))))
-            (convert (k + 3) (code (T.fund s t))) = true)
-  | .Z, _, _, _, _, hd, _, _, _, _, _, _ => by rw [domF_Z] at hd; cases hd
-  | .P xs b, hsD, hr, hs, q, hd, κ, hcut, t, htD, ht, hHt => by
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [domF_none hf] at hd; cases hd
-      · have hil := fnz_lt_length hf
-        have hik : i < k + 3 := by rw [← hsD.length]; exact hil
-        cases hc : domF (V.get0 xs i) with
-        | zero => rw [domF_zero hf hc] at hd; cases hd
-        | omega => rw [domF_omega hf hc] at hd; cases hd
-        | one =>
-          cases i with
-          | zero => rw [domF_one_zero hf hc] at hd; cases hd
-          | succ m =>
-            rw [domF_one_succ hf hc] at hd
-            cases hd
-            have hn := hcut.fundWf t ht hHt
-            have hrelative := fund_regular_cofinal_relative_all_of_wf k m xs hsD hf hc hr hs t htD hn
-            refine ⟨hn, ?_⟩
-            intro v hvR hv hOmega hlt
-            exact ⟨fun z hz => H_fund_regular_cofinal_support k m xs hsD hf hc hs t v hvR hv hOmega hlt hz,
-              hrelative v hvR hv hOmega hlt⟩
-        | Omega q =>
-          by_cases hlt : xs < q
-          · rw [domF_diag hf hc hlt] at hd; cases hd
-          · rw [domF_nondiag hf hc hlt] at hd
-            cases hd
-            have hd' : domF (.P xs .Z) = .Omega q := domF_nondiag hf hc hlt
-            have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
-            have hchildR : Recursive (V.get0 xs i) := (Recursive_P.1 hr).1 i
-            have hchildDim : Dim (k + 3) (V.get0 xs i) := hsD.coord i
-            obtain ⟨hnChild, hchildInv⟩ := Omega_fund_at_label_cut_invariant k (V.get0 xs i) hchildDim
-              hchildR (hcoords i) hc κ hcut t htD ht hHt
-            have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
-              fund_nondiag hf hc hlt t
-            have hc0 : V.get0 xs i ≠ .Z := (V.fnz_some_spec xs i hf).1
-            have hn : RecursiveWF (k + 3) (T.fund (.P xs .Z) t) := by
-              rw [hfund]
-              by_cases hib : i ≤ k + 1
-              · apply principal_replace_cofinal_recursiveWF k xs i hib hsD
-                  (V.fnz_some_spec xs i hf).2 hs _ hnChild hc0
-                  (Omega_image_drop k _ hchildDim hchildR (hcoords i) hc)
-                  (convert (k + 3) (code (.P q .Z))) (Omega_label_recursiveWF k _ hs hd').wf
-                  (cofinality_image_le k _ hsD hr hs hd') (Omega_principal_image_ne_low k xs i hsD hs hd')
-                intro v hvR hv hOmega hlt' hH
-                exact (hchildInv v hvR hv hOmega hlt').2 hH
-              · have hi : i = k + 2 := by omega
-                subst hi
-                have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) :=
-                  lastVec_of_low hsD.length (V.fnz_some_spec xs _ hf).2
-                have hrplc : V.set xs (k + 2) (T.fund (V.get0 xs (k + 2)) t) =
-                    lastVec (k + 2) (T.fund (V.get0 xs (k + 2)) t) := by
-                  have := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
-                    (T.fund (V.get0 xs (k + 2)) t)
-                  rw [← he] at this
-                  exact this
-                rw [hrplc]
-                exact topNode_recursiveWF k _ hnChild
-            refine ⟨hn, ?_⟩
-            intro v hvR hv hOmega hlt'
-            have hcf := (hchildInv v hvR hv hOmega hlt').1
-            have hcf' := fun z hz => Or.inl (b := False) (hcf z hz)
-            exact ⟨fun z hz => (parent_Omega_updated_or_support k xs q i hsD hf hc hr hs hd' t htD hn v
-                hvR hv hOmega _ hcf' z hz).resolve_right id,
-              parent_Omega_relative_of_updated_or_bounded k xs q i hsD hf hc hr hs hd' t htD hn v hvR hv
-                hOmega _ (fun _ h => h.elim) hcf'⟩
-    · have hbr : Recursive b := (Recursive_P.1 hr).2.1
-      have hbw : RecursiveWF (k + 3) b := (RecursiveWF_P.1 hs).2.1
-      have hdb : domF b = .Omega q := by rwa [domF_tail xs hb] at hd
-      obtain ⟨hnB, htailInv⟩ :=
-        Omega_fund_at_label_cut_invariant k b hsD.tail hbr hbw hdb κ hcut t htD ht hHt
-      have hn := fund_nonzero_tail_recursiveWF k xs b t hsD htD hs hb hnB
-      refine ⟨hn, ?_⟩
-      intro v hvR hv hOmega hlt
-      have hcoef (z : Term) (hz : z ∈ Term.H v (convert (k + 3) (code (T.fund (.P xs b) t)))) :
-          UpdatedCoefficient k v (.P xs b) t z := by
-        rw [fund_tail xs hb, convert_P] at hz
-        rcases H_assemble_support v _ _ hz with hz | hz
-        · exact Or.inr (Or.inl (by rw [convert_P]; exact H_assemble_left v _ _ hz))
-        · rcases (htailInv v hvR hv hOmega hlt).1 z hz with he | ho | ⟨a, ha, hw, hmA, he⟩
-          · exact Or.inl he
-          · apply Or.inr; apply Or.inl
-            rw [convert_P]
-            exact H_assemble_right v _ _ ho
-          · refine Or.inr (Or.inr ⟨a, Subterm.trans ha (Subterm.tail xs b), hw, ?_, he⟩)
-            rw [convert_P]
-            exact hmA.elim (fun h => Or.inl (H_assemble_right v _ _ h))
-              (fun h => Or.inr (H_assemble_right v _ _ h))
-      refine ⟨hcoef, ?_⟩
-      intro hH
-      have hsZ : convert (k + 3) (code (.P xs b)) ≠ .zero := convert_ne_zero xs b
-      have hnZ : convert (k + 3) (code (T.fund (.P xs b) t)) ≠ .zero :=
-        fun he => domOmega_fund_ne_zero _ t hd ((convert_eq_zero_iff _ _).1 he)
-      exact closed_of_updated_coefficients k v _ t hsD htD hs hn (Omega_image_head_ne_one k _ hsD hr hs hd)
-        hsZ hnZ (fun a ha => sum_subterm_gap xs b t hb (Omega_head_mass_pos xs b hr hd) hd ha) hcoef hH
-termination_by s => s.size
-decreasing_by
-  all_goals first
-    | exact multi.T.size_get0_lt_P _ _ _
-    | exact multi.T.size_lt_P_right _ _
+            (convert (k + 3) (code (T.fund s t))) = true) :=
+  kumakuma.GeneralImageOmegaCofinality.Omega_fund_invariant k (fun q => CutFund k (.P q .Z) κ) t htD
+    (fun _ _ _ _ _ hG _ => hG.fundWf t ht hHt) s hsD hr hs hd hcut
 
 theorem Omega_label_recursive : ∀ (s : multi.T),
     Recursive s → ∀ {q : V multi.T}, domF s = .Omega q → Recursive (.P q .Z)
