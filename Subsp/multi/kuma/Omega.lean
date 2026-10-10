@@ -1314,8 +1314,7 @@ theorem H_psi_successor_support (v w b : Term)
       Term.le_trans hn hw hp.1 (by simp [Term.le, hlt]) hskip
     rw [Term.H, hnew] at hz
     cases hz
-  · have hskipF : Term.le (.psi w (succTerm b)) (Term.predR v) = false := by
-      cases he : Term.le (.psi w (succTerm b)) (Term.predR v) <;> simp_all
+  · have hskipF : Term.le (.psi w (succTerm b)) (Term.predR v) = false := Bool.eq_false_iff.mpr ‹_›
     rw [Term.H, hskipF]
     rw [Term.H] at hz
     split at hz
@@ -1323,7 +1322,7 @@ theorem H_psi_successor_support (v w b : Term)
     · by_cases hwu : Term.lt w v = true
       · simp only [hwu, ↓reduceIte] at hz ⊢
         exact Or.inl hz
-      · have hwuF : Term.lt w v = false := by cases he : Term.lt w v <;> simp_all
+      · have hwuF : Term.lt w v = false := Bool.eq_false_iff.mpr ‹_›
         simp only [hwuF, Bool.false_eq_true, ↓reduceIte] at hz ⊢
         rcases List.mem_cons.mp hz with rfl | hz
         · exact Or.inr ⟨rfl, List.mem_cons_self⟩
@@ -1355,8 +1354,8 @@ theorem H_step_context_of_wf (v : Term)
         have hle := Term.le_trans hwa hw hp.1 (by simp [Term.le, hlt]) hskip
         rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR a hwa hle] at hz
         cases hz
-      · have hskipF : Term.le (.psi (regular n a) (dropOne c)) (Term.predR v) = false := by
-          cases he : Term.le (.psi (regular n a) (dropOne c)) (Term.predR v) <;> simp_all
+      · have hskipF : Term.le (.psi (regular n a) (dropOne c)) (Term.predR v) = false :=
+          Bool.eq_false_iff.mpr ‹_›
         rw [Term.H, hskipF]
         simp only [Bool.false_eq_true, ↓reduceIte]
         have hzv : z ∈ Term.H v (regular n a) := by

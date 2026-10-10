@@ -34,8 +34,7 @@ theorem H_subset_of_comparable_cuts (w v t : Term)
     · have hn := Term.le_trans ht hpw.1 hpv.1 hskip hpred
       rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR _ ht hn] at hz
       cases hz
-    · have hskipF : Term.le (.psi c a) (Term.predR w) = false := by
-        cases he : Term.le (.psi c a) (Term.predR w) <;> simp_all
+    · have hskipF : Term.le (.psi c a) (Term.predR w) = false := Bool.eq_false_iff.mpr ‹_›
       rw [Term.H, hskipF]
       by_cases hcw : Term.lt c w = true
       · have hcv : Term.lt c v = true := by
@@ -47,8 +46,7 @@ theorem H_subset_of_comparable_cuts (w v t : Term)
         split at hz
         · cases hz
         · exact ihc hp.2.1 hz
-      · have hcwF : Term.lt c w = false := by
-          cases he : Term.lt c w <;> simp_all
+      · have hcwF : Term.lt c w = false := Bool.eq_false_iff.mpr ‹_›
         simp only [hcwF, Bool.false_eq_true, ↓reduceIte]
         rcases H_psi_support hz with he | he | he
         · exact Or.inr (List.mem_cons.mpr (Or.inl he))
@@ -1065,8 +1063,8 @@ theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
           (cofinality_image_le k _ hsD hr hs hdParent) hskip
         rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR _ hL hLpred]
         rfl
-      have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false := by
-        cases he : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) <;> simp_all
+      have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false :=
+        Bool.eq_false_iff.mpr ‹_›
       rw [heOld] at hskipF hH
       by_cases hcut : Term.lt w v = true
       · have hWH : Term.allLt (Term.H v w) B = true := by
@@ -1078,7 +1076,7 @@ theorem Omega_label_relative_bound (k : Nat) (s : multi.T)
             exact le_psi_index_bound n a _ _ hL (heOld ▸ hs.wf)
               (heOld ▸ cofinality_image_le k _ hsD hr hs hdParent)
         exact kumakuma.JaegerFacts.H_downward hv hvR hB _ w hL hwP.2.1 hLw hcut hWH
-      · have hcutF : Term.lt w v = false := by cases he : Term.lt w v <;> simp_all
+      · have hcutF : Term.lt w v = false := Bool.eq_false_iff.mpr ‹_›
         have hChild : Term.allLt (Term.H v (convert (k + 3) (code (V.get0 xs i)))) B = true := by
           apply (Term.allLt_iff _ _).mpr; intro z hz
           apply (Term.allLt_iff _ _).mp hH z

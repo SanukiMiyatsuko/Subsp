@@ -1150,8 +1150,8 @@ theorem Omega_label_coefficient_lift (k : Nat) (s : multi.T)
       · have hLpred := Term.le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
           (cofinality_image_le k _ hsD hr hs hdParent) hskip
         rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR _ hL hLpred] at hz; cases hz
-      have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false := by
-        cases he : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) <;> simp_all
+      have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false :=
+        Bool.eq_false_iff.mpr ‹_›
       rw [heOld] at hskipF
       rw [heOld, Term.H, hskipF, hwV]
       simp only [Bool.false_eq_true, ↓reduceIte]

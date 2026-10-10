@@ -1064,8 +1064,7 @@ theorem H_psi_replacement_support (v w c t : Term)
     have hle := Term.le_trans hn hw hp.1 (by simp [Term.le, hlt]) hskip
     rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR _ hn hle] at hz
     cases hz
-  · have hskipF : Term.le (.psi w c) (Term.predR v) = false := by
-      cases he : Term.le (.psi w c) (Term.predR v) <;> simp_all
+  · have hskipF : Term.le (.psi w c) (Term.predR v) = false := Bool.eq_false_iff.mpr ‹_›
     have ctx (a : Term) (ha : a ∈ Term.H v w) : a ∈ Term.H v (.psi w c) := by
       rw [Term.H, hskipF]
       simp only [Bool.false_eq_true, ↓reduceIte]
@@ -1078,7 +1077,7 @@ theorem H_psi_replacement_support (v w c t : Term)
     · by_cases hcut : Term.lt w v = true
       · simp only [hcut, ↓reduceIte] at hz
         exact Or.inl ⟨hz, ctx _ hz⟩
-      · have hcutF : Term.lt w v = false := by cases he : Term.lt w v <;> simp_all
+      · have hcutF : Term.lt w v = false := Bool.eq_false_iff.mpr ‹_›
         simp only [hcutF, Bool.false_eq_true, ↓reduceIte] at hz
         have hroot : c ∈ Term.H v (.psi w c) := by
           rw [Term.H, hskipF, hcutF]
