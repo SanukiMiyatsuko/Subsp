@@ -1049,7 +1049,7 @@ open GeneralImageCoefficients SourceOmegaTail SourceOmegaInvariant
 theorem TreeBelow.mono_le {s a b : multi.T} (hs : TreeBelow a s) (hab : a ≤ b) :
     TreeBelow b s :=
   treeBelow_of_subterms b s (T.lt_of_lt_of_le hs.root_lt hab)
-    (fun c hc => T.lt_of_lt_of_le (Subterm.treeBelow hc hs).root_lt hab)
+    (fun _c hc => T.lt_of_lt_of_le (Subterm.treeBelow hc hs).root_lt hab)
 
 theorem ofNat_lt_succ (lam n : Nat) : ofNatD lam n < ofNatD lam (n + 1) := by
   rw [← SourceSuccessor.nat_succ]
