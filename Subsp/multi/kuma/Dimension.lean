@@ -805,20 +805,14 @@ theorem head_succTerm {t : Term} (hne : t ≠ .zero) :
   | zero => exact False.elim (hne rfl)
   | add | inacc | psi => rfl
 
-theorem succTerm_wf {t : Term} (hw : Term.wf t = true) : Term.wf (succTerm t) = true := by
+theorem succTerm_eq : succTerm = Term.succT := by
+  funext t
   induction t with
-  | zero => exact Term.wf_one
-  | add a b _ ihb =>
-    have h := (Term.wf_add_iff a b).mp hw
-    apply (Term.wf_add_iff _ _).mpr
-    exact ⟨h.1, h.2.1, ihb h.2.2.1, succTerm_ne_zero b,
-      by simpa only [head_succTerm h.2.2.2.1] using h.2.2.2.2⟩
-  | inacc n b _ =>
-    exact (Term.wf_add_iff _ _).mpr
-      ⟨rfl, hw, Term.wf_one, by decide +kernel, Term.one_le_prin hw rfl⟩
-  | psi u b _ _ =>
-    exact (Term.wf_add_iff _ _).mpr
-      ⟨rfl, hw, Term.wf_one, by decide +kernel, Term.one_le_prin hw rfl⟩
+  | add a b _ ih => exact congrArg (Term.add a) ih
+  | _ => rfl
+
+theorem succTerm_wf {t : Term} (hw : Term.wf t = true) : Term.wf (succTerm t) = true := by
+  rw [succTerm_eq]; exact (Term.succT_spec t hw).1
 
 theorem succTerm_isSucc (t : Term) : Term.isSucc (succTerm t) = true := by
   induction t with
@@ -961,217 +955,34 @@ theorem dropOne_injective {s t : Term} (hs : Term.wf s = true) (ht : Term.wf t =
     cases hlt
   · simpa only [dropOne_of_head_ne hsh, dropOne_of_head_ne hth] using he
 
-theorem one_lt_add {a b : Term} (hp : Term.isPrin a = true) (hw : Term.wf a = true) :
-    Term.lt Term.one (.add a b) = true := by
-  have h := Term.one_le_prin hw hp
-  rw [Term.le] at h
-  rw [Term.one, Term.lt]
-  split
-  · rfl
-  · rename_i he
-    have he' : Term.one ≠ a := he
-    change Term.lt Term.one a = true
-    simpa only [he', decide_false, Bool.false_or] using h
-
-theorem one_lt_succTerm {t : Term} (hw : Term.wf t = true) (hz : t ≠ .zero) :
-    Term.lt Term.one (succTerm t) = true := by
-  cases t with
-  | zero => exact False.elim (hz rfl)
-  | add a b =>
-    have h := (Term.wf_add_iff a b).mp hw
-    exact one_lt_add h.1 h.2.1
-  | inacc | psi => exact one_lt_add rfl hw
-
-theorem succTerm_not_lt_one {t : Term} (hw : Term.wf t = true) :
-    Term.lt (succTerm t) Term.one = false := by
-  cases t with
-  | zero => exact Term.lt_irrefl Term.one
-  | add a b =>
-    have h := (Term.wf_add_iff a b).mp hw
-    rw [succTerm, Term.one, Term.lt]
-    exact Term.not_prin_lt_one h.2.1 h.1
-  | inacc | psi =>
-    rw [succTerm, Term.one, Term.lt]
-    exact Term.not_prin_lt_one hw rfl
-
-theorem add_one_order (s t : Term) :
-    Term.lt (.add s Term.one) (.add t Term.one) = Term.lt s t := by
-  rw [Term.lt]
-  split
-  · rename_i he
-    subst t
-    rw [Term.lt_irrefl, Term.lt_irrefl]
-  · rfl
-
-theorem succTerm_order {s t : Term} (hs : Term.wf s = true) (ht : Term.wf t = true) :
-    Term.lt (succTerm s) (succTerm t) = Term.lt s t := by
-  induction s generalizing t with
-  | zero =>
-    cases t with
-    | zero => simp only [succTerm, Term.lt_irrefl]
-    | add | inacc | psi =>
-      rw [show succTerm .zero = Term.one from rfl,
-        one_lt_succTerm ht (by intro h; cases h)]
-      simp [Term.lt]
-  | add a b _ ihb =>
-    have hsb := (Term.wf_add_iff a b).mp hs
-    cases t with
-    | zero => rw [succTerm, succTerm_not_lt_one hs, CountableTarget.lt_zero]
-    | add c d =>
-      have htd := (Term.wf_add_iff c d).mp ht
-      simp only [succTerm, Term.lt]
-      split
-      · exact ihb hsb.2.2.1 htd.2.2.1
-      · rfl
-    | inacc n c =>
-      rw [succTerm, succTerm, Term.lt, Term.lt]
-      split
-      · rename_i he
-        rw [he, Term.lt_irrefl, succTerm_not_lt_one hsb.2.2.1]
-      · rfl
-    | psi u c =>
-      rw [succTerm, succTerm, Term.lt, Term.lt]
-      split
-      · rename_i he
-        rw [he, Term.lt_irrefl, succTerm_not_lt_one hsb.2.2.1]
-      · rfl
-  | inacc n a _ =>
-    cases t with
-    | zero => rw [succTerm, succTerm_not_lt_one hs, CountableTarget.lt_zero]
-    | add c d =>
-      have htd := (Term.wf_add_iff c d).mp ht
-      simp only [succTerm, Term.lt]
-      split
-      · exact one_lt_succTerm htd.2.2.1 htd.2.2.2.1
-      · rfl
-    | inacc | psi => exact add_one_order _ _
-  | psi u a _ _ =>
-    cases t with
-    | zero => rw [succTerm, succTerm_not_lt_one hs, CountableTarget.lt_zero]
-    | add c d =>
-      have htd := (Term.wf_add_iff c d).mp ht
-      simp only [succTerm, Term.lt]
-      split
-      · exact one_lt_succTerm htd.2.2.1 htd.2.2.2.1
-      · rfl
-    | inacc | psi => exact add_one_order _ _
-
-theorem one_le_of_ne_zero {t : Term} (hw : Term.wf t = true) (hz : t ≠ .zero) :
-    Term.le Term.one t = true := by
-  cases t with
-  | zero => exact False.elim (hz rfl)
-  | add a b =>
-    have h := (Term.wf_add_iff a b).mp hw
-    rw [Term.le, one_lt_add h.1 h.2.1]
-    simp
-  | inacc | psi => exact Term.one_le_prin hw rfl
-
-theorem le_add_same (a b c : Term) :
-    Term.le (.add a b) (.add a c) = Term.le b c := by
-  simp [Term.le, Term.lt]
-
-theorem not_lt_one {t : Term} (hw : Term.wf t = true) (hz : t ≠ .zero) :
-    Term.lt t Term.one = false := by
-  cases t with
-  | zero => exact False.elim (hz rfl)
-  | add a b =>
-    have h := (Term.wf_add_iff a b).mp hw
-    rw [Term.one, Term.lt]
-    exact Term.not_prin_lt_one h.2.1 h.1
-  | inacc | psi => exact Term.not_prin_lt_one hw rfl
+theorem lt_succTerm_eq_le {s t : Term} (hs : Term.wf s = true) (ht : Term.wf t = true) :
+    Term.lt s (succTerm t) = Term.le s t := by
+  rw [succTerm_eq]
+  cases h : Term.le s t
+  · cases h' : Term.lt s (Term.succT t)
+    · rfl
+    · rw [Term.le_of_lt_succT t ht s hs h'] at h; cases h
+  · have hS := Term.succT_spec t ht
+    exact Term.lt_of_le_of_lt hs ht hS.1 h hS.2.2.2.2.1
 
 theorem succTerm_le_eq_lt {s t : Term} (hs : Term.wf s = true) (ht : Term.wf t = true) :
     Term.le (succTerm s) t = Term.lt s t := by
-  induction s generalizing t with
-  | zero =>
-    cases t with
-    | zero => decide +kernel
-    | add | inacc | psi =>
-      rw [show succTerm .zero = Term.one from rfl,
-        one_le_of_ne_zero ht (by intro h; cases h)]
-      simp [Term.lt]
-  | add a b _ ihb =>
-    have hb := (Term.wf_add_iff a b).mp hs
-    cases t with
-    | zero => simp [succTerm, Term.le, Term.lt]
-    | add c d =>
-      have hd := (Term.wf_add_iff c d).mp ht
-      by_cases he : a = c
-      · subst c
-        rw [succTerm, le_add_same, Term.lt]
-        simpa only [↓reduceIte] using ihb hb.2.2.1 hd.2.2.1
-      · simp [succTerm, Term.le, Term.lt, he]
-    | inacc | psi => simp [succTerm, Term.le, Term.lt]
-  | inacc n a _ =>
-    cases t with
-    | zero => simp [succTerm, Term.le, Term.lt]
-    | add c d =>
-      have hd := (Term.wf_add_iff c d).mp ht
-      by_cases he : Term.inacc n a = c
-      · subst c
-        rw [succTerm, le_add_same, Term.lt]
-        simp only [↓reduceIte, one_le_of_ne_zero hd.2.2.1 hd.2.2.2.1]
-      · simp [succTerm, Term.le, Term.lt, he]
-    | inacc | psi => simp [succTerm, Term.le, Term.lt]
-  | psi u a _ _ =>
-    cases t with
-    | zero => simp [succTerm, Term.le, Term.lt]
-    | add c d =>
-      have hd := (Term.wf_add_iff c d).mp ht
-      by_cases he : Term.psi u a = c
-      · subst c
-        rw [succTerm, le_add_same, Term.lt]
-        simp only [↓reduceIte, one_le_of_ne_zero hd.2.2.1 hd.2.2.2.1]
-      · simp [succTerm, Term.le, Term.lt, he]
-    | inacc | psi => simp [succTerm, Term.le, Term.lt]
+  have hS := Term.succT_spec s hs
+  rw [succTerm_eq]
+  cases h : Term.lt s t
+  · cases h' : Term.le (Term.succT s) t
+    · rfl
+    · have := Term.not_lt_of_le h'
+      rw [Term.lt_of_le_of_lt ht hs hS.1 (Term.le_of_not_lt ht hs h) hS.2.2.2.2.1] at this
+      cases this
+  · apply Term.le_of_not_lt hS.1 ht
+    cases h' : Term.lt t (Term.succT s)
+    · rfl
+    · rw [Term.not_lt_of_le (Term.le_of_lt_succT s hs t ht h')] at h; cases h
 
-theorem lt_succTerm_eq_le {s t : Term} (hs : Term.wf s = true) (ht : Term.wf t = true) :
-    Term.lt s (succTerm t) = Term.le s t := by
-  induction s generalizing t with
-  | zero =>
-    cases t <;> simp [succTerm, Term.le, Term.lt, Term.one]
-  | add a b _ ihb =>
-    have hb := (Term.wf_add_iff a b).mp hs
-    cases t with
-    | zero =>
-      rw [show succTerm .zero = Term.one from rfl, not_lt_one hs (by intro h; cases h)]
-      simp [Term.le, Term.lt]
-    | add c d =>
-      have hd := (Term.wf_add_iff c d).mp ht
-      by_cases he : a = c
-      · subst c
-        simp only [succTerm, Term.lt, ↓reduceIte, Term.le, Term.add.injEq, true_and]
-        exact ihb hb.2.2.1 hd.2.2.1
-      · simp [succTerm, Term.le, Term.lt, he]
-    | inacc n c =>
-      by_cases he : a = .inacc n c
-      · subst a
-        rw [succTerm, Term.lt]
-        simp only [↓reduceIte, not_lt_one hb.2.2.1 hb.2.2.2.1, Term.le, reduceCtorEq,
-          decide_false, Bool.false_or, Term.lt, Term.lt_irrefl]
-      · simp [succTerm, Term.le, Term.lt, he]
-    | psi u c =>
-      by_cases he : a = .psi u c
-      · subst a
-        rw [succTerm, Term.lt]
-        simp only [↓reduceIte, not_lt_one hb.2.2.1 hb.2.2.2.1, Term.le, reduceCtorEq,
-          decide_false, Bool.false_or, Term.lt, Term.lt_irrefl]
-      · simp [succTerm, Term.le, Term.lt, he]
-  | inacc n a _ =>
-    cases t with
-    | zero =>
-      rw [show succTerm .zero = Term.one from rfl, Term.not_prin_lt_one hs rfl]
-      simp [Term.le, Term.lt]
-    | add c d => simp [succTerm, Term.le, Term.lt]
-    | inacc | psi => simp [succTerm, Term.le, Term.lt]
-
-  | psi u a _ _ =>
-    cases t with
-    | zero =>
-      rw [show succTerm .zero = Term.one from rfl, Term.not_prin_lt_one hs rfl]
-      simp [Term.le, Term.lt]
-    | add c d => simp [succTerm, Term.le, Term.lt]
-    | inacc | psi => simp [succTerm, Term.le, Term.lt]
+theorem succTerm_order {s t : Term} (hs : Term.wf s = true) (ht : Term.wf t = true) :
+    Term.lt (succTerm s) (succTerm t) = Term.lt s t := by
+  rw [lt_succTerm_eq_le (succTerm_wf hs) ht, succTerm_le_eq_lt hs ht]
 
 theorem dropOne_lt_of_lt {s t : Term} (hs : Term.wf s = true) (ht : Term.wf t = true)
     (hlt : Term.lt s t = true) : Term.lt (dropOne s) t = true := by
