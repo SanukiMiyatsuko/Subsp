@@ -22,18 +22,12 @@ theorem H_subset_of_comparable_cuts (w v t : Term)
     have hp := (Term.wf_add_iff _ _).mp ht
     rw [Term.H] at hz
     rcases List.mem_append.mp hz with hz | hz
-    · rcases iha hp.2.1 hz with he | he
-      · exact Or.inl he
-      · exact Or.inr (List.mem_append_left _ he)
-    · rcases ihb hp.2.2.1 hz with he | he
-      · exact Or.inl he
-      · exact Or.inr (List.mem_append_right _ he)
+    · exact (iha hp.2.1 hz).imp_right (List.mem_append_left _)
+    · exact (ihb hp.2.2.1 hz).imp_right (List.mem_append_right _)
   | inacc n a ih =>
     rcases H_inacc_support n a hz with he | he
     · exact Or.inl he
-    · rcases ih ((Term.wf_inacc_iff _ _).mp ht).1 he with he | he
-      · exact Or.inl he
-      · exact Or.inr (List.mem_append_right _ he)
+    · exact (ih ((Term.wf_inacc_iff _ _).mp ht).1 he).imp_right (List.mem_append_right _)
   | psi c a ihc iha =>
     have hp := (Term.wf_psi_iff _ _).mp ht
     by_cases hskip : Term.le (.psi c a) (Term.predR w) = true

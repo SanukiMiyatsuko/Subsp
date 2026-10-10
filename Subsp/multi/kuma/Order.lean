@@ -1177,9 +1177,7 @@ theorem H_step_support (u : Term) (n : Nat) (a c : Term) {z : Term}
       · exact Or.inr (Or.inr (Or.inr (Or.inr (kumakuma.OT2.mem_H_dropOne h))))
       · rcases H_inacc_support n (succTerm a) h with h | h
         · exact Or.inl h
-        · rcases H_succ_support a h with h | h
-          · exact Or.inl h
-          · exact Or.inr (Or.inl h)
+        · exact (H_succ_support a h).imp_right Or.inl
 
 theorem H_topPair_support (u : Term) (n : Nat) (a b : Term) {z : Term}
     (h : z ∈ Term.H u (topPair n a b)) :
