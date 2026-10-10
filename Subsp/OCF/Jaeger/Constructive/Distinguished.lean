@@ -41,58 +41,53 @@ def Good (α : Term) : Prop := Hull α Wmax α ∧ ∀ β, Hull α Wmax β → l
 
 /-! ### Order helpers -/
 
-theorem le_antisymm {a b : Term} (h1 : le a b = true) (h2 : le b a = true) : a = b := by
-  rcases (le_iff a b).mp h1 with e | h
-  · exact e
-  · rw [not_lt_of_le h2] at h
-    cases h
+theorem le_antisymm {a b : Term} (h1 : le a b = true) (h2 : le b a = true) : a = b :=
+  ((le_iff a b).mp h1).resolve_right (fun h => by rw [not_lt_of_le h2] at h; cases h)
 
 theorem le_trans {a b c : Term} (wa : wf a = true) (wb : wf b = true) (wc : wf c = true)
-    (h1 : le a b = true) (h2 : le b c = true) : le a c = true := by
-  rcases (le_iff a b).mp h1 with e | h
-  · rw [e]
-    exact h2
-  · exact le_of_lt (lt_of_lt_of_le wa wb wc h h2)
+    (h1 : le a b = true) (h2 : le b c = true) : le a c = true :=
+  ((le_iff a b).mp h1).elim (fun e => by rw [e]; exact h2)
+    (fun h => le_of_lt (lt_of_lt_of_le wa wb wc h h2))
 
 /-! ### Hulls -/
 
 theorem Hull.wf_of {α : Term} {X : Term → Prop} {β : Term} (h : Hull α X β) : wf β = true := by
-  cases h with
-  | zero => exact wf_zero
-  | mem _ hw _ => exact hw
-  | add hw _ _ => exact hw
-  | inacc hw _ => exact hw
-  | psi hw _ _ _ => exact hw
+  cases h <;> first | assumption | exact wf_zero
+
+/-- Hulls are mapped constructor by constructor, given the members and the admissible indices. -/
+theorem Hull.map {α β : Term} {X Y : Term → Prop}
+    (hmem : ∀ γ, X γ → wf γ = true → lt γ α = true → Hull β Y γ)
+    (hpsi : ∀ σ, wf σ = true → isRT σ = true → lt α σ = true → lt β σ = true) {γ : Term}
+    (h : Hull α X γ) : Hull β Y γ := by
+  induction h with
+  | zero => exact Hull.zero
+  | mem hX hw hlt => exact hmem _ hX hw hlt
+  | add hw _ _ iha ihb => exact Hull.add hw iha ihb
+  | inacc hw _ ihb => exact Hull.inacc hw ihb
+  | psi hw hσα _ _ ihσ ihb => exact Hull.psi hw (hpsi _ (wf_psi hw).2.1 (wf_psi hw).1 hσα) ihσ ihb
 
 theorem Hull.mono {α : Term} {X Y : Term → Prop}
     (h : ∀ γ, X γ → wf γ = true → lt γ α = true → Y γ) {β : Term} (hb : Hull α X β) :
-    Hull α Y β := by
-  induction hb with
-  | zero => exact Hull.zero
-  | mem hX hw hβ => exact Hull.mem (h _ hX hw hβ) hw hβ
-  | add hw _ _ iha ihb => exact Hull.add hw iha ihb
-  | inacc hw _ ihb => exact Hull.inacc hw ihb
-  | psi hw hσα _ _ ihσ ihb => exact Hull.psi hw hσα ihσ ihb
+    Hull α Y β :=
+  hb.map (fun γ hX hw hlt => Hull.mem (h γ hX hw hlt) hw hlt) (fun _ _ _ h => h)
 
 theorem Hull.congr {α : Term} {X Y : Term → Prop}
     (h : ∀ γ, wf γ = true → lt γ α = true → (X γ ↔ Y γ)) (β : Term) :
     Hull α X β ↔ Hull α Y β :=
-  Iff.intro (Hull.mono (fun γ hX hw hlt => (h γ hw hlt).mp hX))
-    (Hull.mono (fun γ hY hw hlt => (h γ hw hlt).mpr hY))
+  ⟨Hull.mono (fun γ hX hw hlt => (h γ hw hlt).mp hX),
+    Hull.mono (fun γ hY hw hlt => (h γ hw hlt).mpr hY)⟩
+
+/-- Regular terms above `α` lie above everything below `α⁺`. -/
+theorem lt_of_lt_nr {α β σ : Term} (wα : wf α = true) (wβ : wf β = true) (wσ : wf σ = true)
+    (hσR : isRT σ = true) (h1 : lt α σ = true) (h2 : lt β (nr α) = true) : lt β σ = true :=
+  lt_of_lt_of_le wβ (nr_spec α wα).1 wσ h2 (nr_least α wα σ wσ hσR h1)
 
 /-- Raising the parameter inside the same interval below the next regular term. -/
 theorem Hull.raise {α β : Term} {X : Term → Prop} (wα : wf α = true) (wβ : wf β = true)
     (h1 : lt α β = true) (h2 : lt β (nr α) = true) {γ : Term} (hγ : Hull α X γ) :
-    Hull β X γ := by
-  induction hγ with
-  | zero => exact Hull.zero
-  | mem hX hw hlt => exact Hull.mem hX hw (lt_trans hw wα wβ hlt h1)
-  | add hw _ _ iha ihb => exact Hull.add hw iha ihb
-  | inacc hw _ ihb => exact Hull.inacc hw ihb
-  | psi hw hσα _ _ ihσ ihb =>
-    have hw' := wf_psi hw
-    have hle := nr_least α wα _ hw'.2.1 hw'.1 hσα
-    exact Hull.psi hw (lt_of_lt_of_le wβ (nr_spec α wα).1 hw'.2.1 h2 hle) ihσ ihb
+    Hull β X γ :=
+  hγ.map (fun _ hX hw hlt => Hull.mem hX hw (lt_trans hw wα wβ hlt h1))
+    (fun _ wσ hσR hσ => lt_of_lt_nr wα wβ wσ hσR hσ h2)
 
 theorem Hull.lower_aux {X : Term → Prop} (HX : ∀ γ, X γ → Hull γ X γ) {α : Term}
     (wα : wf α = true) : ∀ γ β : Term, wf β = true → le α β = true → Hull β X γ →
@@ -103,16 +98,13 @@ theorem Hull.lower_aux {X : Term → Prop} (HX : ∀ γ, X γ → Hull γ X γ) 
     intro β wβ hαβ h
     have conv : ∀ c : Term, size c < size γ → Hull β X c → Hull α X c := by
       intro c hc hcβ
-      rcases ih c hc β wβ hαβ hcβ with h' | ⟨hXc, _⟩
-      · exact h'
-      · have wc := hcβ.wf_of
-        cases hca : lt c α with
-        | true => exact Hull.mem hXc wc hca
-        | false =>
-          rcases ih c hc c wc (le_of_not_lt wα wc hca) (HX c hXc) with h'' | ⟨_, hcc⟩
-          · exact h''
-          · rw [lt_irrefl] at hcc
-            cases hcc
+      have wc := hcβ.wf_of
+      refine (ih c hc β wβ hαβ hcβ).elim id (fun ⟨hXc, _⟩ => ?_)
+      cases hca : lt c α with
+      | true => exact Hull.mem hXc wc hca
+      | false =>
+        exact (ih c hc c wc (le_of_not_lt wα wc hca) (HX c hXc)).resolve_right
+          (fun ⟨_, h⟩ => by rw [lt_irrefl] at h; cases h)
     cases h with
     | zero => exact Or.inl Hull.zero
     | mem hX _ hlt => exact Or.inr ⟨hX, hlt⟩
@@ -120,32 +112,27 @@ theorem Hull.lower_aux {X : Term → Prop} (HX : ∀ γ, X γ → Hull γ X γ) 
       exact Or.inl (Hull.add hw (conv _ (by size_omega) ha) (conv _ (by size_omega) hb))
     | inacc hw hb => exact Or.inl (Hull.inacc hw (conv _ (by size_omega) hb))
     | psi hw hσβ hσ hb =>
-      have wσ := (wf_psi hw).2.1
-      exact Or.inl (Hull.psi hw (lt_of_le_of_lt wα wβ wσ hαβ hσβ)
+      exact Or.inl (Hull.psi hw (lt_of_le_of_lt wα wβ (wf_psi hw).2.1 hαβ hσβ)
         (conv _ (by size_omega) hσ) (conv _ (by size_omega) hb))
 
 /-- `α ≤ β ⇒ C^β(X) ⊆ C^α(X)`, provided every element of `X` belongs to its own hull. -/
 theorem Hull.lower {X : Term → Prop} (HX : ∀ γ, X γ → Hull γ X γ) {α β : Term}
     (wα : wf α = true) (wβ : wf β = true) (hαβ : le α β = true) {γ : Term} (h : Hull β X γ) :
     Hull α X γ := by
-  rcases Hull.lower_aux HX wα γ β wβ hαβ h with h' | ⟨hX, _⟩
-  · exact h'
-  · have wγ := h.wf_of
-    cases hγα : lt γ α with
-    | true => exact Hull.mem hX wγ hγα
-    | false =>
-      rcases Hull.lower_aux HX wα γ γ wγ (le_of_not_lt wα wγ hγα) (HX γ hX) with h'' | ⟨_, hγγ⟩
-      · exact h''
-      · rw [lt_irrefl] at hγγ
-        cases hγγ
+  have wγ := h.wf_of
+  refine (Hull.lower_aux HX wα γ β wβ hαβ h).elim id (fun ⟨hX, _⟩ => ?_)
+  cases hγα : lt γ α with
+  | true => exact Hull.mem hX wγ hγα
+  | false =>
+    exact (Hull.lower_aux HX wα γ γ wγ (le_of_not_lt wα wγ hγα) (HX γ hX)).resolve_right
+      (fun ⟨_, h⟩ => by rw [lt_irrefl] at h; cases h)
 
 theorem Hull.sub_of_lt_nr {X : Term → Prop} (HX : ∀ γ, X γ → Hull γ X γ) {β γ : Term}
     (wβ : wf β = true) (wγ : wf γ = true) (h : lt γ (nr β) = true) {x : Term}
     (hx : Hull β X x) : Hull γ X x := by
-  rcases lt_trichotomy wγ wβ with h' | e | h'
+  rcases lt_trichotomy wγ wβ with h' | rfl | h'
   · exact Hull.lower HX wγ wβ (le_of_lt h') hx
-  · rw [e]
-    exact hx
+  · exact hx
   · exact Hull.raise wβ wγ h' h hx
 
 /-! ### Well-founded parts -/
@@ -328,81 +315,47 @@ theorem wmax_of_good_hyp {α : Term} (hG : Good α) (hH : Hyp α) : Wmax α := b
   have accα : ∀ x, Wmax x → lt x α = true → Acc (Rel (Hull α Wmax)) x := fun x hx hxα =>
     acc_hull_of_wmax hx (fun x' hx' hx'x =>
       hG.2 x' hx' (lt_trans hx'.wf_of (wmax_wf hx) wα hx'x hxα))
-  have hYα : Ext α α :=
-    ⟨⟨hG.1, Acc.intro α (fun x hx => accα x (hG.2 x hx.1 hx.2) hx.2)⟩, hnα.2.2⟩
   have agree : ∀ β, lt β α = true → (Ext α β ↔ Wmax β) := fun β hβα =>
-    Iff.intro (fun hb => hG.2 β hb.1.1 hβα)
-      (fun hb => ⟨⟨Hull.mem hb (wmax_wf hb) hβα, accα β hb hβα⟩,
-        lt_trans (wmax_wf hb) wα hnα.1 hβα hnα.2.2⟩)
+    ⟨fun hb => hG.2 β hb.1.1 hβα, fun hb => ⟨⟨Hull.mem hb (wmax_wf hb) hβα, accα β hb hβα⟩,
+      lt_trans (wmax_wf hb) wα hnα.1 hβα hnα.2.2⟩⟩
   have hYwf : ∀ β, Ext α β → wf β = true := fun β hb => hb.1.1.wf_of
-  refine ⟨Ext α, ⟨hYwf, ?_⟩, hYα⟩
-  intro γ wγ hγ β
-  obtain ⟨ε, hε, hγε⟩ := hγ
-  have wε := hYwf ε hε
-  have hγnα : lt γ (nr α) = true := lt_of_le_of_lt wγ wε hnα.1 hγε hε.2
+  refine ⟨Ext α, ⟨hYwf, ?_⟩,
+    ⟨⟨hG.1, Acc.intro α (fun x hx => accα x (hG.2 x hx.1 hx.2) hx.2)⟩, hnα.2.2⟩⟩
+  intro γ wγ ⟨ε, hε, hγε⟩ β
   have hnγ := nr_spec γ wγ
-  have hnγnα : le (nr γ) (nr α) = true := nr_least γ wγ (nr α) hnα.1 hnα.2.1 hγnα
-  have split : le (nr γ) α = true ∨ lt α (nr γ) = true := by
-    rcases lt_trichotomy hnγ.1 wα with h | e | h
-    · exact Or.inl (le_of_lt h)
-    · rw [e]
-      exact Or.inl (le_refl α)
-    · exact Or.inr h
+  have hnγnα := nr_least γ wγ (nr α) hnα.1 hnα.2.1 (lt_of_le_of_lt wγ (hYwf ε hε) hnα.1 hγε hε.2)
+  have split : le (nr γ) α = true ∨ lt α (nr γ) = true :=
+    (lt_trichotomy hnγ.1 wα).elim (fun h => Or.inl (le_of_lt h))
+      (fun h => h.elim (fun e => Or.inl (by rw [e]; exact le_refl α)) Or.inr)
   rcases split with hle | hgt
   · have hγα : lt γ α = true := lt_of_lt_of_le wγ hnγ.1 wα hnγ.2.2 hle
-    have hcY : ∀ x, Hull γ (Ext α) x ↔ Hull γ Wmax x :=
-      Hull.congr (fun x wx hxγ => agree x (lt_trans wx wγ wα hxγ hγα))
-    rw [WPart.congr hcY β]
+    rw [WPart.congr (Hull.congr (fun x wx hxγ => agree x (lt_trans wx wγ wα hxγ hγα))) β]
     constructor
     · intro hb
-      have wb := hb.1.1.wf_of
-      have hbW := hH γ wγ hle β hb.1 hb.2
-      exact ⟨(agree β (lt_of_lt_of_le wb hnγ.1 wα hb.2 hle)).mpr hbW, hb.2⟩
+      exact ⟨(agree β (lt_of_lt_of_le hb.1.1.wf_of hnγ.1 wα hb.2 hle)).mpr
+        (hH γ wγ hle β hb.1 hb.2), hb.2⟩
     · intro hb
       have wb := hYwf β hb.1
-      have hbα : lt β α = true := lt_of_lt_of_le wb hnγ.1 wα hb.2 hle
-      have hbW := (agree β hbα).mp hb.1
+      have hbW := (agree β (lt_of_lt_of_le wb hnγ.1 wα hb.2 hle)).mp hb.1
       refine ⟨?_, hb.2⟩
       cases hβγ : lt β γ with
-      | false =>
-        exact ((wmax_dist.2 γ wγ ⟨β, hbW, le_of_not_lt wγ wb hβγ⟩ β).mpr ⟨hbW, hb.2⟩).1
+      | false => exact ((wmax_dist.2 γ wγ ⟨β, hbW, le_of_not_lt wγ wb hβγ⟩ β).mpr ⟨hbW, hb.2⟩).1
       | true =>
-        refine ⟨Hull.mem hbW wb hβγ, acc_hull_of_wmax hbW ?_⟩
-        intro x hx hxβ
-        exact wmax_bounded wb (Hull.lower HW wb wγ (le_of_lt hβγ) hx) hbW (le_of_lt hxβ)
-          (nr_spec β wb).2.2
-  · have hnαnγ : le (nr α) (nr γ) = true := nr_least α wα (nr γ) hnγ.1 hnγ.2.1 hgt
-    have heqn : nr γ = nr α := le_antisymm hnγnα hnαnγ
+        exact ⟨Hull.mem hbW wb hβγ, acc_hull_of_wmax hbW (fun x hx hxβ => wmax_bounded wb
+          (Hull.lower HW wb wγ (le_of_lt hβγ) hx) hbW (le_of_lt hxβ) (nr_spec β wb).2.2)⟩
+  · have heqn : nr γ = nr α := le_antisymm hnγnα (nr_least α wα (nr γ) hnγ.1 hnγ.2.1 hgt)
     have hc : ∀ x, Hull γ (Ext α) x ↔ Hull α Wmax x := by
-      rcases lt_trichotomy wγ wα with hγα | eγα | hαγ
+      rcases lt_trichotomy wγ wα with hγα | rfl | hαγ
       · intro x
         rw [Hull.congr (fun x wx hxγ => agree x (lt_trans wx wγ wα hxγ hγα)) x]
-        exact Iff.intro (fun hx => Hull.raise wγ wα hγα hgt hx)
-          (fun hx => Hull.lower HW wγ wα (le_of_lt hγα) hx)
-      · subst eγα
-        exact Hull.congr (fun x _ hxγ => agree x hxγ)
+        exact ⟨Hull.raise wγ wα hγα hgt, Hull.lower HW wγ wα (le_of_lt hγα)⟩
+      · exact Hull.congr (fun x _ hxγ => agree x hxγ)
       · intro x
-        constructor
-        · intro hx
-          induction hx with
-          | zero => exact Hull.zero
-          | mem hY _ _ => exact hY.1.1
-          | add hw _ _ iha ihb => exact Hull.add hw iha ihb
-          | inacc hw _ ihb => exact Hull.inacc hw ihb
-          | psi hw hσγ _ _ ihσ ihb =>
-            exact Hull.psi hw (lt_trans wα wγ (wf_psi hw).2.1 hαγ hσγ) ihσ ihb
-        · intro hx
-          induction hx with
-          | zero => exact Hull.zero
-          | mem hW hw hlt => exact Hull.mem ((agree _ hlt).mpr hW) hw (lt_trans hw wα wγ hlt hαγ)
-          | add hw _ _ iha ihb => exact Hull.add hw iha ihb
-          | inacc hw _ ihb => exact Hull.inacc hw ihb
-          | psi hw hσα _ _ ihσ ihb =>
-            have hw' := wf_psi hw
-            have hle := nr_least α wα _ hw'.2.1 hw'.1 hσα
-            rw [← heqn] at hle
-            exact Hull.psi hw (lt_of_lt_of_le wγ hnγ.1 hw'.2.1 hnγ.2.2 hle) ihσ ihb
+        exact ⟨Hull.map (fun _ hY _ _ => hY.1.1) (fun _ wσ _ h => lt_trans wα wγ wσ hαγ h),
+          Hull.map (fun _ hW hw hlt => Hull.mem ((agree _ hlt).mpr hW) hw
+            (lt_trans hw wα wγ hlt hαγ))
+            (fun _ wσ hσR h => lt_of_lt_nr wα wγ wσ hσR h (by rw [← heqn]; exact hnγ.2.2))⟩
     rw [WPart.congr hc β, heqn]
-    exact Iff.intro (fun hb => ⟨⟨hb.1, hb.2⟩, hb.2⟩) (fun hb => ⟨hb.1.1, hb.2⟩)
+    exact ⟨fun hb => ⟨⟨hb.1, hb.2⟩, hb.2⟩, fun hb => ⟨hb.1.1, hb.2⟩⟩
 
 end OCF.Jaeger.Term
