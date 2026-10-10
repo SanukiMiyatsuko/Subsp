@@ -1809,6 +1809,40 @@ theorem mass_lt_of_subterm {a s : multi.T} (h : Subterm a s) : mass a < mass s :
   | tail => exact mass_tail_lt _ _
   | trans _ _ ha hb => exact Nat.lt_trans ha hb
 
+/-- A subterm of `xs ⊕ b` is no heavier than a coordinate of `xs` or than `b`. -/
+theorem mass_le_of_subterm_P {a : multi.T} {xs : V multi.T} {b : multi.T}
+    (h : Subterm a (.P xs b)) : (∃ j, mass a ≤ mass (V.get0 xs j)) ∨ mass a ≤ mass b := by
+  suffices ∀ {s}, Subterm a s → s = .P xs b →
+      (∃ j, mass a ≤ mass (V.get0 xs j)) ∨ mass a ≤ mass b from this h rfl
+  clear h
+  intro s h
+  induction h with
+  | coordinate _ _ i => intro he; cases he; exact .inl ⟨i, Nat.le_refl _⟩
+  | tail => intro he; cases he; exact .inr (Nat.le_refl _)
+  | trans hab _ _ ih =>
+    have := mass_lt_of_subterm hab
+    intro he
+    exact (ih he).imp (fun ⟨j, hj⟩ => ⟨j, by omega⟩) (fun _ => by omega)
+
+theorem principal_subterm_mass {xs : V multi.T} {i j : Nat} (hij : i ≠ j)
+    (hi : V.get0 xs i ≠ .Z) (hj : V.get0 xs j ≠ .Z) {a : multi.T} (ha : Subterm a (.P xs .Z)) :
+    mass a < mass (.P xs .Z) - 1 := by
+  have := mass_positive hi; have := mass_positive hj; have := vectorMass_pair_le xs i j hij
+  rw [mass_P, mass_Z]
+  rcases mass_le_of_subterm_P ha with ⟨l, hl⟩ | hl
+  · by_cases e : l = i
+    · subst e; omega
+    · have := vectorMass_pair_le xs l i e; omega
+  · rw [mass_Z] at hl; omega
+
+theorem sum_subterm_mass {xs : V multi.T} {b : multi.T} (hb : b ≠ .Z) (hx : 0 < vectorMass xs)
+    {a : multi.T} (ha : Subterm a (.P xs b)) : mass a < mass (.P xs b) - 1 := by
+  have := mass_positive hb
+  rw [mass_P]
+  rcases mass_le_of_subterm_P ha with ⟨l, hl⟩ | hl
+  · have := vectorMass_get0_le xs l; omega
+  · omega
+
 end kumakuma.SourceCoefficientGap
 
 namespace kumakuma.GeneralImageLimitSupport

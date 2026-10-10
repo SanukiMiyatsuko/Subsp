@@ -28,33 +28,7 @@ theorem principal_subterm_gap (xs : V multi.T)
     {v : V multi.T} (hd : domF (.P xs .Z) = .Omega v)
     (t : multi.T) {a : multi.T} (ha : GeneralImageCoefficients.Subterm a (.P xs .Z)) :
     mass a < gap (.P xs .Z) t := by
-  have hcoords : ∀ l, mass (V.get0 xs l) < vectorMass xs := by
-    intro l
-    by_cases hl : l = i
-    · subst l
-      have hp := vectorMass_pair_le xs i j hij
-      have hz := mass_positive hj
-      omega
-    · have hp := vectorMass_pair_le xs l i hl
-      have hz := mass_positive hi
-      omega
-  have hgap : gap (.P xs .Z) t = vectorMass xs := by
-    rw [gap_Omega _ _ _ hd, mass_P, mass_Z]
-    omega
-  rw [hgap]
-  have hgen : ∀ {a s : multi.T}, GeneralImageCoefficients.Subterm a s → s = .P xs .Z →
-      mass a < vectorMass xs := by
-    intro a s ha
-    induction ha with
-    | coordinate ys b l => intro he; cases he; exact hcoords l
-    | tail ys b =>
-      intro he; cases he
-      rw [mass_Z]
-      exact Nat.lt_of_lt_of_le (mass_positive hi) (vectorMass_get0_le xs i)
-    | trans hab hbs iha ihb =>
-      intro he
-      exact Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm hab) (ihb he)
-  exact hgen ha rfl
+  rw [gap_Omega _ _ _ hd]; exact kumakuma.SourceCoefficientGap.principal_subterm_mass hij hi hj ha
 
 theorem H_inacc_succ_support (v : Term) (n : Nat) (a : Term) {z : Term}
     (hz : z ∈ Term.H v (.inacc n a)) : z ∈ Term.H v (.inacc n (succTerm a)) := by
@@ -173,23 +147,7 @@ theorem sum_subterm_gap (xs : V multi.T) (b t : multi.T)
     (hb : b ≠ .Z) (hx : 0 < vectorMass xs)
     {v : V multi.T} (hd : domF (.P xs b) = .Omega v)
     {a : multi.T} (ha : Subterm a (.P xs b)) : mass a < gap (.P xs b) t := by
-  have hbp := mass_positive hb
-  have hgap : gap (.P xs b) t = vectorMass xs + mass b := by
-    rw [gap_Omega _ _ _ hd, mass_P]; omega
-  rw [hgap]
-  have hgen : ∀ {a s : multi.T}, Subterm a s → s = .P xs b →
-      mass a < vectorMass xs + mass b := by
-    intro a s ha
-    induction ha with
-    | coordinate ys c i =>
-      intro he; cases he
-      have hi := vectorMass_get0_le xs i
-      omega
-    | tail ys c => intro he; cases he; omega
-    | trans hab hbs iha ihb =>
-      intro he
-      exact Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm hab) (ihb he)
-  exact hgen ha rfl
+  rw [gap_Omega _ _ _ hd]; exact kumakuma.SourceCoefficientGap.sum_subterm_mass hb hx ha
 
 /-- An updated coefficient of a subterm `c` of `s` lies below the image of `s[t]`. -/
 theorem updated_lt_fund (k : Nat) (v : Term) {s c t : multi.T} (hsD : Dim (k + 3) s)
@@ -2231,29 +2189,7 @@ theorem positive_principal_subterm_gap (xs : V multi.T)
     (i j : Nat) (hij : i ≠ j) (hi : V.get0 xs i ≠ .Z) (hj : V.get0 xs j ≠ .Z)
     (t : multi.T) (ht : t ≠ .Z) {a : multi.T} (ha : Subterm a (.P xs .Z)) :
     mass a < gap (.P xs .Z) t := by
-  have hcoords : ∀ l, mass (V.get0 xs l) < vectorMass xs := by
-    intro l
-    by_cases hl : l = i
-    · subst l
-      have hp := vectorMass_pair_le xs i j hij
-      have hz := mass_positive hj; omega
-    · have hp := vectorMass_pair_le xs l i hl
-      have hz := mass_positive hi; omega
-  have hgap : gap (.P xs .Z) t = vectorMass xs := by
-    rw [gap, ite_eq_right ht, mass_P, mass_Z]; omega
-  rw [hgap]
-  have hgen : ∀ {a s : multi.T}, Subterm a s → s = .P xs .Z → mass a < vectorMass xs := by
-    intro a s ha
-    induction ha with
-    | coordinate ys b l => intro he; cases he; exact hcoords l
-    | tail ys b =>
-      intro he; cases he
-      rw [mass_Z]
-      exact Nat.lt_of_lt_of_le (mass_positive hi) (vectorMass_get0_le xs i)
-    | trans hab hbs iha ihb =>
-      intro he
-      exact Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm hab) (ihb he)
-  exact hgen ha rfl
+  rw [gap, ite_eq_right ht]; exact kumakuma.SourceCoefficientGap.principal_subterm_mass hij hi hj ha
 
 theorem omega_relative_allcuts (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
     (hr : Recursive s) (hs : RecursiveWF (k + 3) s) (hd : domF s = .omega)
@@ -2277,20 +2213,6 @@ theorem omega_relative_allcuts (k : Nat) (s : multi.T) (hsD : Dim (k + 3) s)
 theorem positive_sum_subterm_gap (xs : V multi.T) (b t : multi.T)
     (hb : b ≠ .Z) (hx : 0 < vectorMass xs) (ht : t ≠ .Z)
     {a : multi.T} (ha : Subterm a (.P xs b)) : mass a < gap (.P xs b) t := by
-  have hbp := mass_positive hb
-  have hgap : gap (.P xs b) t = vectorMass xs + mass b := by
-    rw [gap, ite_eq_right ht, mass_P]; omega
-  rw [hgap]
-  have hgen : ∀ {a s : multi.T}, Subterm a s → s = .P xs b → mass a < vectorMass xs + mass b := by
-    intro a s ha
-    induction ha with
-    | coordinate ys c i =>
-      intro he; cases he
-      have hi := vectorMass_get0_le xs i; omega
-    | tail ys c => intro he; cases he; omega
-    | trans hab hbs iha ihb =>
-      intro he
-      exact Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm hab) (ihb he)
-  exact hgen ha rfl
+  rw [gap, ite_eq_right ht]; exact kumakuma.SourceCoefficientGap.sum_subterm_mass hb hx ha
 
 end kumakuma.GeneralImageCountableInheritance
