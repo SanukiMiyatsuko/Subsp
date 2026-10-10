@@ -993,24 +993,8 @@ theorem principal_replace_cofinal_recursiveWF (k : Nat)
   let newArgs := arguments (k + 3) (trim (codes ys))
   have hold (j : Nat) : oldArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 xs j)) :=
     converted_coordinate xs j
-  have hnew (j : Nat) : newArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 ys j)) :=
-    converted_coordinate ys j
-  have hnewa : newArgs[i]?.getD .zero = convert (k + 3) (code a) := by
-    rw [hnew i]; show convert (k + 3) (code (V.get0 (V.set xs i a) i)) = _
-    rw [V.get0_set_same xs i a hil]
-  have hzeroOld : ∀ j, j < i → oldArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hold j, hlow j hj, convert_Z]
-  have hzeroNew : ∀ j, j < i → newArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hnew j]
-    show convert (k + 3) (code (V.get0 (V.set xs i a) j)) = _
-    rw [V.get0_set_ne xs i a j (by omega), hlow j hj, convert_Z]
-  have hsame : ∀ j, i < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
-    intro j hj _
-    rw [hnew j, hold j]
-    show convert (k + 3) (code (V.get0 (V.set xs i a) j)) = _
-    rw [V.get0_set_ne xs i a j (by omega)]
+  obtain ⟨hnewa, hzeroOld, hzeroNew, hsame⟩ :=
+    kumakuma.GeneralImageRegularLimit.replace_args k hil hlow a
   have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
   have hcNZ : convert (k + 3) (code (V.get0 xs i)) ≠ .zero :=
     fun he => hc0 ((convert_eq_zero_iff _ _).1 he)
@@ -1158,24 +1142,8 @@ theorem principal_replacement_psi_images (k : Nat)
   let newArgs := arguments (k + 3) (trim (codes ys))
   have hold (j : Nat) : oldArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 xs j)) :=
     converted_coordinate xs j
-  have hnew (j : Nat) : newArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 ys j)) :=
-    converted_coordinate ys j
-  have hnewa : newArgs[i]?.getD .zero = convert (k + 3) (code a) := by
-    rw [hnew i]; show convert (k + 3) (code (V.get0 (V.set xs i a) i)) = _
-    rw [V.get0_set_same xs i a hil]
-  have hzeroOld : ∀ j, j < i → oldArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hold j, hlow j hj, convert_Z]
-  have hzeroNew : ∀ j, j < i → newArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hnew j]
-    show convert (k + 3) (code (V.get0 (V.set xs i a) j)) = _
-    rw [V.get0_set_ne xs i a j (by omega), hlow j hj, convert_Z]
-  have hsame : ∀ j, i < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
-    intro j hj _
-    rw [hnew j, hold j]
-    show convert (k + 3) (code (V.get0 (V.set xs i a) j)) = _
-    rw [V.get0_set_ne xs i a j (by omega)]
+  obtain ⟨hnewa, hzeroOld, hzeroNew, hsame⟩ :=
+    kumakuma.GeneralImageRegularLimit.replace_args k hil hlow a
   have heOld : convert (k + 3) (code (.P xs .Z)) = lower (k + 1) oldArgs
       (topPair (k + 1) (oldArgs[k + 2]?.getD .zero) (oldArgs[k + 1]?.getD .zero)) := by
     rw [convert_principal, principal_as_layers]
@@ -1714,23 +1682,9 @@ theorem parent_zero_updated_support (k : Nat)
         let newArgs := arguments (k + 3) (trim (codes ys))
         have hold (j : Nat) : oldArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 xs j)) :=
           converted_coordinate xs j
-        have hnew (j : Nat) : newArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 ys j)) :=
-          converted_coordinate ys j
-        have hnewa : newArgs[i]?.getD .zero = .zero := by
-          rw [hnew i]; show convert (k + 3) (code (V.get0 (V.set xs i .Z) i)) = _
-          rw [V.get0_set_same xs i _ hil, convert_Z]
-        have hzeroOld : ∀ j, j < i → oldArgs[j]?.getD .zero = .zero := by
-          intro j hj; rw [hold j, hlow j hj, convert_Z]
-        have hzeroNew : ∀ j, j < i → newArgs[j]?.getD .zero = .zero := by
-          intro j hj
-          rw [hnew j]
-          show convert (k + 3) (code (V.get0 (V.set xs i .Z) j)) = _
-          rw [V.get0_set_ne xs i _ j (by omega_c), hlow j hj, convert_Z]
-        have hsame : ∀ j, i < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
-          intro j hj _
-          rw [hnew j, hold j]
-          show convert (k + 3) (code (V.get0 (V.set xs i .Z) j)) = _
-          rw [V.get0_set_ne xs i _ j (by omega_c)]
+        obtain ⟨hnewa, hzeroOld, hzeroNew, hsame⟩ :=
+          kumakuma.GeneralImageRegularLimit.replace_args k hil hlow .Z
+        rw [convert_Z] at hnewa
         have heOld : convert (k + 3) (code (.P xs .Z)) = lower (k + 1) oldArgs
             (topPair (k + 1) (oldArgs[k + 2]?.getD .zero) (oldArgs[k + 1]?.getD .zero)) := by
           rw [convert_principal, principal_as_layers]
@@ -1820,23 +1774,14 @@ theorem regular_zero_updated_support (k m : Nat)
     apply set_eq_self
     rw [V.get0_set_ne xs (m + 1) p m (by omega)]
     exact hlow m (by omega)
-  have yidx (j : Nat) : V.get0 ys j = if j = m + 1 then p else V.get0 xs j := V.get0_set xs _ p j hml'
   let oldArgs := arguments (k + 3) (trim (codes xs))
   let newArgs := arguments (k + 3) (trim (codes ys))
   have oldGet (j : Nat) : oldArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 xs j)) :=
     converted_coordinate xs j
-  have newGet (j : Nat) : newArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 ys j)) :=
-    converted_coordinate ys j
   have hOld : oldArgs[m + 1]?.getD .zero = succTerm (convert (k + 3) (code p)) := by
     rw [oldGet (m + 1)]; exact hsucc
-  have hNew : newArgs[m + 1]?.getD .zero = convert (k + 3) (code p) := by
-    rw [newGet (m + 1), yidx, ite_eq_left rfl]
-  have hzeroOld : ∀ j, j < m + 1 → oldArgs[j]?.getD .zero = .zero := by
-    intro j hj; rw [oldGet j, hlow j hj, convert_Z]
-  have hzeroNew : ∀ j, j < m + 1 → newArgs[j]?.getD .zero = .zero := by
-    intro j hj; rw [newGet j, yidx, ite_eq_right (by omega), hlow j hj, convert_Z]
-  have hsame : ∀ j, m + 1 < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
-    intro j hj _; rw [newGet j, oldGet j, yidx, ite_eq_right (by omega)]
+  obtain ⟨hNew, hzeroOld, hzeroNew, hsame⟩ :=
+    kumakuma.GeneralImageRegularLimit.replace_args k hml' hlow p
   have heOld : convert (k + 3) (code (.P xs .Z)) = lower (k + 1) oldArgs
       (topPair (k + 1) (oldArgs[k + 2]?.getD .zero) (oldArgs[k + 1]?.getD .zero)) := by
     rw [convert_principal, principal_as_layers]

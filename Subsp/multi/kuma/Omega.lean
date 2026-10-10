@@ -578,6 +578,22 @@ theorem regular_update_args (k m : Nat) {xs : V multi.T} (hv : V.fnz xs = some (
       convert_Z]
   · rw [newGet, converted_coordinate, zidx, ite_eq_right (by omega), ite_eq_right (by omega)]
 
+/-- The converted arguments of `xs` and of its update `xs[i := a]`, all zero below `i`. -/
+theorem replace_args (k : Nat) {xs : V multi.T} {i : Nat} (hil : i < xs.length)
+    (hlow : ∀ j, j < i → V.get0 xs j = .Z) (a : multi.T) :
+    let oldArgs := arguments (k + 3) (trim (codes xs))
+    let newArgs := arguments (k + 3) (trim (codes (V.set xs i a)))
+    newArgs[i]?.getD .zero = convert (k + 3) (code a) ∧
+    (∀ j, j < i → oldArgs[j]?.getD .zero = .zero) ∧
+    (∀ j, j < i → newArgs[j]?.getD .zero = .zero) ∧
+    (∀ j, i < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero) := by
+  intro oldArgs newArgs
+  refine ⟨?_, fun j hj => ?_, fun j hj => ?_, fun j hj _ => ?_⟩
+  · rw [converted_coordinate, V.get0_set_same xs i a hil]
+  · rw [converted_coordinate, hlow j hj, convert_Z]
+  · rw [converted_coordinate, V.get0_set_ne xs i a j (by omega), hlow j hj, convert_Z]
+  · rw [converted_coordinate, converted_coordinate, V.get0_set_ne xs i a j (by omega)]
+
 theorem fund_regular_recursiveWF (k m : Nat) (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hv : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one) (t : multi.T)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (ht : RecursiveWF (k + 3) t)
@@ -1680,21 +1696,7 @@ theorem principal_replace_relative_recursiveWF (k : Nat)
   let newArgs := arguments (k + 3) (trim (codes ys))
   have hold (j : Nat) : oldArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 xs j)) :=
     converted_coordinate xs j
-  have hnew (j : Nat) : newArgs[j]?.getD .zero = convert (k + 3) (code (V.get0 ys j)) :=
-    converted_coordinate ys j
-  have hnewa : newArgs[i]?.getD .zero = convert (k + 3) (code a) := by
-    rw [hnew i]; show convert (k + 3) (code (V.get0 (V.set xs i a) i)) = _
-    rw [V.get0_set_same xs i a hil]
-  have hzero : ∀ j, j < i → newArgs[j]?.getD .zero = .zero := by
-    intro j hj
-    rw [hnew j]
-    show convert (k + 3) (code (V.get0 (V.set xs i a) j)) = _
-    rw [V.get0_set_ne xs i a j (by omega), hlow j hj, convert_Z]
-  have hsame : ∀ j, i < j → j < k + 3 → newArgs[j]?.getD .zero = oldArgs[j]?.getD .zero := by
-    intro j hj _
-    rw [hnew j, hold j]
-    show convert (k + 3) (code (V.get0 (V.set xs i a) j)) = _
-    rw [V.get0_set_ne xs i a j (by omega)]
+  obtain ⟨hnewa, -, hzero, hsame⟩ := kumakuma.GeneralImageRegularLimit.replace_args k hil hlow a
   have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
   have hc := (hcoords i).wf
   refine RecursiveWF_P.2 ⟨?_, recursive_zero _, ?_⟩
