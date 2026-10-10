@@ -173,7 +173,7 @@ theorem diagonal_parent_relative_above (k : Nat)
         with ⟨hw, ho⟩ | ⟨_, hroot, _⟩
       · exact ⟨hw, heOld ▸ ho⟩
       · have hback := (Term.allLt_iff _ _).mp hH _ (heOld ▸ hroot)
-        have hfalse := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (hcoords i).wf hs.wf (hcoords i).wf hback hparentLtChild
+        have hfalse := Term.lt_trans (hcoords i).wf hs.wf (hcoords i).wf hback hparentLtChild
         rw [lt_self] at hfalse; cases hfalse
     by_cases hex : ∃ j, i ≠ j ∧ V.get0 xs j ≠ .Z
     · obtain ⟨j, hij, hj⟩ := hex
@@ -629,7 +629,7 @@ theorem closed_of_dominated_coefficients (k : Nat) (v : Term)
       · exact dropOne_lt_of_lt (ha.recursiveWF hs).wf hn.wf (bound a ha hm)
   · rcases (Term.le_iff_eq_or_lt _ _).mp he with he | he
     · rw [he]; exact bound a ha hm
-    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v _ hn.wf hz) (ha.recursiveWF hs).wf hn.wf
+    · exact Term.lt_trans (H_coefficient_wf v _ hn.wf hz) (ha.recursiveWF hs).wf hn.wf
         he (bound a ha hm)
 
 theorem dominated_child_coefficients_below_parent (k : Nat)
@@ -678,7 +678,7 @@ theorem dominated_child_coefficients_below_parent (k : Nat)
       · exact dropOne_lt_of_lt (hb.recursiveWF hc).wf hn.wf (bound b hb hm)
   · rcases (Term.le_iff_eq_or_lt _ _).mp he with he | he
     · rw [he]; exact bound b hb hm
-    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v _ ha.wf hz) (hb.recursiveWF hc).wf hn.wf
+    · exact Term.lt_trans (H_coefficient_wf v _ ha.wf hz) (hb.recursiveWF hc).wf hn.wf
         he (bound b hb hm)
 
 theorem inherited_omega_dominated_support (k : Nat)
@@ -859,13 +859,13 @@ theorem inherited_omega_dominated_relative_above (k : Nat)
             have hOldArg : Term.lt (convert (k + 3) (code (V.get0 xs i)))
                 (.psi (.inacc i .zero) (convert (k + 3) (code (V.get0 xs i)))) = true := by
               rw [← heOld]; exact (Term.allLt_iff _ _).mp hH _ (heOld ▸ hroot)
-            have hOwn := (psi_argument_lt_iff _ _ hwOld).mp hOldArg
+            have hOwn := (kumakuma.JaegerFacts.lt_psi_self_iff hwOld).mp hOldArg
             have hChildLt := (convert_order k _ _ hnChildD hcD hnChild (hcoords i)).mp
               (fund_lt (V.get0 xs i) _ hc0)
             have hOwnW := ((Term.wf_psi_iff _ _).mp hwOld).2.1
-            have hNewOwn := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
+            have hNewOwn := Term.lt_trans hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
             rw [heFund]
-            exact (psi_argument_lt_iff _ _ hwNew).mpr (dropOne_lt_of_lt hnChild.wf hOwnW hNewOwn)
+            exact (kumakuma.JaegerFacts.lt_psi_self_iff hwNew).mpr (dropOne_lt_of_lt hnChild.wf hOwnW hNewOwn)
           · exact dominated_child_coefficients_below_parent k xs i _ _ hsD (Dim_ofNatD _ _) ht hs hn
               hnChild hhead hnZ v (fun z hz => heOld ▸ hchild z hz) hcoef hH z hzChild
       · have hi : i = k + 2 := by omega_c
@@ -1417,14 +1417,14 @@ theorem parent_Omega_relative_of_updated_or_bounded (k : Nat)
           have hOldArg : Term.lt (convert (k + 3) (code (V.get0 xs i)))
               (.psi (.inacc i .zero) (convert (k + 3) (code (V.get0 xs i)))) = true := by
             rw [← heOld]; exact (Term.allLt_iff _ _).mp hH _ (heOld ▸ hroot)
-          have hOwn := (psi_argument_lt_iff _ _ hwOld).mp hOldArg
+          have hOwn := (kumakuma.JaegerFacts.lt_psi_self_iff hwOld).mp hOldArg
           have hChildLt := (convert_order k _ _ (Dim_fund _ _ hchildDim htD) hchildDim hnChild
             (hcoords i)).mp (fund_lt (V.get0 xs i) t hc0)
           have hOwnW := ((Term.wf_psi_iff _ _).mp hwOld).2.1
-          have hNewOwn := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
+          have hNewOwn := Term.lt_trans hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
           have hDropOwn := dropOne_lt_of_lt hnChild.wf hOwnW hNewOwn
           rw [heFund]
-          exact (psi_argument_lt_iff _ _ hwNew).mpr hDropOwn
+          exact (kumakuma.JaegerFacts.lt_psi_self_iff hwNew).mpr hDropOwn
         · have embed (a : Term) (ha : a ∈ Term.H v (convert (k + 3) (code (V.get0 xs i)))) :
               a ∈ Term.H v (convert (k + 3) (code (.P xs .Z))) := heOld ▸ hchild a ha
           rcases hcoef z hzChild with hu | hex
@@ -1475,7 +1475,7 @@ theorem inserted_coefficient_bound_at_self
   · rw [he]; exact (zero_lt_iff _).mpr hb0
   · rw [he]; exact hNext
   · rw [he]; exact dropOne_lt_of_lt ha hb hNext
-  · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf cut _ ha he) ha hb
+  · exact Term.lt_trans (H_coefficient_wf cut _ ha he) ha hb
       ((Term.allLt_iff _ _).mp hH z he) hNext
   · rw [hSelf] at he; cases he
 
@@ -1666,7 +1666,7 @@ theorem Omega_iter_at_label_cut (k : Nat) (s : multi.T)
   · subst cut
     exact all_Omega_iter_closed k s hsD hr hs hd ((H_omega_bound_iff_subterms k s hsD hs hr).mp hSource) n
   have hCut : Term.lt Term.bigOmega cut = true := by
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega cut Term.wf_bigOmega hc.cutWf with h | h | h
+    rcases Term.lt_trichotomy Term.wf_bigOmega hc.cutWf with h | h | h
     · exact h
     · exact False.elim (he h.symm)
     · rw [kumakuma.CountableTarget.regular_not_below_omega hc.regular] at h; cases h
@@ -1773,17 +1773,17 @@ theorem Omega_label_coefficient_lift (k : Nat) (s : multi.T)
       have hVw : Term.lt v w = true := by
         rcases (Term.le_iff_eq_or_lt _ _).mp hVL with he | he
         · simpa only [← he] using hLw
-        · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hv hL hw he hLw
+        · exact Term.lt_trans hv hL hw he hLw
       have hwV : Term.lt w v = false := by
         cases he : Term.lt w v with
         | false => rfl
         | true =>
-          have hh := kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hw hv hw he hVw
+          have hh := Term.lt_trans hw hv hw he hVw
           rw [lt_self] at hh; cases hh
       by_cases hskip : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = true
-      · have hLpred := target_le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
+      · have hLpred := Term.le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
           (cofinality_image_le k _ hsD hr hs hdParent) hskip
-        rw [H_eq_nil_of_le_pred v _ hvR hv hL hLpred] at hz; cases hz
+        rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR _ hL hLpred] at hz; cases hz
       have hskipF : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = false := by
         cases he : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) <;> simp_all
       rw [heOld] at hskipF
@@ -1858,7 +1858,7 @@ theorem Omega_iter_coefficient_support_at_label_cut
     · exact Or.inl (UpdatedCoefficient.dominated k v s t hsD hInv.1 hs
         ((hInvF.2 v hvR hv hOmega hAbove).1 z hz))
     have hVL : Term.le v (convert (k + 3) (code (.P q .Z))) = true := by
-      rcases kumakuma.JaegerFacts.jaeger_order.2.2 v _ hv hL with he | he | he
+      rcases Term.lt_trichotomy hv hL with he | he | he
       · simp [Term.le, he]
       · simp [Term.le, he]
       · exact False.elim (hAbove he)
@@ -1986,7 +1986,7 @@ theorem Omega_cut_bound_after_update (k : Nat) (s : multi.T)
     · exact (Term.allLt_iff _ _).mp hSource _ he
     · rcases (Term.le_iff_eq_or_lt _ _).mp hle with he | he
       · rw [he]; exact oldBound a ha hmem
-      · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v cut hc.cutWf hz)
+      · exact Term.lt_trans (H_coefficient_wf v cut hc.cutWf hz)
           (ha.recursiveWF hs).wf hs.wf he (oldBound a ha hmem)
   rcases H_convert_source k v (T.fund (.P q .Z) .Z) hBase with he | ⟨a, ha, he⟩
   · rw [he]; exact (zero_lt_iff _).mpr hn0
@@ -2027,11 +2027,11 @@ theorem Omega_fund_at_label_cut_relative (k : Nat) (s : multi.T)
   intro v hvR hv hSource hT
   by_cases ht0 : t = .Z
   · subst t; exact (zero_fund_invariant k s hsD hr hs).2.2 v hvR hv hSource
-  rcases kumakuma.JaegerFacts.jaeger_order.2.2 Term.bigOmega v Term.wf_bigOmega hv with hOmega | he | hOmega
+  rcases Term.lt_trichotomy Term.wf_bigOmega hv with hOmega | he | hOmega
   · by_cases hAbove : Term.lt (convert (k + 3) (code (.P q .Z))) v = true
     · exact (hInv.2 v hvR hv hOmega hAbove).2 hSource
     have hVL : Term.le v (convert (k + 3) (code (.P q .Z))) = true := by
-      rcases kumakuma.JaegerFacts.jaeger_order.2.2 v _ hv (Omega_label_recursiveWF k s hs hd).wf with he | he | he
+      rcases Term.lt_trichotomy hv (Omega_label_recursiveWF k s hs hd).wf with he | he | he
       · simp [Term.le, he]
       · simp [Term.le, he]
       · exact False.elim (hAbove he)
@@ -2045,7 +2045,7 @@ theorem Omega_fund_at_label_cut_relative (k : Nat) (s : multi.T)
     · rw [he]; exact (zero_lt_iff _).mpr hn0
     · rw [he]; exact hNextImage
     · rw [he]; exact dropOne_lt_of_lt ht.wf hn.wf hNextImage
-    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v _ ht.wf he) ht.wf hn.wf
+    · exact Term.lt_trans (H_coefficient_wf v _ ht.wf he) ht.wf hn.wf
         ((Term.allLt_iff _ _).mp hT _ he) hNextImage
     · exact Omega_cut_bound_after_update k s hsD hr hs hd cut hc v hvR hv hOmega hVL hSource t htD ht0
         hn z he

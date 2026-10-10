@@ -217,16 +217,6 @@ theorem image_le_of_le (k : Nat) (s t : multi.T)
   · exact Or.inl (congrArg (fun a => DimensionImage.convert (k + 3) (code a))
       (eq_of_compare_eq hsD htD h))
 
-theorem target_le_trans {a b c : Term}
-    (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
-    (hab : Term.le a b = true) (hbc : Term.le b c = true) : Term.le a c = true := by
-  apply (Term.le_iff_eq_or_lt _ _).mpr
-  rcases (Term.le_iff_eq_or_lt _ _).mp hab with rfl | hab
-  · exact (Term.le_iff_eq_or_lt _ _).mp hbc
-  · rcases (Term.le_iff_eq_or_lt _ _).mp hbc with rfl | hbc
-    · exact Or.inr hab
-    · exact Or.inr (kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ha hb hc hab hbc)
-
 theorem replace_tail_recursiveWF (k : Nat)
     (xs : V multi.T) (b c : multi.T) (hsD : Dim (k + 3) (.P xs b)) (hcD : Dim (k + 3) c)
     (hs : RecursiveWF (k + 3) (.P xs b)) (hc : RecursiveWF (k + 3) c)
@@ -250,7 +240,7 @@ theorem replace_tail_recursiveWF (k : Nat)
     have hh := image_le_of_le k (T.hd c) (T.hd b) (Dim_hd hcD) (Dim_hd hsD.tail)
       (recursive_head c hc) (recursive_head b hs'.2.1) (T.hd_mono hcb)
     rw [← convert_head, ← convert_head] at hh
-    have hnew := target_le_trans (wf_head hc.wf) (wf_head hs'.2.1.wf) hpwf hh hbound
+    have hnew := Term.le_trans (wf_head hc.wf) (wf_head hs'.2.1.wf) hpwf hh hbound
     rw [convert_P, OT2.assemble, ite_eq_right hcnz]
     exact (Term.wf_add_iff _ _).mpr ⟨principal_isPrin _ _, hpwf, hc.wf, hcnz, hnew⟩
 
@@ -771,7 +761,7 @@ theorem target_lt_of_ambient_lt (q r : Classes)
   have hidx : IndicesBelow (k + 2) (kumakuma.GeneralImageEmbedding.classConversion q) := by
     apply (kumakuma.GeneralImageEmbedding.indices_convert (representative q)).mono
     omega
-  rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ hq hr with hl | he | hl
+  rcases Term.lt_trichotomy hq hr with hl | he | hl
   · exact hl
   · exact False.elim (hnot (he ▸ hidx))
   · exact False.elim (hnot (indicesBelow_initial (by omega : 0 < k + 2)

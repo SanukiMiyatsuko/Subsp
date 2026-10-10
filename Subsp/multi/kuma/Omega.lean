@@ -1296,11 +1296,6 @@ open kumakuma.GeneralImageLayerOrder kumakuma.GeneralImagePrincipalOrder kumakum
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageCoefficients
 open OCF.Jaeger.Term
 
-theorem H_eq_nil_of_le_pred (v t : Term)
-    (hvR : Term.isRT v = true) (hv : Term.wf v = true) (ht : Term.wf t = true)
-    (hle : Term.le t (Term.predR v) = true) : Term.H v t = [] :=
-  kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR t ht hle
-
 theorem H_psi_successor_support (v w b : Term)
     (hvR : Term.isRT v = true) (hv : Term.wf v = true) (hb : Term.wf b = true)
     (hw : Term.wf (.psi w (succTerm b)) = true) {z : Term}
@@ -1316,7 +1311,7 @@ theorem H_psi_successor_support (v w b : Term)
     simp only [lt_self, decide_true, Bool.false_and, Bool.true_and, Bool.false_or, Bool.or_false, hbs]
   by_cases hskip : Term.le (.psi w (succTerm b)) (Term.predR v) = true
   · have hnew : Term.le (.psi w b) (Term.predR v) = true :=
-      target_le_trans hn hw hp.1 (by simp [Term.le, hlt]) hskip
+      Term.le_trans hn hw hp.1 (by simp [Term.le, hlt]) hskip
     rw [Term.H, hnew] at hz
     cases hz
   · have hskipF : Term.le (.psi w (succTerm b)) (Term.predR v) = false := by
@@ -1357,8 +1352,8 @@ theorem H_step_context_of_wf (v : Term)
           rw [context_lt_psi_regular _ hwa hpa hwa hfa hw]
           simp [Term.le]
         have hp := (kumakuma.JaegerFacts.predR_facts hv hvR)
-        have hle := target_le_trans hwa hw hp.1 (by simp [Term.le, hlt]) hskip
-        rw [H_eq_nil_of_le_pred v a hvR hv hwa hle] at hz
+        have hle := Term.le_trans hwa hw hp.1 (by simp [Term.le, hlt]) hskip
+        rw [kumakuma.JaegerFacts.H_nil_of_le_predR hv hvR a hwa hle] at hz
         cases hz
       · have hskipF : Term.le (.psi (regular n a) (dropOne c)) (Term.predR v) = false := by
           cases he : Term.le (.psi (regular n a) (dropOne c)) (Term.predR v) <;> simp_all
@@ -1516,7 +1511,7 @@ theorem zero_coordinate_relative_closed (k : Nat) (v : Term)
         · exact undrop_lt_principal _ _ hbs.wf hs.wf hp hone ((Term.allLt_iff _ _).mp hH _ h)
       have hbl : Term.lt (convert (k + 3) (code b))
           (convert (k + 3) (code (.P xs .Z))) = true := by
-        apply kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ hb.wf hbs.wf hs.wf _ hslt
+        apply Term.lt_trans hb.wf hbs.wf hs.wf _ hslt
         rw [convert_succ, lt_succTerm_eq_le hb.wf hb.wf]; simp [Term.le]
       rcases he with rfl | rfl
       · exact hbl
@@ -1581,7 +1576,7 @@ theorem H_mul_principal_bound (k : Nat) (v : Term)
     have hl := (Term.allLt_iff _ _).mp hH z ho
     rcases (Term.le_iff_eq_or_lt _ _).mp hle' with he | he
     · simpa only [← he] using hl
-    · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ (H_coefficient_wf v _ hs.wf ho) hs.wf hm.wf hl he
+    · exact Term.lt_trans (H_coefficient_wf v _ hs.wf ho) hs.wf hm.wf hl he
 
 open multi in
 theorem fund_zero_successor_relative (k : Nat)
@@ -1758,11 +1753,6 @@ open kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.GeneralImageCoefficients kumakuma.SourceRecursiveDescending kumakuma.SourceFundOrder
 open kumakuma.BinaryTranslation kumakuma.TargetArithmetic
 
-theorem psi_argument_lt_iff (v a : Term)
-    (hw : Term.wf (.psi v a) = true) :
-    Term.lt a (.psi v a) = true ↔ Term.lt a v = true :=
-  kumakuma.JaegerFacts.lt_psi_self_iff hw
-
 open multi in
 theorem H_low_empty_above_Omega (v : Term) (hOmega : Term.lt Term.bigOmega v = true)
     (d m : Nat) (a : multi.T) :
@@ -1825,10 +1815,6 @@ open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.Genera
 open kumakuma.SourceOmegaInvariant
 open kumakuma.GeneralImageHighOmega kumakuma.SourceOmegaHighest
 open OCF.Jaeger.Term
-
-theorem psi_above_predR (v a : Term)
-    (hw : Term.wf (.psi v a) = true) : Term.lt (Term.predR v) (.psi v a) = true :=
-  kumakuma.JaegerFacts.predR_lt_psi hw
 
 theorem lower_zero_nonzero (j : Nat) (xs : List Term) (a : Term) (ha : a ≠ .zero)
     (hz : ∀ i, i < j → xs[i]?.getD .zero = .zero) : lower j xs a = a := by
@@ -1908,7 +1894,7 @@ theorem regular_H_context_empty_of_wf (n : Nat) (a : Term)
   have hpred : Term.predR (regular n a) = if Term.fT a ≤ n then .inacc n a else a := by
     simp only [regular, Term.predR, succTerm_ne_zero, ↓reduceIte, predT_succTerm hwa]
   have sp := (kumakuma.JaegerFacts.predR_facts hu (regular_isRT n a))
-  apply H_eq_nil_of_le_pred _ a (regular_isRT n a) hu hwa
+  apply kumakuma.JaegerFacts.H_nil_of_le_predR hu (regular_isRT n a) a hwa
   by_cases hf : Term.fT a ≤ n
   · have hi : Term.wf (.inacc n a) = true := by simpa only [hpred, hf, ↓reduceIte] using sp.1
     have hlt : Term.lt a (.inacc n a) = true := OCF.Jaeger.Term.lt_inacc_self hi
@@ -1963,7 +1949,7 @@ theorem layerCut_H_context_empty (n : Nat) (a : Term)
   · have hp : Term.predR (layerCut n a) = a := by
       simp only [layerCut, ha0, ↓reduceIte, Term.predR, succTerm_ne_zero,
         predT_succTerm hwa, show ¬Term.fT a ≤ n from Nat.not_le.mpr (ha.resolve_left ha0)]
-    exact H_eq_nil_of_le_pred _ a (layerCut_regular n a) (layerCut_wf n a ha hwa) hwa
+    exact kumakuma.JaegerFacts.H_nil_of_le_predR (layerCut_wf n a ha hwa) (layerCut_regular n a) a hwa
       (by rw [hp]; simp [Term.le, lt_self])
 
 theorem step_positive_nonzero (n : Nat) (hn : 0 < n) (a c : Term) (hc : c ≠ .zero) :

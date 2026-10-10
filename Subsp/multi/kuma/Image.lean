@@ -613,11 +613,6 @@ theorem indicesBelow_below_boundary {k : Nat} (hk : 0 < k) (t : WFBelowOmega)
     (ht : IndicesBelow k t.val) : Term.lt t.val (boundary k) = true :=
   outer_below_boundary hk (CountableTarget.target_outer t) ht
 
-private theorem wf_lt_trans {a b c : Term}
-    (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
-    (hab : Term.lt a b = true) (hbc : Term.lt b c = true) : Term.lt a c = true :=
-  kumakuma.JaegerFacts.jaeger_order.2.1 a b c ha hb hc hab hbc
-
 private theorem head_lt_psi (t v b : Term) :
     Term.lt (Term.head t) (.psi v b) = Term.lt t (.psi v b) := by
   cases t <;> simp only [Term.head, Term.lt]
@@ -632,7 +627,7 @@ private theorem tail_below_psi {a b v c : Term}
     simp only [Term.le, Bool.or_eq_true, decide_eq_true_eq] at he
     rcases he with he | he
     · rw [he]; exact hlt
-    · exact wf_lt_trans hh h.2.1 hp he hlt
+    · exact Term.lt_trans hh h.2.1 hp he hlt
   rwa [head_lt_psi] at hl
 
 private theorem high_inacc_not_below_inacc {n k : Nat} (hn : k ≤ n) (a : Term) :
@@ -674,7 +669,7 @@ private theorem lower_psi_below_collapse_subscript
       simpa [Term.lt, Term.fT, Nat.not_lt.mpr (Nat.le_of_lt hn),
         Nat.le_of_lt hn, Nat.ne_of_lt hn] using hlt.2
     have hkw : Term.wf (.inacc k .zero) = true := by simp [Term.wf, Term.fT]
-    have hself := wf_lt_trans hkw hw hkw hlt.1 hl
+    have hself := Term.lt_trans hkw hw hkw hlt.1 hl
     rw [TargetArithmetic.lt_self] at hself
     cases hself
 
@@ -758,7 +753,7 @@ theorem wf_below_boundary_indicesBelow {k : Nat} (hk : 0 < k)
       intro z hz
       have hzlt := (Term.allLt_iff _ _).mp h.2.2.2 z hz
       have hzwf := kumakuma.JaegerFacts.H_mem_wf _ _ h.2.2.1 _ hz
-      exact wf_lt_trans hzwf h.2.2.1 (collapse_wf k) hzlt ha
+      exact Term.lt_trans hzwf h.2.2.1 (collapse_wf k) hzlt ha
     exact ⟨⟨hk, trivial⟩, indicesBelow_of_collapse_bounds a h.2.2.1 ha hH⟩
 
 theorem indicesBelow_iff_below_boundary {k : Nat} (hk : 0 < k)
@@ -769,7 +764,7 @@ theorem indicesBelow_initial {k : Nat} (hk : 0 < k)
     (s t : WFBelowOmega) (hst : Term.lt s.val t.val = true)
     (ht : IndicesBelow k t.val) : IndicesBelow k s.val := by
   apply (indicesBelow_iff_below_boundary hk s).mpr
-  exact wf_lt_trans s.property.1 t.property.1 (boundary_wf k hk) hst
+  exact Term.lt_trans s.property.1 t.property.1 (boundary_wf k hk) hst
     (indicesBelow_below_boundary hk t ht)
 
 end kumakuma.TargetIndexCuts

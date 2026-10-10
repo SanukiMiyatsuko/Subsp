@@ -883,13 +883,6 @@ theorem principal_lt_pairCut (k : Nat) (xs : V multi.T)
   exact lower_lt_inacc (k + 1) (k + 1) (Nat.le_refl _) _ _ _ (topPair_context _ _ _)
     (topPair_lt_pairCut _ _ _ (hcoords _).wf)
 
-theorem term_lt_of_lt_of_le {a b c : Term}
-    (ha : Term.wf a = true) (hb : Term.wf b = true) (hc : Term.wf c = true)
-    (hab : Term.lt a b = true) (hbc : Term.le b c = true) : Term.lt a c = true := by
-  rcases (Term.le_iff_eq_or_lt _ _).mp hbc with he | hl
-  · rw [← he]; exact hab
-  · exact kumakuma.JaegerFacts.jaeger_order.2.1 _ _ _ ha hb hc hab hl
-
 theorem uc_image_le_of_le (k : Nat) (s t : multi.T)
     (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t)
     (hs : RecursiveWF (k + 3) s) (ht : RecursiveWF (k + 3) t) (h : s ≤ t) :
@@ -948,7 +941,7 @@ theorem nondiagonal_virtual_cut_above_label (k : Nat)
       (upper_le_of_not_lt xs q r hnd)
     rw [heBaseQ, heBase] at hle
     have hcut := (layerCut_comparable_of_erased_le r r (Nat.le_refl _) aq a haq ha haqw haw hle).1
-    exact term_lt_of_lt_of_le hqW.wf (layerCut_wf r aq haq haqw) (layerCut_wf r a ha haw) hq1 hcut
+    exact Term.lt_of_lt_of_le hqW.wf (layerCut_wf r aq haq haqw) (layerCut_wf r a ha haw) hq1 hcut
   · have hrK : r = k + 1 := by omega
     subst hrK
     rw [lift_image_top k xs hxl i hc0] at hw
@@ -973,7 +966,7 @@ theorem nondiagonal_virtual_cut_above_label (k : Nat)
       (hqD.coord _) (hsD.coord _) (hqcoords _) (hcoords _) htop).1
     have hcutQ := kumakuma.GeneralImageChangingMiddle.pairCut_convert_wf k _ (hqcoords (k + 2))
     have hcutX := kumakuma.GeneralImageChangingMiddle.pairCut_convert_wf k _ (hcoords (k + 2))
-    exact term_lt_of_lt_of_le hqW.wf hcutQ hcutX hq1 hpair
+    exact Term.lt_of_lt_of_le hqW.wf hcutQ hcutX hq1 hpair
 
 end kumakuma.GeneralImageUniformContext
 

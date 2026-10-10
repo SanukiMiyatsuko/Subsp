@@ -155,7 +155,7 @@ theorem wf_not_lt_reverse {a c : Term}
   cases hca : Term.lt c a with
   | false => rfl
   | true =>
-    have h := kumakuma.JaegerFacts.jaeger_order.2.1 a c a ha hc ha hac hca
+    have h := Term.lt_trans ha hc ha hac hca
     rw [lt_self] at h
     cases h
 
@@ -249,14 +249,14 @@ theorem topPair_eq_iff (n : Nat) {h m h' m' : Term}
     rw [he, lt_self] at hf
     rw [he, lt_self] at hr
     have heh : h = h' := by
-      rcases kumakuma.JaegerFacts.jaeger_order.2.2 h h' hh hh' with hl | he | hl
+      rcases Term.lt_trichotomy hh hh' with hl | he | hl
       · rw [hl, Bool.true_or] at hf; cases hf
       · exact he
       · rw [hl, Bool.true_or] at hr; cases hr
     refine ⟨heh, ?_⟩
     subst h'
     simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 m m' hm hm' with hl | he | hl
+    rcases Term.lt_trichotomy hm hm' with hl | he | hl
     · rw [hl] at hf; cases hf
     · exact he
     · rw [hl] at hr; cases hr
@@ -333,7 +333,7 @@ theorem wf_le_iff_reverse_false {a b : Term}
     · exact lt_self a
     · exact wf_not_lt_reverse ha hb h
   · intro h
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
+    rcases Term.lt_trichotomy ha hb with hl | he | hl
     · exact Or.inr hl
     · exact Or.inl he
     · rw [h] at hl; cases hl
@@ -344,7 +344,7 @@ theorem wf_lt_iff_reverse_false_of_ne {a b : Term}
   constructor
   · exact wf_not_lt_reverse ha hb
   · intro h
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
+    rcases Term.lt_trichotomy ha hb with hl | he | hl
     · exact hl
     · exact False.elim (hne he)
     · rw [h] at hl; cases hl
@@ -401,7 +401,7 @@ theorem psi_regular_lt_context {n : Nat} {a b : Term} (x : Term)
       | false => simp
       | true =>
         have hβv : Term.lt (.psi (.inacc m d) c) (.inacc m d) = true := by simp [Term.lt, Term.fT]
-        have hav := kumakuma.JaegerFacts.jaeger_order.2.1 a (.psi (.inacc m d) c) (.inacc m d) ha hb hv.2.1 hab hβv
+        have hav := Term.lt_trans ha hb hv.2.1 hab hβv
         simp [hav]
 
 theorem context_lt_psi_regular {n : Nat} {a b : Term} (x : Term)
@@ -556,14 +556,14 @@ theorem step_injective {n : Nat} {a b c d : Term}
   rw [he, lt_self] at hf
   rw [he, lt_self] at hr
   have hab : a = b := by
-    rcases kumakuma.JaegerFacts.jaeger_order.2.2 a b ha hb with hl | he | hl
+    rcases Term.lt_trichotomy ha hb with hl | he | hl
     · rw [hl, Bool.true_or] at hf; cases hf
     · exact he
     · rw [hl, Bool.true_or] at hr; cases hr
   refine ⟨hab, ?_⟩
   subst b
   simp only [lt_self, decide_true, Bool.true_and, Bool.false_or] at hf hr
-  rcases kumakuma.JaegerFacts.jaeger_order.2.2 c d hc hd with hl | he | hl
+  rcases Term.lt_trichotomy hc hd with hl | he | hl
   · rw [hl] at hf; cases hf
   · exact he
   · rw [hl] at hr; cases hr
@@ -821,7 +821,7 @@ theorem lex_equal_of_false (k : Nat) (xs ys : List Term)
   | zero => intro i hi; omega
   | succ k ih =>
     have he : xs[k]?.getD .zero = ys[k]?.getD .zero := by
-      rcases kumakuma.JaegerFacts.jaeger_order.2.2 _ _ (hxs k (by omega)) (hys k (by omega)) with hl | he | hl
+      rcases Term.lt_trichotomy (hxs k (by omega)) (hys k (by omega)) with hl | he | hl
       · simp [lexArgs, hl] at hf
       · exact he
       · simp [lexArgs, hl] at hr
