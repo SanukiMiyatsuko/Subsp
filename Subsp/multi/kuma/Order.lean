@@ -149,20 +149,13 @@ theorem psi_same_lt_raw (n : Nat) (a b c d : Term) :
   rw [Term.lt]
   simp [inacc_same_lt, inacc_same_lt_psi, psi_same_lt_inacc]
 
-theorem psi_same_lt (n : Nat) (a b c d : Term)
-    (ha : Term.wf a = true) (hc : Term.wf c = true) :
+theorem psi_same_lt (n : Nat) (a b c d : Term) :
     Term.lt (.psi (.inacc n a) b) (.psi (.inacc n c) d) =
       (Term.lt a c || (decide (a = c) && Term.lt b d)) := by
   rw [psi_same_lt_raw]
-  have hbad : (Term.lt c a && Term.le a c) = false := by
-    by_cases he : a = c
-    · subst c; simp [Term.lt_irrefl]
-    · rw [Term.le]
-      simp only [he, decide_false, Bool.false_or]
-      cases hac : Term.lt a c with
-      | false => simp
-      | true => simp [Term.not_lt_of_lt hac]
-  rw [hbad, Bool.or_false]
+  cases h : Term.le a c
+  · simp
+  · simp [Term.not_lt_of_le h]
 
 theorem topPair_order (n : Nat) {h m h' m' : Term}
     (hh : Term.wf h = true) (hm : Term.wf m = true)
@@ -202,23 +195,21 @@ theorem topPair_order (n : Nat) {h m h' m' : Term}
         Bool.and_false, Bool.or_false]
   · by_cases hh0 : h = .zero <;> by_cases hh'0 : h' = .zero
     · subst h; subst h'
-      simp only [topPair, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _ Term.wf_zero Term.wf_zero,
+      simp only [topPair, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _,
         Term.lt_irrefl, decide_true, Bool.true_and, Bool.false_or,
         dropOne_order hm hm' hm0 hm'0]
     · subst h
-      simp only [topPair, hh'0, hm0, hm'0, ↓reduceIte,
-        psi_same_lt n _ _ _ _ Term.wf_zero (succTerm_wf (dropOne_wf hh'))]
+      simp only [topPair, hh'0, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _]
       simp [(zero_lt_iff _).mpr (succTerm_ne_zero _), (zero_lt_iff h').mpr hh'0]
     · subst h'
-      simp only [topPair, hh0, hm0, hm'0, ↓reduceIte,
-        psi_same_lt n _ _ _ _ (succTerm_wf (dropOne_wf hh)) Term.wf_zero]
+      simp only [topPair, hh0, hm0, hm'0, ↓reduceIte, psi_same_lt n _ _ _ _]
       simp [kumakuma.CountableTarget.lt_zero, succTerm_ne_zero]
     · have hseq : succTerm (dropOne h) = succTerm (dropOne h') ↔ h = h' :=
         ⟨fun he => dropOne_injective hh hh' hh0 hh'0
             (succTerm_injective (dropOne_wf hh) (dropOne_wf hh') he),
           congrArg (fun a => succTerm (dropOne a))⟩
       simp only [topPair, hh0, hh'0, hm0, hm'0, ↓reduceIte,
-        psi_same_lt n _ _ _ _ (succTerm_wf (dropOne_wf hh)) (succTerm_wf (dropOne_wf hh')),
+        psi_same_lt n _ _ _ _,
         succTerm_order (dropOne_wf hh) (dropOne_wf hh'),
         dropOne_order hh hh' hh0 hh'0, dropOne_order hm hm' hm0 hm'0]
       simp only [hseq]
@@ -516,7 +507,7 @@ theorem step_order {n : Nat} {a b c d : Term}
     · have hseq : succTerm a = succTerm b ↔ a = b :=
         ⟨succTerm_injective ha hb, congrArg succTerm⟩
       simp only [step, ha0, hb0, hc0, hd0, ↓reduceIte, regular,
-        psi_same_lt n _ _ _ _ (succTerm_wf ha) (succTerm_wf hb),
+        psi_same_lt n _ _ _ _,
         succTerm_order ha hb, dropOne_order hc hd hc0 hd0, hseq]
 
 theorem step_injective {n : Nat} {a b c d : Term}
