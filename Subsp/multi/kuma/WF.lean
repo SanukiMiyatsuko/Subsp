@@ -1787,7 +1787,8 @@ theorem mass_le_of_subterm_P {a : multi.T} {xs : V multi.T} {b : multi.T}
   | trans hab _ _ ih =>
     have := mass_lt_of_subterm hab
     intro he
-    exact (ih he).imp (fun ⟨j, hj⟩ => ⟨j, by omega⟩) (fun _ => by omega)
+    exact (ih he).imp (fun ⟨j, hj⟩ => ⟨j, Nat.le_trans (Nat.le_of_lt this) hj⟩)
+      (Nat.le_trans (Nat.le_of_lt this))
 
 theorem principal_subterm_mass {xs : V multi.T} {i j : Nat} (hij : i ≠ j)
     (hi : V.get0 xs i ≠ .Z) (hj : V.get0 xs j ≠ .Z) {a : multi.T} (ha : Subterm a (.P xs .Z)) :
