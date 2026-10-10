@@ -550,6 +550,34 @@ theorem lower_regular_update (j m : Nat) (xs ys : List Term) (a c t : Term)
       exact lower_zero_wf m ys _ hzero
         (step_wf_of_omega_closed m _ t (context_above hnewctx) hnew ht hHt)
 
+/-- The converted arguments of `xs` and of its update `xs[m + 1 := p, m := t]` below `m + 2`. -/
+theorem regular_update_args (k m : Nat) {xs : V multi.T} (hv : V.fnz xs = some (m + 1))
+    (p t : multi.T) :
+    let zs := V.set (V.set xs (m + 1) p) m t
+    let oldArgs := arguments (k + 3) (trim (codes xs))
+    let newArgs := arguments (k + 3) (trim (codes zs))
+    (∀ i, V.get0 zs i = if i = m then t else if i = m + 1 then p else V.get0 xs i) ∧
+    newArgs[m + 1]?.getD .zero = convert (k + 3) (code p) ∧
+    newArgs[m]?.getD .zero = convert (k + 3) (code t) ∧
+    (∀ i, i < m + 1 → oldArgs[i]?.getD .zero = .zero) ∧
+    (∀ i, i < m → newArgs[i]?.getD .zero = .zero) ∧
+    (∀ i, m + 1 < i → i < k + 3 → newArgs[i]?.getD .zero = oldArgs[i]?.getD .zero) := by
+  intro zs oldArgs newArgs
+  have hml' : m + 1 < xs.length := fnz_lt_length hv
+  have hlow := (V.fnz_some_spec xs _ hv).2
+  have zidx (i : Nat) : V.get0 zs i =
+      if i = m then t else if i = m + 1 then p else V.get0 xs i := by
+    rw [V.get0_set _ m t i (by rw [V.length_set]; omega), V.get0_set xs (m + 1) p i hml']
+  have newGet (i : Nat) : newArgs[i]?.getD .zero = convert (k + 3) (code (V.get0 zs i)) :=
+    converted_coordinate zs i
+  refine ⟨zidx, ?_, ?_, fun i hi => ?_, fun i hi => ?_, fun i hi _ => ?_⟩
+  · rw [newGet, zidx, ite_eq_right (by omega), ite_eq_left rfl]
+  · rw [newGet, zidx, ite_eq_left rfl]
+  · rw [converted_coordinate, hlow i hi, convert_Z]
+  · rw [newGet, zidx, ite_eq_right (by omega), ite_eq_right (by omega), hlow i (by omega),
+      convert_Z]
+  · rw [newGet, converted_coordinate, zidx, ite_eq_right (by omega), ite_eq_right (by omega)]
+
 theorem fund_regular_recursiveWF (k m : Nat) (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hv : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one) (t : multi.T)
     (hs : RecursiveWF (k + 3) (.P xs .Z)) (ht : RecursiveWF (k + 3) t)
@@ -568,35 +596,13 @@ theorem fund_regular_recursiveWF (k m : Nat) (xs : V multi.T) (hsD : Dim (k + 3)
     show _ = succTerm (convert (k + 3) (code (T.fund (V.get0 xs (m + 1)) .Z)))
     rw [he, kumakuma.SourceSuccessor.fund_succ, convert_succ]
   let zs := V.set (V.set xs (m + 1) p) m t
-  have hlen : xs.length = k + 3 := hsD.length
-  have zidx (i : Nat) : V.get0 zs i =
-      if i = m then t else if i = m + 1 then p else V.get0 xs i := by
-    show V.get0 (V.set (V.set xs (m + 1) p) m t) i = _
-    rw [V.get0_set _ m t i (by rw [V.length_set]; omega), V.get0_set xs (m + 1) p i (by omega)]
-  have zhigh (i : Nat) (hi : m + 1 < i) : V.get0 zs i = V.get0 xs i := by
-    rw [zidx, ite_eq_right (by omega), ite_eq_right (by omega)]
-  have zlow (i : Nat) (hi : i < m) : V.get0 zs i = .Z := by
-    rw [zidx, ite_eq_right (by omega), ite_eq_right (by omega)]
-    exact hlow i (by omega)
   let oldArgs := arguments (k + 3) (trim (codes xs))
   let newArgs := arguments (k + 3) (trim (codes zs))
   have oldGet (i : Nat) : oldArgs[i]?.getD .zero =
       convert (k + 3) (code (V.get0 xs i)) := converted_coordinate xs i
-  have newGet (i : Nat) : newArgs[i]?.getD .zero =
-      convert (k + 3) (code (V.get0 zs i)) := converted_coordinate zs i
-  have newP : newArgs[m + 1]?.getD .zero = convert (k + 3) (code p) := by
-    rw [newGet (m + 1), zidx, ite_eq_right (by omega), ite_eq_left rfl]
-  have newT : newArgs[m]?.getD .zero = convert (k + 3) (code t) := by
-    rw [newGet m, zidx, ite_eq_left rfl]
+  obtain ⟨zidx, newP, newT, -, newZero, newSame⟩ := regular_update_args k m hv p t
   have oldSucc : oldArgs[m + 1]?.getD .zero = succTerm (convert (k + 3) (code p)) := by
     rw [oldGet (m + 1)]; exact hsucc
-  have newZero : ∀ i, i < m → newArgs[i]?.getD .zero = .zero := by
-    intro i hi
-    rw [newGet i, zlow i hi, convert_Z]
-  have newSame : ∀ i, m + 1 < i → i < k + 3 →
-      newArgs[i]?.getD .zero = oldArgs[i]?.getD .zero := by
-    intro i hi _
-    rw [newGet i, oldGet i, zhigh i hi]
   rw [fund_one_succ hv hdom]
   change RecursiveWF (k + 3) (.P zs .Z)
   refine RecursiveWF_P.2 ⟨?_, recursive_zero _, ?_⟩

@@ -17,12 +17,6 @@ open kumakuma.GeneralImageCoefficients kumakuma.SourceFundOrder kumakuma.SourceR
 open kumakuma.GeneralImageOmegaCoefficients kumakuma.SourceOmegaInvariant
 open kumakuma.SourceFundGap
 
-/-- Coordinates after the update at a regular index `m + 1`. -/
-theorem get0_set_set {xs : V multi.T} {m : Nat} (hml : m + 1 < xs.length) (p t : multi.T)
-    (i : Nat) : V.get0 (V.set (V.set xs (m + 1) p) m t) i =
-      if i = m then t else if i = m + 1 then p else V.get0 xs i := by
-  rw [V.get0_set _ m t i (by rw [V.length_set]; omega), V.get0_set xs (m + 1) p i hml]
-
 theorem principal_subterm_gap (xs : V multi.T)
     (i j : Nat) (hij : i ≠ j) (hi : V.get0 xs i ≠ .Z) (hj : V.get0 xs j ≠ .Z)
     {v : V multi.T} (hd : domF (.P xs .Z) = .Omega v)
@@ -577,30 +571,13 @@ theorem H_fund_regular_cofinal_support (k m : Nat)
     show _ = succTerm (convert (k + 3) (code (T.fund (V.get0 xs (m + 1)) .Z)))
     rw [he, kumakuma.SourceSuccessor.fund_succ, convert_succ]
   let zs := V.set (V.set xs (m + 1) p) m t
-  have zidx (i : Nat) : V.get0 zs i =
-      if i = m then t else if i = m + 1 then p else V.get0 xs i := get0_set_set hml' p t i
   let oldArgs := arguments (k + 3) (trim (codes xs))
   let newArgs := arguments (k + 3) (trim (codes zs))
   have oldGet (i : Nat) : oldArgs[i]?.getD .zero = convert (k + 3) (code (V.get0 xs i)) :=
     converted_coordinate xs i
-  have newGet (i : Nat) : newArgs[i]?.getD .zero = convert (k + 3) (code (V.get0 zs i)) :=
-    converted_coordinate zs i
-  have newP : newArgs[m + 1]?.getD .zero = convert (k + 3) (code p) := by
-    rw [newGet (m + 1), zidx, ite_eq_right (by omega), ite_eq_left rfl]
-  have newT : newArgs[m]?.getD .zero = convert (k + 3) (code t) := by
-    rw [newGet m, zidx, ite_eq_left rfl]
+  obtain ⟨-, newP, newT, oldZero, newZero, newSame⟩ := regular_update_args k m hf p t
   have oldSucc : oldArgs[m + 1]?.getD .zero = succTerm (convert (k + 3) (code p)) := by
     rw [oldGet (m + 1)]; exact hsucc
-  have oldZero : ∀ i, i < m + 1 → oldArgs[i]?.getD .zero = .zero := by
-    intro i hi
-    rw [oldGet i, hlow i hi, convert_Z]
-  have newZero : ∀ i, i < m → newArgs[i]?.getD .zero = .zero := by
-    intro i hi
-    rw [newGet i, zidx, ite_eq_right (by omega), ite_eq_right (by omega), hlow i (by omega),
-      convert_Z]
-  have newSame : ∀ i, m + 1 < i → i < k + 3 → newArgs[i]?.getD .zero = oldArgs[i]?.getD .zero := by
-    intro i hi _
-    rw [newGet i, oldGet i, zidx, ite_eq_right (by omega), ite_eq_right (by omega)]
   have heOldFull : convert (k + 3) (code (.P xs .Z)) = lower (k + 1) oldArgs
       (topPair (k + 1) (oldArgs[k + 2]?.getD .zero) (oldArgs[k + 1]?.getD .zero)) := by
     rw [convert_principal, principal_as_layers]
@@ -717,25 +694,11 @@ theorem H_fund_regular_single_small (k m : Nat)
       · exact Or.inr ⟨a, ha.dim hpD, ha.recursiveWF hp,
           Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm ha) hpGap, he⟩
   let zs := V.set (V.set xs (m + 1) p) m t
-  have zidx (i : Nat) : V.get0 zs i =
-      if i = m then t else if i = m + 1 then p else V.get0 xs i := get0_set_set hml' p t i
   let oldArgs := arguments (k + 3) (trim (codes xs))
   let newArgs := arguments (k + 3) (trim (codes zs))
   have oldGet (i : Nat) : oldArgs[i]?.getD .zero = convert (k + 3) (code (V.get0 xs i)) :=
     converted_coordinate xs i
-  have newGet (i : Nat) : newArgs[i]?.getD .zero = convert (k + 3) (code (V.get0 zs i)) :=
-    converted_coordinate zs i
-  have newP : newArgs[m + 1]?.getD .zero = c := by
-    rw [newGet (m + 1), zidx, ite_eq_right (by omega), ite_eq_left rfl]
-  have newT : newArgs[m]?.getD .zero = convert (k + 3) (code t) := by
-    rw [newGet m, zidx, ite_eq_left rfl]
-  have oldZero : ∀ i, i < m + 1 → oldArgs[i]?.getD .zero = .zero := by
-    intro i hi
-    rw [oldGet i, hlow i hi, convert_Z]
-  have newZero : ∀ i, i < m → newArgs[i]?.getD .zero = .zero := by
-    intro i hi
-    rw [newGet i, zidx, ite_eq_right (by omega), ite_eq_right (by omega),
-      hother i (by omega), convert_Z]
+  obtain ⟨zidx, newP, newT, oldZero, newZero, -⟩ := regular_update_args k m hf p t
   rw [fund_one_succ hf hdom t] at hz
   change z ∈ Term.H v (convert (k + 3) (code (.P zs .Z))) at hz
   by_cases hhighest : m + 1 = k + 2
@@ -822,27 +785,6 @@ theorem updated_coefficient_lt_old (k : Nat) (v : Term)
       · exact hl
       · exact dropOne_lt_of_lt hw.wf hs.wf hl
 
-theorem fund_regular_cofinal_relative_of_wf (k m : Nat)
-    (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
-    (hf : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
-    (i j : Nat) (hij : i ≠ j) (hi : V.get0 xs i ≠ .Z) (hj : V.get0 xs j ≠ .Z)
-    (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
-    (t : multi.T) (htD : Dim (k + 3) t)
-    (hn : RecursiveWF (k + 3) (T.fund (.P xs .Z) t)) :
-    ∀ v, Term.isRT v = true → Term.wf v = true → Term.lt Term.bigOmega v = true →
-        Term.lt (convert (k + 3) (code (.P xs .Z))) v = true →
-        Term.allLt (Term.H v (convert (k + 3) (code (.P xs .Z)))) (convert (k + 3) (code (.P xs .Z))) = true →
-        Term.allLt (Term.H v (convert (k + 3) (code (T.fund (.P xs .Z) t))))
-          (convert (k + 3) (code (T.fund (.P xs .Z) t))) = true := by
-  have hd : domF (.P xs .Z) = .Omega xs := domF_one_succ hf hdom
-  intro v hvR hv hOmega hlt hH
-  have hsZ : convert (k + 3) (code (.P xs .Z)) ≠ .zero := convert_ne_zero xs .Z
-  have hnZ : convert (k + 3) (code (T.fund (.P xs .Z) t)) ≠ .zero := fun he =>
-    domOmega_fund_ne_zero _ t hd ((convert_eq_zero_iff _ _).1 he)
-  exact closed_of_updated_coefficients k v _ t hsD htD hs hn (Omega_image_head_ne_one k _ hsD hr hs hd)
-    hsZ hnZ (fun a ha => principal_subterm_gap xs i j hij hi hj hd t ha)
-    (fun z hz => H_fund_regular_cofinal_support k m xs hsD hf hdom hs t v hvR hv hOmega hlt hz) hH
-
 theorem fund_regular_cofinal_relative_all_of_wf (k m : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one)
@@ -855,37 +797,35 @@ theorem fund_regular_cofinal_relative_all_of_wf (k m : Nat)
         Term.allLt (Term.H v (convert (k + 3) (code (T.fund (.P xs .Z) t))))
           (convert (k + 3) (code (T.fund (.P xs .Z) t))) = true := by
   have hi : V.get0 xs (m + 1) ≠ .Z := (V.fnz_some_spec xs _ hf).1
+  have hd : domF (.P xs .Z) = .Omega xs := domF_one_succ hf hdom
+  have hsZ : convert (k + 3) (code (.P xs .Z)) ≠ .zero := convert_ne_zero xs .Z
+  have hnZ : convert (k + 3) (code (T.fund (.P xs .Z) t)) ≠ .zero := fun he =>
+    domOmega_fund_ne_zero _ t hd ((convert_eq_zero_iff _ _).1 he)
+  have hhead := Omega_image_head_ne_one k _ hsD hr hs hd
+  intro v hvR hv hOmega hlt hH
   by_cases hex : ∃ j, m + 1 ≠ j ∧ V.get0 xs j ≠ .Z
   · obtain ⟨j, hij, hj⟩ := hex
-    exact fund_regular_cofinal_relative_of_wf k m xs hsD hf hdom (m + 1) j hij hi hj hr hs t htD hn
-  · have hother : ∀ j, j ≠ m + 1 → V.get0 xs j = .Z := by
-      intro j hj
-      apply Decidable.byContradiction
-      intro hn
-      exact hex ⟨j, fun he => hj he.symm, hn⟩
-    have hd : domF (.P xs .Z) = .Omega xs := domF_one_succ hf hdom
-    have hsZ : convert (k + 3) (code (.P xs .Z)) ≠ .zero := convert_ne_zero xs .Z
-    have hnD : Dim (k + 3) (T.fund (.P xs .Z) t) := Dim_fund _ _ hsD htD
-    have hnZ : convert (k + 3) (code (T.fund (.P xs .Z) t)) ≠ .zero := fun he =>
-      domOmega_fund_ne_zero _ t hd ((convert_eq_zero_iff _ _).1 he)
-    have hhead := Omega_image_head_ne_one k _ hsD hr hs hd
-    intro v hvR hv hOmega hlt hH
-    apply (Term.allLt_iff _ _).mpr
-    intro z hz
-    have hzOld := updated_coefficient_lt_old k v _ t hsD htD hs hhead hsZ hH
-      (H_fund_regular_cofinal_support k m xs hsD hf hdom hs t v hvR hv hOmega hlt hz)
-    rcases H_fund_regular_single_small k m xs hsD hf hdom hother hs t v hv hOmega hlt hz
-      with he | ⟨a, haD, ha, hmA, he⟩
-    · rw [he]; exact (zero_lt_iff _).mpr hnZ
-    · have hal : a < .P xs .Z := by
-        apply (convert_order k _ _ haD hsD ha hs).mpr
-        rcases he with he | he
-        · exact he ▸ hzOld
-        · exact undrop_lt_head_ne_one _ _ ha.wf hs.wf hsZ hhead (he ▸ hzOld)
-      have hl := (convert_order k _ _ haD hnD ha hn).mp (small_lt_fund_all (.P xs .Z) t a hal hmA)
-      rcases he with rfl | rfl
-      · exact hl
-      · exact dropOne_lt_of_lt ha.wf hn.wf hl
+    exact closed_of_updated_coefficients k v _ t hsD htD hs hn hhead hsZ hnZ
+      (fun a ha => principal_subterm_gap xs _ j hij hi hj hd t ha)
+      (fun z hz => H_fund_regular_cofinal_support k m xs hsD hf hdom hs t v hvR hv hOmega hlt hz) hH
+  have hother (j : Nat) (hj : j ≠ m + 1) : V.get0 xs j = .Z :=
+    Decidable.byContradiction fun hn => hex ⟨j, fun he => hj he.symm, hn⟩
+  refine (Term.allLt_iff _ _).mpr fun z hz => ?_
+  have hzOld := updated_coefficient_lt_old k v _ t hsD htD hs hhead hsZ hH
+    (H_fund_regular_cofinal_support k m xs hsD hf hdom hs t v hvR hv hOmega hlt hz)
+  rcases H_fund_regular_single_small k m xs hsD hf hdom hother hs t v hv hOmega hlt hz
+    with he | ⟨a, haD, ha, hmA, he⟩
+  · rw [he]; exact (zero_lt_iff _).mpr hnZ
+  have hal : a < .P xs .Z := by
+    apply (convert_order k _ _ haD hsD ha hs).mpr
+    rcases he with he | he
+    · exact he ▸ hzOld
+    · exact undrop_lt_head_ne_one _ _ ha.wf hs.wf hsZ hhead (he ▸ hzOld)
+  have hl := (convert_order k _ _ haD (Dim_fund _ _ hsD htD) ha hn).mp
+    (small_lt_fund_all (.P xs .Z) t a hal hmA)
+  rcases he with rfl | rfl
+  · exact hl
+  · exact dropOne_lt_of_lt ha.wf hn.wf hl
 
 end kumakuma.GeneralImageRegularCofinality
 
