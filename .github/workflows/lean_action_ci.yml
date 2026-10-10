@@ -13,8 +13,14 @@ jobs:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
       - name: Build all project modules
-        run: lake build subsp Subsp.old.stop Subsp.new.stop
-      - name: Audit all legacy declarations
-        run: lake env lean ProofAuditOld.lean
-      - name: Audit all new declarations
+        run: >
+          lake build subsp Subsp.Support.OTOrder
+          Subsp.multi.emp.stop Subsp.multi.new.stop Subsp.multi.old.stop Subsp.multi.kuma.stop
+      - name: Audit the multi emp system
+        run: lake env lean ProofAuditEmp.lean
+      - name: Audit the multi new system
         run: lake env lean ProofAuditNew.lean
+      - name: Audit the multi old system
+        run: lake env lean ProofAuditOld.lean
+      - name: Audit the multi kumakuma system and the constructive Jaeger well-ordering
+        run: lake env lean ProofAuditKuma.lean
