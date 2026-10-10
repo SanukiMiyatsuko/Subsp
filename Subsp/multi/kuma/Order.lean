@@ -149,16 +149,6 @@ theorem psi_same_lt_raw (n : Nat) (a b c d : Term) :
   rw [Term.lt]
   simp [inacc_same_lt, inacc_same_lt_psi, psi_same_lt_inacc]
 
-theorem wf_not_lt_reverse {a c : Term}
-    (ha : Term.wf a = true) (hc : Term.wf c = true) (hac : Term.lt a c = true) :
-    Term.lt c a = false := by
-  cases hca : Term.lt c a with
-  | false => rfl
-  | true =>
-    have h := Term.lt_trans ha hc ha hac hca
-    rw [Term.lt_irrefl] at h
-    cases h
-
 theorem psi_same_lt (n : Nat) (a b c d : Term)
     (ha : Term.wf a = true) (hc : Term.wf c = true) :
     Term.lt (.psi (.inacc n a) b) (.psi (.inacc n c) d) =
@@ -171,7 +161,7 @@ theorem psi_same_lt (n : Nat) (a b c d : Term)
       simp only [he, decide_false, Bool.false_or]
       cases hac : Term.lt a c with
       | false => simp
-      | true => simp [wf_not_lt_reverse ha hc hac]
+      | true => simp [Term.not_lt_of_lt hac]
   rw [hbad, Bool.or_false]
 
 theorem topPair_order (n : Nat) {h m h' m' : Term}
@@ -326,28 +316,12 @@ theorem context_lt_regular {n : Nat} {a b : Term}
 
 theorem wf_le_iff_reverse_false {a b : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) :
-    Term.le a b = true ↔ Term.lt b a = false := by
-  simp only [Term.le, Bool.or_eq_true, decide_eq_true_eq]
-  constructor
-  · rintro (rfl | h)
-    · exact Term.lt_irrefl a
-    · exact wf_not_lt_reverse ha hb h
-  · intro h
-    rcases Term.lt_trichotomy ha hb with hl | he | hl
-    · exact Or.inr hl
-    · exact Or.inl he
-    · rw [h] at hl; cases hl
+    Term.le a b = true ↔ Term.lt b a = false := ⟨Term.not_lt_of_le, Term.le_of_not_lt ha hb⟩
 
 theorem wf_lt_iff_reverse_false_of_ne {a b : Term}
     (ha : Term.wf a = true) (hb : Term.wf b = true) (hne : a ≠ b) :
-    Term.lt a b = true ↔ Term.lt b a = false := by
-  constructor
-  · exact wf_not_lt_reverse ha hb
-  · intro h
-    rcases Term.lt_trichotomy ha hb with hl | he | hl
-    · exact hl
-    · exact False.elim (hne he)
-    · rw [h] at hl; cases hl
+    Term.lt a b = true ↔ Term.lt b a = false :=
+  ⟨Term.not_lt_of_lt, fun h => ((Term.le_iff _ _).mp (Term.le_of_not_lt ha hb h)).resolve_left hne⟩
 
 theorem psi_regular_lt_context {n : Nat} {a b : Term} (x : Term)
     (ha : Term.wf a = true) (hap : Term.isPrin a = true)
@@ -519,7 +493,7 @@ theorem step_order {n : Nat} {a b c d : Term}
   · subst b
     have haf := haa.resolve_left ha0
     have hforward := zero_step_lt_positive_step d c ha haf
-    have hreverse := wf_not_lt_reverse hwbd hwac hforward
+    have hreverse := Term.not_lt_of_lt hforward
     simp only [hreverse, kumakuma.CountableTarget.lt_zero, ha0, decide_false, Bool.false_and, Bool.false_or]
   · have haf := haa.resolve_left ha0
     have hbf := hba.resolve_left hb0

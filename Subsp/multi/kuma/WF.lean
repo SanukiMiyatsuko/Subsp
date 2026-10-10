@@ -807,7 +807,7 @@ theorem global_certificate_of_fundClosure
       · intro h
         exact False.elim (classLT_irrefl q (classLT_trans h hs))
       · intro h
-        have hf := wf_not_lt_reverse (hw r) (hw q) ht
+        have hf := Term.not_lt_of_lt ht
         rw [h] at hf
         cases hf
 
@@ -1880,7 +1880,7 @@ theorem no_diagonal_highest (k : Nat)
       (convert (k + 3) (code (.P xs .Z))) = true := by
     rw [he]
     exact lt_inacc_drop _ _ ha.wf (he ▸ hs.wf)
-  have hf' := kumakuma.GeneralImageTopPair.wf_not_lt_reverse hs.wf ha.wf hlt
+  have hf' := OCF.Jaeger.Term.not_lt_of_lt hlt
   rw [hf'] at hrev
   cases hrev
 
