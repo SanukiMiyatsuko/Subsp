@@ -191,6 +191,66 @@ theorem sum_subterm_gap (xs : V multi.T) (b t : multi.T)
       exact Nat.lt_trans (kumakuma.SourceCoefficientGap.mass_lt_of_subterm hab) (ihb he)
   exact hgen ha rfl
 
+/-- An updated coefficient of a subterm `c` of `s` lies below the image of `s[t]`. -/
+theorem updated_lt_fund (k : Nat) (v : Term) {s c t : multi.T} (hsD : Dim (k + 3) s)
+    (hcD : Dim (k + 3) c) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
+    (hc : RecursiveWF (k + 3) c) (hn : RecursiveWF (k + 3) (T.fund s t))
+    (hhead : Term.head (convert (k + 3) (code s)) ≠ Term.one)
+    (hzero : convert (k + 3) (code s) ≠ .zero)
+    (hnewZero : convert (k + 3) (code (T.fund s t)) ≠ .zero)
+    (hgap : ∀ a, Subterm a c → mass a < gap s t)
+    (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code c)) →
+      z ∈ Term.H v (convert (k + 3) (code s)))
+    (hH : Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true)
+    {z : Term} (hz : UpdatedCoefficient k v c t z) :
+    Term.lt z (convert (k + 3) (code (T.fund s t))) = true := by
+  have hzlt := (zero_lt_iff _).mpr hnewZero
+  have hnD := Dim_fund s t hsD htD
+  have old (a : multi.T) (ha : Subterm a c)
+      (hm : convert (k + 3) (code a) ∈ Term.H v (convert (k + 3) (code c)) ∨
+        dropOne (convert (k + 3) (code a)) ∈ Term.H v (convert (k + 3) (code c))) :
+      a < T.fund s t := by
+    have hw := ha.recursiveWF hc
+    refine small_lt_fund_all s t a ((convert_order k _ _ (ha.dim hcD) hsD hw hs).mpr ?_) (hgap a ha)
+    rcases hm with hm | hm
+    · exact (Term.allLt_iff _ _).mp hH _ (embed _ hm)
+    · exact undrop_lt_head_ne_one _ _ hw.wf hs.wf hzero hhead
+        ((Term.allLt_iff _ _).mp hH _ (embed _ hm))
+  have fin (b : multi.T) (hbD : Dim (k + 3) b) (hbW : RecursiveWF (k + 3) b) (hb : b < T.fund s t)
+      (he : z = convert (k + 3) (code b) ∨ z = dropOne (convert (k + 3) (code b))) :
+      Term.lt z (convert (k + 3) (code (T.fund s t))) = true := by
+    have hl := (convert_order k _ _ hbD hnD hbW hn).mp hb
+    rcases he with rfl | rfl
+    · exact hl
+    · exact dropOne_lt_of_lt hbW.wf hn.wf hl
+  rcases hz with rfl | ho | ⟨a, ha, hw, hm, he⟩
+  · exact hzlt
+  · rcases H_convert_source k v c ho with rfl | ⟨a, ha, he⟩
+    · exact hzlt
+    · exact fin a (ha.dim hcD) (ha.recursiveWF hc) (old a ha (he.elim (fun e => Or.inl (e ▸ ho)) (fun e => Or.inr (e ▸ ho)))) he
+  · by_cases ha0 : a = .Z
+    · subst a
+      rw [fund_Z, convert_Z] at he
+      rcases he with rfl | rfl <;> exact hzlt
+    · exact fin _ (Dim_fund a t (ha.dim hcD) htD) hw (T.lt_trans (fund_lt a t ha0) (old a ha hm)) he
+
+theorem closed_of_updated_or_bounded (k : Nat) (v : Term)
+    (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
+    (hn : RecursiveWF (k + 3) (T.fund s t))
+    (hhead : Term.head (convert (k + 3) (code s)) ≠ Term.one)
+    (hzero : convert (k + 3) (code s) ≠ .zero)
+    (hnewZero : convert (k + 3) (code (T.fund s t)) ≠ .zero)
+    (hgap : ∀ a, Subterm a s → mass a < gap s t)
+    (extra : Term → Prop)
+    (hBound : ∀ z, extra z → Term.lt z (convert (k + 3) (code (T.fund s t))) = true)
+    (hcoef : ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund s t))) →
+      UpdatedCoefficient k v s t z ∨ extra z)
+    (hH : Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true) :
+    Term.allLt (Term.H v (convert (k + 3) (code (T.fund s t))))
+      (convert (k + 3) (code (T.fund s t))) = true :=
+  (Term.allLt_iff _ _).mpr fun z hz => (hcoef z hz).elim
+    (updated_lt_fund k v hsD hsD htD hs hs hn hhead hzero hnewZero hgap (fun _ h => h) hH) (hBound z)
+
 theorem closed_of_updated_coefficients (k : Nat) (v : Term)
     (s t : multi.T) (hsD : Dim (k + 3) s) (htD : Dim (k + 3) t) (hs : RecursiveWF (k + 3) s)
     (hn : RecursiveWF (k + 3) (T.fund s t))
@@ -199,46 +259,12 @@ theorem closed_of_updated_coefficients (k : Nat) (v : Term)
     (hnewZero : convert (k + 3) (code (T.fund s t)) ≠ .zero)
     (hgap : ∀ a, Subterm a s → mass a < gap s t)
     (hcoef : ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund s t))) →
-      UpdatedCoefficient k v s t z)
-    (hH : Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true) :
+      UpdatedCoefficient k v s t z) :
+    Term.allLt (Term.H v (convert (k + 3) (code s))) (convert (k + 3) (code s)) = true →
     Term.allLt (Term.H v (convert (k + 3) (code (T.fund s t))))
-      (convert (k + 3) (code (T.fund s t))) = true := by
-  have hzlt := (zero_lt_iff _).mpr hnewZero
-  have hnD := Dim_fund s t hsD htD
-  have oldBound (a : multi.T) (ha : Subterm a s)
-      (hm : convert (k + 3) (code a) ∈ Term.H v (convert (k + 3) (code s)) ∨
-        dropOne (convert (k + 3) (code a)) ∈ Term.H v (convert (k + 3) (code s))) : a < s := by
-    have hw := ha.recursiveWF hs
-    apply (convert_order k _ _ (ha.dim hsD) hsD hw hs).mpr
-    rcases hm with hm | hm
-    · exact (Term.allLt_iff _ _).mp hH _ hm
-    · exact undrop_lt_head_ne_one _ _ hw.wf hs.wf hzero hhead ((Term.allLt_iff _ _).mp hH _ hm)
-  apply (Term.allLt_iff _ _).mpr
-  intro z hz
-  rcases hcoef z hz with he | ho | ⟨a, ha, hw, hm, he⟩
-  · rw [he]; exact hzlt
-  · rcases H_convert_source k v s ho with rfl | ⟨a, ha, he⟩
-    · exact hzlt
-    · have hw := ha.recursiveWF hs
-      have hal := oldBound a ha (he.elim (fun he => Or.inl (he ▸ ho)) (fun he => Or.inr (he ▸ ho)))
-      have hl := (convert_order k _ _ (ha.dim hsD) hnD hw hn).mp
-        (small_lt_fund_all s t a hal (hgap a ha))
-      rcases he with rfl | rfl
-      · exact hl
-      · exact dropOne_lt_of_lt hw.wf hn.wf hl
-  · by_cases ha0 : a = .Z
-    · subst a
-      rw [fund_Z, convert_Z] at he
-      rcases he with rfl | rfl
-      · exact hzlt
-      · exact hzlt
-    · have hal := oldBound a ha hm
-      have haD := ha.dim hsD
-      have hl := (convert_order k _ _ (Dim_fund a t haD htD) hnD hw hn).mp
-        (T.lt_trans (fund_lt a t ha0) (small_lt_fund_all s t a hal (hgap a ha)))
-      rcases he with rfl | rfl
-      · exact hl
-      · exact dropOne_lt_of_lt hw.wf hn.wf hl
+      (convert (k + 3) (code (T.fund s t))) = true :=
+  closed_of_updated_or_bounded k v s t hsD htD hs hn hhead hzero hnewZero hgap (fun _ => False)
+    (fun _ h => h.elim) (fun z hz => .inl (hcoef z hz))
 
 theorem Omega_image_drop (k : Nat) (s : multi.T)
     (hsD : Dim (k + 3) s) (hr : Recursive s) (hs : RecursiveWF (k + 3) s)
@@ -287,75 +313,34 @@ theorem topNode_child_subterm_gap (k : Nat) (a t : multi.T) (haD : Dim (k + 3) a
   have hm := kumakuma.SourceCoefficientGap.mass_lt_of_subterm hz
   omega
 
-theorem topNode_relative_of_child_support (k : Nat)
+theorem topNode_relative_of_updated_or_bounded (k : Nat)
     (a t : multi.T) (haD : Dim (k + 3) a) (htD : Dim (k + 3) t)
     (hr : Recursive a) (ha : RecursiveWF (k + 3) a)
     {q : V multi.T} (hd : domF a = .Omega q)
     (hs : RecursiveWF (k + 3) (topNode k a))
     (hnChild : RecursiveWF (k + 3) (T.fund a t)) (v : Term)
     (hv : Term.lt Term.bigOmega v = true)
-    (hcoef : ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund a t))) → UpdatedCoefficient k v a t z)
+    (extra : Term → Prop)
+    (hBound : ∀ z, extra z → Term.lt z (convert (k + 3) (code (T.fund (topNode k a) t))) = true)
+    (hcoef : ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund a t))) →
+      UpdatedCoefficient k v a t z ∨ extra z)
     (hH : Term.allLt (Term.H v (convert (k + 3) (code (topNode k a))))
       (convert (k + 3) (code (topNode k a))) = true) :
     Term.allLt (Term.H v (convert (k + 3) (code (T.fund (topNode k a) t))))
       (convert (k + 3) (code (T.fund (topNode k a) t))) = true := by
   have hza : a ≠ .Z := by intro he; rw [he, domF_Z] at hd; cases hd
   have hzn := domOmega_fund_ne_zero a t hd
-  have hsD : Dim (k + 3) (topNode k a) := Dim_topNode haD
   have hf : T.fund (topNode k a) t = topNode k (T.fund a t) :=
     highest_Omega_fund (k + 2) a t haD hr hd
-  have hnD : Dim (k + 3) (T.fund (topNode k a) t) := Dim_fund _ _ hsD htD
-  have hn : RecursiveWF (k + 3) (T.fund (topNode k a) t) := hf ▸ topNode_recursiveWF k _ hnChild
-  have hhead : Term.head (convert (k + 3) (code (topNode k a))) ≠ Term.one := by
-    rw [convert_topNode k a hza]
-    simp only [Term.head, Term.one]
-    intro he; cases he
-  have hsZ : convert (k + 3) (code (topNode k a)) ≠ .zero := by
-    rw [convert_topNode k a hza]; intro he; cases he
-  have hnZ : convert (k + 3) (code (T.fund (topNode k a) t)) ≠ .zero := by
-    rw [hf, convert_topNode k _ hzn]; intro he; cases he
-  have heH := H_topNode_Omega k a haD hr ha hd v hv
-  have oldBound (b : multi.T) (hb : Subterm b a)
-      (hm : convert (k + 3) (code b) ∈ Term.H v (convert (k + 3) (code a)) ∨
-        dropOne (convert (k + 3) (code b)) ∈ Term.H v (convert (k + 3) (code a))) :
-      b < topNode k a := by
-    have hw := hb.recursiveWF ha
-    have oldMem : convert (k + 3) (code b) ∈ Term.H v (convert (k + 3) (code (topNode k a))) ∨
-        dropOne (convert (k + 3) (code b)) ∈ Term.H v (convert (k + 3) (code (topNode k a))) := by
-      rw [heH]; exact hm
-    apply (convert_order k _ _ (hb.dim haD) hsD hw hs).mpr
-    rcases oldMem with hm | hm
-    · exact (Term.allLt_iff _ _).mp hH _ hm
-    · exact undrop_lt_head_ne_one _ _ hw.wf hs.wf hsZ hhead ((Term.allLt_iff _ _).mp hH _ hm)
-  have hzlt := (zero_lt_iff _).mpr hnZ
-  apply (Term.allLt_iff _ _).mpr
-  intro z hz
+  refine (Term.allLt_iff _ _).mpr fun z hz => ?_
   rw [hf, H_topNode_above_Omega k _ hzn v hv] at hz
-  have hzChild := kumakuma.OT2.mem_H_dropOne hz
-  rcases hcoef z hzChild with he | ho | ⟨b, hb, hw, hm, he⟩
-  · rw [he]; exact hzlt
-  · rcases H_convert_source k v a ho with rfl | ⟨b, hb, he⟩
-    · exact hzlt
-    · have hw := hb.recursiveWF ha
-      have hal := oldBound b hb (he.elim (fun he => Or.inl (he ▸ ho)) (fun he => Or.inr (he ▸ ho)))
-      have hl := (convert_order k _ _ (hb.dim haD) hnD hw hn).mp
-        (small_lt_fund_all _ t b hal (topNode_child_subterm_gap k a t haD hr hd hb))
-      rcases he with rfl | rfl
-      · exact hl
-      · exact dropOne_lt_of_lt hw.wf hn.wf hl
-  · by_cases hb0 : b = .Z
-    · subst b
-      rw [fund_Z, convert_Z] at he
-      rcases he with rfl | rfl
-      · exact hzlt
-      · exact hzlt
-    · have hal := oldBound b hb hm
-      have hl := (convert_order k _ _ (Dim_fund b t (hb.dim haD) htD) hnD hw hn).mp
-        (T.lt_trans (fund_lt b t hb0)
-          (small_lt_fund_all _ t b hal (topNode_child_subterm_gap k a t haD hr hd hb)))
-      rcases he with rfl | rfl
-      · exact hl
-      · exact dropOne_lt_of_lt hw.wf hn.wf hl
+  refine (hcoef z (kumakuma.OT2.mem_H_dropOne hz)).elim (updated_lt_fund k v (Dim_topNode haD) haD
+    htD hs ha (hf ▸ topNode_recursiveWF k _ hnChild) ?_ ?_ ?_
+    (fun b hb => topNode_child_subterm_gap k a t haD hr hd hb)
+    (fun z h => (H_topNode_Omega k a haD hr ha hd v hv).symm ▸ h) hH) (hBound z)
+  · rw [convert_topNode k a hza]; simp only [Term.head, Term.one]; intro he; cases he
+  · rw [convert_topNode k a hza]; intro he; cases he
+  · rw [hf, convert_topNode k _ hzn]; intro he; cases he
 
 end kumakuma.GeneralImageUpperOmega
 
@@ -1382,7 +1367,7 @@ theorem lastVec_of_low {k : Nat} {xs : V multi.T} (hl : xs.length = k + 3)
     · exact hlow j hjl
     · exact V.get0_ge xs j (by omega)
 
-theorem parent_Omega_updated_support (k : Nat)
+theorem parent_Omega_updated_or_support (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1390,76 +1375,68 @@ theorem parent_Omega_updated_support (k : Nat)
     (hn : RecursiveWF (k + 3) (T.fund (.P xs .Z) t))
     (v : Term) (hvR : Term.isRT v = true) (hv : Term.wf v = true)
     (hOmega : Term.lt Term.bigOmega v = true)
+    (extra : Term → Prop)
     (hcoef : ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund (V.get0 xs i) t))) →
-      UpdatedCoefficient k v (V.get0 xs i) t z) :
+      UpdatedCoefficient k v (V.get0 xs i) t z ∨ extra z) :
     ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund (.P xs .Z) t))) →
-      UpdatedCoefficient k v (.P xs .Z) t z := by
+      UpdatedCoefficient k v (.P xs .Z) t z ∨ extra z := by
   have hil : i < xs.length := fnz_lt_length hf
-  have hik : i < k + 3 := by rw [← hsD.length]; exact hil
   have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
   have hchildR : Recursive (V.get0 xs i) := (Recursive_P.1 hr).1 i
   have hchildDim : Dim (k + 3) (V.get0 xs i) := hsD.coord i
-  have hc0 : V.get0 xs i ≠ .Z := (V.fnz_some_spec xs i hf).1
-  have hcNZ : convert (k + 3) (code (V.get0 xs i)) ≠ .zero :=
-    fun he => hc0 ((convert_eq_zero_iff _ _).1 he)
-  have haNZ : convert (k + 3) (code (T.fund (V.get0 xs i) t)) ≠ .zero :=
-    fun he => domOmega_fund_ne_zero _ t hdq ((convert_eq_zero_iff _ _).1 he)
-  have hnd : ¬ xs < q := not_diag_of_dom hf hdq hd
   have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
-    fund_nondiag hf hdq hnd t
-  have hnD : Dim (k + 3) (T.fund (.P xs .Z) t) := Dim_fund _ _ hsD htD
+    fund_nondiag hf hdq (not_diag_of_dom hf hdq hd) t
   have hnChild : RecursiveWF (k + 3) (T.fund (V.get0 xs i) t) := by
-    have hw := hn
-    rw [hfund] at hw
-    have := (RecursiveWF_P.1 hw).1 i
+    have := (RecursiveWF_P.1 (hfund ▸ hn)).1 i
     rwa [V.get0_set_same xs i _ hil] at this
   have lift (embed : ∀ z, z ∈ Term.H v (convert (k + 3) (code (V.get0 xs i))) →
-      z ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) {z : Term}
-      (hc : UpdatedCoefficient k v (V.get0 xs i) t z) : UpdatedCoefficient k v (.P xs .Z) t z := by
-    rcases hc with he | ho | ⟨a, ha, hw, ho, he⟩
-    · exact Or.inl he
-    · exact Or.inr (Or.inl (embed _ ho))
-    · exact Or.inr (Or.inr ⟨a, Subterm.trans ha (Subterm.coordinate xs .Z i), hw,
-        ho.elim (fun h => Or.inl (embed _ h)) (fun h => Or.inr (embed _ h)), he⟩)
+      z ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) {z : Term} :
+      UpdatedCoefficient k v (V.get0 xs i) t z ∨ extra z →
+        UpdatedCoefficient k v (.P xs .Z) t z ∨ extra z := by
+    rintro ((he | ho | ⟨a, ha, hw, ho, he⟩) | hex)
+    · exact Or.inl (Or.inl he)
+    · exact Or.inl (Or.inr (Or.inl (embed _ ho)))
+    · exact Or.inl (Or.inr (Or.inr ⟨a, Subterm.trans ha (Subterm.coordinate xs .Z i), hw,
+        ho.imp (embed _) (embed _), he⟩))
+    · exact Or.inr hex
   intro z hz
   by_cases hib : i ≤ k + 1
   · obtain ⟨w, heOld, heNew⟩ := principal_replacement_psi_images k xs i hib
-      (V.fnz_some_spec xs i hf).2 _ hcNZ haNZ
+      (V.fnz_some_spec xs i hf).2 _
+      (fun he => (V.fnz_some_spec xs i hf).1 ((convert_eq_zero_iff _ _).1 he))
+      (fun he => domOmega_fund_ne_zero _ t hdq ((convert_eq_zero_iff _ _).1 he))
       (Omega_image_drop k _ hchildDim hchildR (hcoords i) hdq)
       (Omega_principal_image_ne_low k xs i hsD hs hd)
     have heFund := hfund ▸ heNew
-    have hlt := (convert_order k _ _ hnD hsD hn hs).mp (fund_lt (.P xs .Z) t (by intro he; cases he))
-    have hwOld := heOld ▸ hs.wf
-    have hwNew := heFund ▸ hn.wf
+    have hlt := (convert_order k _ _ (Dim_fund _ _ hsD htD) hsD hn hs).mp
+      (fund_lt (.P xs .Z) t (by intro he; cases he))
     rw [heOld, heFund] at hlt
     rw [heFund] at hz
-    rcases H_psi_replacement_support v w _ _ hvR hv hwOld hwNew hlt hz with ⟨_, ho⟩ | ⟨he, hroot, hchild⟩
-    · exact Or.inr (Or.inl (heOld ▸ ho))
-    · rcases he with he | hzChild
-      · exact Or.inr (Or.inr ⟨V.get0 xs i, Subterm.coordinate xs .Z i, hnChild,
-          Or.inl (heOld ▸ hroot), Or.inr he⟩)
-      · exact lift (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
-  · have hi : i = k + 2 := by omega
+    rcases H_psi_replacement_support v w _ _ hvR hv (heOld ▸ hs.wf) (heFund ▸ hn.wf) hlt hz with
+      ⟨_, ho⟩ | ⟨he | hzChild, hroot, hchild⟩
+    · exact Or.inl (Or.inr (Or.inl (heOld ▸ ho)))
+    · exact Or.inl (Or.inr (Or.inr ⟨V.get0 xs i, Subterm.coordinate xs .Z i, hnChild,
+        Or.inl (heOld ▸ hroot), Or.inr he⟩))
+    · exact lift (fun z hz => heOld ▸ hchild z hz) (hcoef z hzChild)
+  · have hi : i = k + 2 := by have := hsD.length; omega
     subst hi
     have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) :=
       lastVec_of_low hsD.length (V.fnz_some_spec xs _ hf).2
-    have heOld : (multi.T.P xs .Z) = topNode k (V.get0 xs (k + 2)) :=
-      congrArg (fun us => multi.T.P us .Z) he
     have heNew : T.fund (.P xs .Z) t = topNode k (T.fund (V.get0 xs (k + 2)) t) := by
       rw [hfund]
       show multi.T.P _ .Z = multi.T.P _ .Z
       congr 1
       have := kumakuma.SourceOmegaHighest.lastVec_replace_last (k + 2) (V.get0 xs (k + 2))
         (T.fund (V.get0 xs (k + 2)) t)
-      rw [← he] at this
-      exact this
+      rwa [← he] at this
     have heH : Term.H v (convert (k + 3) (code (.P xs .Z))) =
         Term.H v (convert (k + 3) (code (V.get0 xs (k + 2)))) := by
-      rw [heOld]; exact H_topNode_Omega k _ hchildDim hchildR (hcoords _) hdq v hOmega
+      rw [show multi.T.P xs .Z = topNode k (V.get0 xs (k + 2)) from congrArg (multi.T.P · .Z) he]
+      exact H_topNode_Omega k _ hchildDim hchildR (hcoords _) hdq v hOmega
     rw [heNew, H_topNode_above_Omega k _ (domOmega_fund_ne_zero _ t hdq) v hOmega] at hz
     exact lift (fun z hz => heH ▸ hz) (hcoef z (kumakuma.OT2.mem_H_dropOne hz))
 
-theorem parent_Omega_relative_of_child_support (k : Nat)
+theorem parent_Omega_relative_of_updated_or_bounded (k : Nat)
     (xs q : V multi.T) (i : Nat) (hsD : Dim (k + 3) (.P xs .Z))
     (hf : V.fnz xs = some i) (hdq : domF (V.get0 xs i) = .Omega q)
     (hr : Recursive (.P xs .Z)) (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -1467,27 +1444,24 @@ theorem parent_Omega_relative_of_child_support (k : Nat)
     (hn : RecursiveWF (k + 3) (T.fund (.P xs .Z) t))
     (v : Term) (hvR : Term.isRT v = true) (hv : Term.wf v = true)
     (hOmega : Term.lt Term.bigOmega v = true)
+    (extra : Term → Prop)
+    (hBound : ∀ z, extra z → Term.lt z (convert (k + 3) (code (T.fund (.P xs .Z) t))) = true)
     (hcoef : ∀ z, z ∈ Term.H v (convert (k + 3) (code (T.fund (V.get0 xs i) t))) →
-      UpdatedCoefficient k v (V.get0 xs i) t z)
+      UpdatedCoefficient k v (V.get0 xs i) t z ∨ extra z)
     (hH : Term.allLt (Term.H v (convert (k + 3) (code (.P xs .Z))))
       (convert (k + 3) (code (.P xs .Z))) = true) :
     Term.allLt (Term.H v (convert (k + 3) (code (T.fund (.P xs .Z) t))))
       (convert (k + 3) (code (T.fund (.P xs .Z) t))) = true := by
   have hil : i < xs.length := fnz_lt_length hf
-  have hik : i < k + 3 := by rw [← hsD.length]; exact hil
   have hcoords : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
   have hchildR : Recursive (V.get0 xs i) := (Recursive_P.1 hr).1 i
   have hchildDim : Dim (k + 3) (V.get0 xs i) := hsD.coord i
   have hc0 : V.get0 xs i ≠ .Z := (V.fnz_some_spec xs i hf).1
   have hlow := (V.fnz_some_spec xs i hf).2
-  have hnd : ¬ xs < q := not_diag_of_dom hf hdq hd
   have hfund : T.fund (.P xs .Z) t = .P (V.set xs i (T.fund (V.get0 xs i) t)) .Z :=
-    fund_nondiag hf hdq hnd t
-  have hnD : Dim (k + 3) (T.fund (.P xs .Z) t) := Dim_fund _ _ hsD htD
+    fund_nondiag hf hdq (not_diag_of_dom hf hdq hd) t
   have hnChild : RecursiveWF (k + 3) (T.fund (V.get0 xs i) t) := by
-    have hw := hn
-    rw [hfund] at hw
-    have := (RecursiveWF_P.1 hw).1 i
+    have := (RecursiveWF_P.1 (hfund ▸ hn)).1 i
     rwa [V.get0_set_same xs i _ hil] at this
   have hsZ : convert (k + 3) (code (.P xs .Z)) ≠ .zero := convert_ne_zero xs .Z
   have hnZ : convert (k + 3) (code (T.fund (.P xs .Z) t)) ≠ .zero :=
@@ -1495,125 +1469,70 @@ theorem parent_Omega_relative_of_child_support (k : Nat)
   have hhead := Omega_image_head_ne_one k _ hsD hr hs hd
   by_cases hex : ∃ j, i ≠ j ∧ V.get0 xs j ≠ .Z
   · obtain ⟨j, hij, hj⟩ := hex
-    exact closed_of_updated_coefficients k v _ t hsD htD hs hn hhead hsZ hnZ
-      (fun a ha => principal_subterm_gap xs i j hij hc0 hj hd t ha)
-      (parent_Omega_updated_support k xs q i hsD hf hdq hr hs hd t htD hn v hvR hv hOmega hcoef) hH
-  · have hother : ∀ j, j ≠ i → V.get0 xs j = .Z := by
-      intro j hj
-      apply Decidable.byContradiction
-      intro hz
-      exact hex ⟨j, fun he => hj he.symm, hz⟩
-    by_cases hib : i ≤ k + 1
-    · have hip : 0 < i := by
-        apply Nat.pos_of_ne_zero
-        intro hi0
-        subst hi0
-        have he : xs = lowVec (k + 2) (V.get0 xs 0) := by
-          apply V.eq_of_get0 _ _ (by rw [hsD.length, lowVec_length])
-          intro j
-          rw [get0_lowVec]
-          by_cases hj : j = 0
-          · rw [ite_eq_left hj, hj]
-          · rw [ite_eq_right hj]
-            exact hother j hj
-        have ho : Outer (k + 2) (.P (lowVec (k + 2) (V.get0 xs 0)) .Z) := .cons _ _ .zero
-        have hdom := hd
-        rw [he] at hdom
-        exact SourceFundOrder.outer_not_Omega ho q hdom
-      have hhigh (j : Nat) (hj : i < j) : V.get0 xs j = .Z := hother j (by omega_c)
-      have hdrop := Omega_image_drop k _ hchildDim hchildR (hcoords i) hdq
-      have heOld := convert_positive_single k xs i hip hib hlow hhigh hc0
-      rw [hdrop] at heOld
-      let ys := V.set xs i (T.fund (V.get0 xs i) t)
-      have hnewLow (j : Nat) (hj : j < i) : V.get0 ys j = .Z := by
-        show V.get0 (V.set xs i _) j = _
-        rw [V.get0_set_ne xs i _ j (by omega_c)]
-        exact hlow j hj
-      have hnewHigh (j : Nat) (hj : i < j) : V.get0 ys j = .Z := by
-        show V.get0 (V.set xs i _) j = _
-        rw [V.get0_set_ne xs i _ j (by omega_c)]
-        exact hhigh j hj
-      have hnewIdx : V.get0 ys i = T.fund (V.get0 xs i) t := V.get0_set_same xs i _ hil
-      have hnewNZ : V.get0 ys i ≠ .Z := hnewIdx ▸ domOmega_fund_ne_zero _ t hdq
-      have heNew := convert_positive_single k ys i hip hib hnewLow hnewHigh hnewNZ
-      rw [hnewIdx] at heNew
-      have heFund : convert (k + 3) (code (T.fund (.P xs .Z) t)) =
-          .psi (.inacc i .zero) (dropOne (convert (k + 3) (code (T.fund (V.get0 xs i) t)))) :=
-        hfund ▸ heNew
-      have hwOld := heOld ▸ hs.wf
-      have hwNew := heFund ▸ hn.wf
-      have hlt := (convert_order k _ _ hnD hsD hn hs).mp (fund_lt (.P xs .Z) t (by intro he; cases he))
-      rw [heOld, heFund] at hlt
-      have hgapChild (a : multi.T) (ha : Subterm a (V.get0 xs i)) : mass a < gap (.P xs .Z) t := by
-        have hmA := kumakuma.SourceCoefficientGap.mass_lt_of_subterm ha
-        have hmI := vectorMass_get0_le xs i
-        rw [gap_Omega _ _ _ hd, mass_P, mass_Z]
-        omega_c
-      have oldBound (a : multi.T) (ha : Subterm a (V.get0 xs i))
-          (hmA : convert (k + 3) (code a) ∈ Term.H v (convert (k + 3) (code (.P xs .Z))) ∨
-            dropOne (convert (k + 3) (code a)) ∈ Term.H v (convert (k + 3) (code (.P xs .Z)))) :
-          a < .P xs .Z := by
-        have haW := ha.recursiveWF (hcoords i)
-        apply (convert_order k _ _ (ha.dim hchildDim) hsD haW hs).mpr
-        rcases hmA with hmA | hmA
-        · exact (Term.allLt_iff _ _).mp hH _ hmA
-        · exact undrop_lt_head_ne_one _ _ haW.wf hs.wf hsZ hhead ((Term.allLt_iff _ _).mp hH _ hmA)
-      apply (Term.allLt_iff _ _).mpr
-      intro z hz
-      rw [heFund] at hz
-      rcases H_psi_replacement_support v _ _ _ hvR hv hwOld hwNew hlt hz with ⟨hctx, _⟩ | ⟨he, hroot, hchild⟩
-      · simp [Term.H, Term.hOne, hOmega] at hctx
-      · rcases he with he | hzChild
-        · rw [he]
-          have hOldArg : Term.lt (convert (k + 3) (code (V.get0 xs i)))
-              (.psi (.inacc i .zero) (convert (k + 3) (code (V.get0 xs i)))) = true := by
-            rw [← heOld]; exact (Term.allLt_iff _ _).mp hH _ (heOld ▸ hroot)
-          have hOwn := (kumakuma.JaegerFacts.lt_psi_self_iff hwOld).mp hOldArg
-          have hChildLt := (convert_order k _ _ (Dim_fund _ _ hchildDim htD) hchildDim hnChild
-            (hcoords i)).mp (fund_lt (V.get0 xs i) t hc0)
-          have hOwnW := ((Term.wf_psi_iff _ _).mp hwOld).2.1
-          have hNewOwn := Term.lt_trans hnChild.wf (hcoords i).wf hOwnW hChildLt hOwn
-          have hDropOwn := dropOne_lt_of_lt hnChild.wf hOwnW hNewOwn
-          rw [heFund]
-          exact (kumakuma.JaegerFacts.lt_psi_self_iff hwNew).mpr hDropOwn
-        · have embed (a : Term) (ha : a ∈ Term.H v (convert (k + 3) (code (V.get0 xs i)))) :
-              a ∈ Term.H v (convert (k + 3) (code (.P xs .Z))) := heOld ▸ hchild a ha
-          rcases hcoef z hzChild with he | ho | ⟨a, ha, haW, hmA, he⟩
-          · rw [he]; exact (zero_lt_iff _).mpr hnZ
-          · rcases H_convert_source k v (V.get0 xs i) ho with rfl | ⟨a, ha, he⟩
-            · exact (zero_lt_iff _).mpr hnZ
-            · have haW := ha.recursiveWF (hcoords i)
-              have hOld := oldBound a ha (he.elim (fun he => Or.inl (he ▸ embed _ ho))
-                (fun he => Or.inr (he ▸ embed _ ho)))
-              have hNew := (convert_order k _ _ (ha.dim hchildDim) hnD haW hn).mp
-                (small_lt_fund_all (.P xs .Z) t a hOld (hgapChild a ha))
-              rcases he with rfl | rfl
-              · exact hNew
-              · exact dropOne_lt_of_lt haW.wf hn.wf hNew
-          · by_cases ha0 : a = .Z
-            · subst a
-              rw [fund_Z, convert_Z] at he
-              rcases he with rfl | rfl
-              · exact (zero_lt_iff _).mpr hnZ
-              · exact (zero_lt_iff _).mpr hnZ
-            · have hOld := oldBound a ha (hmA.elim (fun h => Or.inl (embed _ h))
-                (fun h => Or.inr (embed _ h)))
-              have hSmall := small_lt_fund_all (.P xs .Z) t a hOld (hgapChild a ha)
-              have hNew := (convert_order k _ _ (Dim_fund a t (ha.dim hchildDim) htD) hnD haW hn).mp
-                (T.lt_trans (fund_lt a t ha0) hSmall)
-              rcases he with rfl | rfl
-              · exact hNew
-              · exact dropOne_lt_of_lt haW.wf hn.wf hNew
-    · have hi : i = k + 2 := by omega_c
-      subst hi
-      have he : xs = lastVec (k + 2) (V.get0 xs (k + 2)) := lastVec_of_low hsD.length hlow
-      have hsource : (multi.T.P xs .Z) = topNode k (V.get0 xs (k + 2)) :=
-        congrArg (fun us => multi.T.P us .Z) he
-      have htop := topNode_relative_of_child_support k (V.get0 xs (k + 2)) t hchildDim htD hchildR
-        (hcoords _) hdq (hsource ▸ hs) (by
-          have := hnChild; exact this) v hOmega hcoef (hsource ▸ hH)
-      rw [hsource]
-      exact htop
+    exact closed_of_updated_or_bounded k v _ t hsD htD hs hn hhead hsZ hnZ
+      (fun a ha => principal_subterm_gap xs i j hij hc0 hj hd t ha) extra hBound
+      (parent_Omega_updated_or_support k xs q i hsD hf hdq hr hs hd t htD hn v hvR hv hOmega extra
+        hcoef) hH
+  have hother (j : Nat) (hj : j ≠ i) : V.get0 xs j = .Z :=
+    Decidable.byContradiction fun hz => hex ⟨j, fun he => hj he.symm, hz⟩
+  by_cases hib : i ≤ k + 1
+  · have hip : 0 < i := by
+      refine Nat.pos_of_ne_zero fun hi0 => ?_
+      subst hi0
+      have he : xs = lowVec (k + 2) (V.get0 xs 0) := by
+        refine V.eq_of_get0 _ _ (by rw [hsD.length, lowVec_length]) fun j => ?_
+        rw [get0_lowVec]
+        by_cases hj : j = 0
+        · rw [ite_eq_left hj, hj]
+        · rw [ite_eq_right hj]; exact hother j hj
+      have ho : Outer (k + 2) (.P (lowVec (k + 2) (V.get0 xs 0)) .Z) := .cons _ _ .zero
+      exact SourceFundOrder.outer_not_Omega ho q (by rwa [he] at hd)
+    have hhigh (j : Nat) (hj : i < j) : V.get0 xs j = .Z := hother j (by omega_c)
+    have heOld := convert_positive_single k xs i hip hib hlow hhigh hc0
+    rw [Omega_image_drop k _ hchildDim hchildR (hcoords i) hdq] at heOld
+    have hnewIdx : V.get0 (V.set xs i (T.fund (V.get0 xs i) t)) i = T.fund (V.get0 xs i) t :=
+      V.get0_set_same xs i _ hil
+    have hnewNZ : V.get0 (V.set xs i (T.fund (V.get0 xs i) t)) i ≠ .Z :=
+      by rw [hnewIdx]; exact domOmega_fund_ne_zero _ t hdq
+    have heFund : convert (k + 3) (code (T.fund (.P xs .Z) t)) =
+        .psi (.inacc i .zero) (dropOne (convert (k + 3) (code (T.fund (V.get0 xs i) t)))) := by
+      rw [hfund, convert_positive_single k _ i hip hib
+        (fun j hj => by rw [V.get0_set_ne xs i _ j (by omega_c)]; exact hlow j hj)
+        (fun j hj => by rw [V.get0_set_ne xs i _ j (by omega_c)]; exact hhigh j hj) hnewNZ, hnewIdx]
+    have hwOld := heOld ▸ hs.wf
+    have hwNew := heFund ▸ hn.wf
+    have hlt := (convert_order k _ _ (Dim_fund _ _ hsD htD) hsD hn hs).mp
+      (fund_lt (.P xs .Z) t (by intro he; cases he))
+    rw [heOld, heFund] at hlt
+    have hgapChild (a : multi.T) (ha : Subterm a (V.get0 xs i)) : mass a < gap (.P xs .Z) t := by
+      have hmA := kumakuma.SourceCoefficientGap.mass_lt_of_subterm ha
+      have hmI := vectorMass_get0_le xs i
+      rw [gap_Omega _ _ _ hd, mass_P, mass_Z]
+      omega_c
+    refine (Term.allLt_iff _ _).mpr fun z hz => ?_
+    rw [heFund] at hz
+    rcases H_psi_replacement_support v _ _ _ hvR hv hwOld hwNew hlt hz with
+      ⟨hctx, _⟩ | ⟨rfl | hzChild, hroot, hchild⟩
+    · simp [Term.H, Term.hOne, hOmega] at hctx
+    · have hOldArg : Term.lt (convert (k + 3) (code (V.get0 xs i)))
+          (.psi (.inacc i .zero) (convert (k + 3) (code (V.get0 xs i)))) = true := by
+        rw [← heOld]; exact (Term.allLt_iff _ _).mp hH _ (heOld ▸ hroot)
+      have hOwnW := ((Term.wf_psi_iff _ _).mp hwOld).2.1
+      rw [heFund]
+      exact (kumakuma.JaegerFacts.lt_psi_self_iff hwNew).mpr (dropOne_lt_of_lt hnChild.wf hOwnW
+        (Term.lt_trans hnChild.wf (hcoords i).wf hOwnW ((convert_order k _ _
+          (Dim_fund _ _ hchildDim htD) hchildDim hnChild (hcoords i)).mp (fund_lt (V.get0 xs i) t hc0))
+          ((kumakuma.JaegerFacts.lt_psi_self_iff hwOld).mp hOldArg)))
+    · exact (hcoef z hzChild).elim (updated_lt_fund k v hsD hchildDim htD hs (hcoords i) hn hhead
+        hsZ hnZ hgapChild (fun a ha => heOld ▸ hchild a ha) hH) (hBound z)
+  · have hi : i = k + 2 := by have := hsD.length; omega
+    subst hi
+    have hsource : (multi.T.P xs .Z) = topNode k (V.get0 xs (k + 2)) :=
+      congrArg (multi.T.P · .Z) (lastVec_of_low hsD.length hlow)
+    rw [hsource]
+    exact topNode_relative_of_updated_or_bounded k (V.get0 xs (k + 2)) t hchildDim htD hchildR
+      (hcoords _) hdq (hsource ▸ hs) hnChild v hOmega extra
+      (fun z hz => (congrArg (T.fund · t) hsource) ▸ hBound z hz) hcoef (hsource ▸ hH)
 
 end kumakuma.GeneralImageCofinalityCoefficients
 
@@ -1709,9 +1628,11 @@ theorem Omega_fund_cofinal_invariant (k : Nat) : ∀ (s : multi.T),
             refine ⟨hn, ?_⟩
             intro v hvR hv hOmega hcut
             have hcf := (hchildInv v hvR hv hOmega hcut).1
-            exact ⟨parent_Omega_updated_support k xs q i hsD hf hc hr hs hd' t htD hn v hvR hv hOmega hcf,
-              parent_Omega_relative_of_child_support k xs q i hsD hf hc hr hs hd' t htD hn v hvR hv
-                hOmega hcf⟩
+            have hcf' := fun z hz => Or.inl (b := False) (hcf z hz)
+            exact ⟨fun z hz => (parent_Omega_updated_or_support k xs q i hsD hf hc hr hs hd' t htD hn v
+                hvR hv hOmega _ hcf' z hz).resolve_right id,
+              parent_Omega_relative_of_updated_or_bounded k xs q i hsD hf hc hr hs hd' t htD hn v hvR hv
+                hOmega _ (fun _ h => h.elim) hcf'⟩
     · have hbr : Recursive b := (Recursive_P.1 hr).2.1
       have hbw : RecursiveWF (k + 3) b := (RecursiveWF_P.1 hs).2.1
       have hdb : domF b = .Omega q := by rwa [domF_tail xs hb] at hd
