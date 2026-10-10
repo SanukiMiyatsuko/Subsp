@@ -82,11 +82,8 @@ theorem context_lt_of_image_lt {r s : Nat} {a b : Term}
     by_cases ha0 : a = .zero
     · rw [ite_eq_left ha0, Term.lt_irrefl] at h; cases h
     · rw [ite_eq_right ha0] at h
-      have hle := Term.one_le_prin haw (above_principal (ha.resolve_left ha0))
-      rcases (Term.le_iff_eq_or_lt _ _).mp hle with he | hl
-      · rw [← he, Term.lt_irrefl] at h; cases h
-      · have := Term.lt_trans Term.wf_one haw Term.wf_one hl h
-        rw [Term.lt_irrefl] at this; cases this
+      rw [Term.not_lt_of_le (Term.one_le_prin haw (above_principal (ha.resolve_left ha0)))] at h
+      cases h
   · refine ⟨?_, hb0⟩
     by_cases ha0 : a = .zero
     · subst a; exact (zero_lt_iff _).mpr hb0
@@ -143,13 +140,8 @@ theorem H_lower_visible (n : Nat) (zz : Term)
         rw [succ_principal (above_principal (habove.resolve_left hh0)), Term.lt]
         exact hlt
       have hnotLe : Term.le (.psi (regular j h) (dropOne (args[j]?.getD .zero)))
-          (Term.predR (.inacc n zz)) = false := by
-        cases he : Term.le (.psi (regular j h) (dropOne (args[j]?.getD .zero))) (Term.predR (.inacc n zz))
-        · rfl
-        · rcases (Term.le_iff_eq_or_lt _ _).mp he with he' | hl
-          · rw [he', Term.lt_irrefl] at hpredPsi; cases hpredPsi
-          · have := Term.lt_trans hpw hpsiW hpw hpredPsi hl
-            rw [Term.lt_irrefl] at this; cases this
+          (Term.predR (.inacc n zz)) = false :=
+        Bool.eq_false_iff.mpr fun he => by rw [Term.not_lt_of_le he] at hpredPsi; cases hpredPsi
       apply ih (by omega) args _ (step_shape _ habove)
         (step_lt_inacc j n (by omega) h _ zz habove hlt)
         (by rw [hstep]; exact hpredPsi) hwf z
@@ -174,15 +166,8 @@ theorem lift_self_of_low (xs : V multi.T) (i : Nat) (hi : i < xs.length)
 theorem psi_self_visible (w Q : Term) (hw : Term.wf (.psi w Q) = true) :
     Q ∈ Term.H w (.psi w Q) := by
   have hpr := (Term.predR_spec hw).1
-  have hp := (Term.wf_psi_iff _ _).mp hw
-  have hpw := ((kumakuma.JaegerFacts.predR_facts hp.2.1 hp.1)).1
-  have hnotLe : Term.le (.psi w Q) (Term.predR w) = false := by
-    cases he : Term.le (.psi w Q) (Term.predR w)
-    · rfl
-    · rcases (Term.le_iff_eq_or_lt _ _).mp he with he' | hl
-      · rw [he', Term.lt_irrefl] at hpr; cases hpr
-      · have := Term.lt_trans hpw hw hpw hpr hl
-        rw [Term.lt_irrefl] at this; cases this
+  have hnotLe : Term.le (.psi w Q) (Term.predR w) = false :=
+    Bool.eq_false_iff.mpr fun he => by rw [Term.not_lt_of_le he] at hpr; cases hpr
   rw [Term.H, hnotLe]
   simp [Term.lt_irrefl]
 

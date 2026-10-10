@@ -1098,12 +1098,7 @@ theorem Omega_label_coefficient_lift (k : Nat) (s : multi.T)
         rcases (Term.le_iff_eq_or_lt _ _).mp hVL with he | he
         · simpa only [← he] using hLw
         · exact Term.lt_trans hv hL hw he hLw
-      have hwV : Term.lt w v = false := by
-        cases he : Term.lt w v with
-        | false => rfl
-        | true =>
-          have hh := Term.lt_trans hw hv hw he hVw
-          rw [Term.lt_irrefl] at hh; cases hh
+      have hwV : Term.lt w v = false := Term.not_lt_of_lt hVw
       by_cases hskip : Term.le (convert (k + 3) (code (.P xs .Z))) (Term.predR v) = true
       · have hLpred := Term.le_trans hL hs.wf ((kumakuma.JaegerFacts.predR_facts hv hvR)).1
           (cofinality_image_le k _ hsD hr hs hdParent) hskip

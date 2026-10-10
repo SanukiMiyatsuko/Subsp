@@ -350,17 +350,9 @@ theorem psi_regular_lt_context {n : Nat} {a b : Term} (x : Term)
       rw [Term.lt, hrv, hrb, hvr, hpv]
       simp only [hne, decide_false, Bool.false_and, Bool.or_false]
       have hbad : (Term.le (.inacc m d) a && Term.lt a (.inacc m d)) = false := by
-        cases h : Term.lt a (.inacc m d) with
-        | false => simp
-        | true =>
-          have hle : Term.le (.inacc m d) a = false := by
-            cases hl : Term.le (.inacc m d) a with
-            | false => rfl
-            | true =>
-              have bad := (wf_le_iff_reverse_false hv.2.1 ha).mp hl
-              rw [h] at bad
-              cases bad
-          simp [hle]
+        cases h : Term.le (.inacc m d) a
+        · rfl
+        · simp [Term.not_lt_of_le h]
       rw [hbad, Bool.or_false]
       cases hab : Term.lt a (.psi (.inacc m d) c) with
       | false => simp
