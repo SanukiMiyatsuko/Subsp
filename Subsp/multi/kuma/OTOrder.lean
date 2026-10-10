@@ -445,9 +445,4 @@ theorem lt_iff_fundLT {d : Nat} {s t : multi.T}
     · subst he; exact absurd hlt (T.lt_irrefl _)
     · exact h'
 
-/-- The fundamental-sequence order is well-founded on `DOT d`. -/
-theorem fundLT_wellFounded (d : Nat) :
-    WellFounded (fun s t : OTD d => FundLT d s.val t.val) :=
-  Subrelation.wf (fun h => fundLT_lt h) (ot_lt_wellFounded d)
-
 end kumakuma.OTOrder

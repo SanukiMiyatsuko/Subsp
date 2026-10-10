@@ -120,11 +120,6 @@ decreasing_by
     | exact multi.T.size_get0_lt_P _ _ _
     | exact multi.T.size_lt_P_right _ _
 
-theorem regularVector_dom {v : V multi.T} (hv : RegularVector v) : domF (.P v .Z) = .Omega v := by
-  obtain ⟨i, hi, hf, hd⟩ := hv
-  obtain ⟨m, rfl⟩ : ∃ m, i = m + 1 := ⟨i - 1, by omega⟩
-  exact domF_one_succ hf hd
-
 theorem lowVec_below_positive (k : Nat) (a : multi.T) (v : V multi.T) (i : Nat) (hi : 0 < i)
     (hv : V.get0 v i ≠ .Z) : CountableSource.lowVec k a < v := by
   have hil : i < (V.trim v).length := by

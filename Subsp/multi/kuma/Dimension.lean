@@ -55,18 +55,6 @@ theorem fnz_eq_none {v : V multi.T} (h : ∀ j, V.get0 v j = .Z) : V.fnz v = non
   · rfl
   · exact absurd (h k) (V.fnz_some_spec v k hf).1
 
-theorem fnz_none_iff (v : V multi.T) : V.fnz v = none ↔ ∀ j, V.get0 v j = .Z :=
-  ⟨V.fnz_none_spec v, fnz_eq_none⟩
-
-theorem fnz_set {v : V multi.T} {i : Nat} (hi : i < v.length)
-    (hlow : ∀ j, j < i → V.get0 v j = .Z) {w : multi.T} (hw : w ≠ .Z) :
-    V.fnz (V.set v i w) = some i := by
-  apply fnz_eq_some
-  · rw [V.get0_set_same v i w hi]; exact hw
-  · intro j hj
-    rw [V.get0_set_ne v i w j (Nat.ne_of_lt hj)]
-    exact hlow j hj
-
 theorem fnz_lt_length {v : V multi.T} {i : Nat} (h : V.fnz v = some i) : i < v.length :=
   V.lt_length_of_fnz v i h
 
@@ -1443,9 +1431,6 @@ def dimensionBound (k : Nat) : multi.T := .P (lowVec (k + 1) (dimensionTop k)) .
 
 theorem lowerBase_isOT (k n : Nat) : DOT (k + 1) (lowerBase k n) := DOT.base_succ k n
 
-theorem Dim_dimensionBound (k : Nat) : Dim (k + 2) (dimensionBound k) :=
-  Dim_lowVec (Dim_dimensionTop k) (Dim_Z _)
-
 theorem dimensionBound_isOT (k : Nat) : DOT (k + 2) (dimensionBound k) := by
   show DOT (k + 2) (.P (lowVec (k + 1) (dimensionTop k)) .Z)
   rw [← dimensionTop_LF k]
@@ -1533,8 +1518,6 @@ theorem hasDimensionWitness_mono {lam m : Nat} (h : lam ≤ m) {q : Classes}
   obtain ⟨s, hs⟩ := hq
   exact ⟨promoteOT h s, (classOf_promoteOT h s).trans hs⟩
 
-
-
 end kumakuma.OTQuotient
 
 namespace kumakuma.HigherBoundary
@@ -1588,9 +1571,6 @@ theorem lt_one_iff {s : multi.T} {w : V multi.T} (hw : ∀ i, V.get0 w i = .Z) :
       · exact absurd h (not_lt_zeros u hw)
       · exact absurd h (T.not_lt_Z _)
   · rintro rfl; exact T.Z_lt_P _ _
-
-theorem nonzero_not_below_one {d : Nat} {s : multi.T} (hs : s ≠ .Z) : ¬ s < ofNatD d 1 :=
-  fun h => hs ((lt_one_iff (w := zeros d) (get0_zeros d)).1 h)
 
 def RootLow (k : Nat) : multi.T → Prop
   | .Z => True

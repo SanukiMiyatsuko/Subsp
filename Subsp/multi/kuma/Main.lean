@@ -652,68 +652,6 @@ theorem UC_diagonal_iterates (k : Nat) (c : multi.T) (hcD : Dim (k + 3) c)
       (hIter.2 κ hκ.regular hκ.cutWf hSource)
       (topOK_transfer k q hql c _ htop hc0 hIter.1 hIter.2)
 
-theorem UC_fund_zero (k : Nat) : ∀ (s : multi.T),
-    Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s → UC k s → UC k (T.fund s .Z)
-  | .Z, _, _, _, _ => by rw [fund_Z]; exact UC_zero k
-  | .P xs b, hsD, hr, hs, huc => by
-    have omegaCase (q : V multi.T) (hd : domF (.P xs b) = .Omega q) :
-        UC k (T.fund (.P xs b) .Z) := by
-      obtain ⟨κ, hκ⟩ := Omega_label_cutFund k _ hsD hr hs hd
-      exact UC_fund_Omega k _ hsD hr hs huc hd κ hκ .Z (Dim_Z _) (recursive_zero _) (UC_zero k)
-        (by simp [convert_Z, Term.H, Term.allLt]) (fun h => absurd rfl h)
-    have hcoordsR : ∀ j, Recursive (V.get0 xs j) := (Recursive_P.1 hr).1
-    have hcoordsW : ∀ j, RecursiveWF (k + 3) (V.get0 xs j) := (RecursiveWF_P.1 hs).1
-    have hxl : xs.length = k + 3 := hsD.length
-    by_cases hb : b = .Z
-    · subst hb
-      rcases hf : V.fnz xs with _ | i
-      · rw [fund_none hf]; exact UC_zero k
-      · have hil := fnz_lt_length hf
-        have hlow := (V.fnz_some_spec xs i hf).2
-        have hc0 := (V.fnz_some_spec xs i hf).1
-        cases hcd : domF (V.get0 xs i) with
-        | zero => exact absurd ((domF_eq_zero_iff _).1 hcd) hc0
-        | one =>
-          cases i with
-          | zero =>
-            obtain ⟨c, hcc⟩ := dom_one_succ _ (hsD.coord 0) hcd
-            rw [fund_zero_coordinate_successor k xs c _ hcc]
-            exact UC_zero k
-          | succ m => exact omegaCase xs (domF_one_succ hf hcd)
-        | Omega q =>
-          by_cases hdiag : xs < q
-          · have hf0 : T.fund (.P xs .Z) .Z = .P (V.set xs i (T.fund (V.get0 xs i) .Z)) .Z :=
-              fund_diag hf hcd hdiag .Z
-            rw [hf0, UC_P_iff]
-            refine ⟨VecUC_replace_zero_fund k xs i hxl hlow huc.vec hc0 (hsD.coord i) (hcoordsR i)
-              (hcoordsW i), ?_, UC_zero k⟩
-            intro j
-            rw [V.get0_set xs i _ j hil]
-            split
-            · obtain ⟨κ, hκ⟩ := Omega_label_cutFund k _ (hsD.coord i) (hcoordsR i) (hcoordsW i) hcd
-              exact UC_fund_Omega k _ (hsD.coord i) (hcoordsR i) (hcoordsW i) (huc.coord i) hcd κ hκ .Z
-                (Dim_Z _) (recursive_zero _) (UC_zero k) (by simp [convert_Z, Term.H, Term.allLt])
-                (fun h => absurd rfl h)
-            · exact huc.coord j
-          · exact omegaCase q (domF_nondiag hf hcd hdiag)
-        | omega =>
-          rw [fund_omega hf hcd, UC_P_iff]
-          refine ⟨VecUC_replace_zero_fund k xs i hxl hlow huc.vec hc0 (hsD.coord i) (hcoordsR i)
-            (hcoordsW i), ?_, UC_zero k⟩
-          intro j
-          rw [V.get0_set xs i _ j hil]
-          split
-          · exact UC_fund_zero k (V.get0 xs i) (hsD.coord i) (hcoordsR i) (hcoordsW i) (huc.coord i)
-          · exact huc.coord j
-    · rw [fund_tail xs hb, UC_P_iff]
-      exact ⟨huc.vec, huc.coord, UC_fund_zero k b hsD.tail (Recursive_P.1 hr).2.1
-        (RecursiveWF_P.1 hs).2.1 huc.tail⟩
-termination_by s => s.size
-decreasing_by
-  all_goals first
-    | exact multi.T.size_get0_lt_P _ _ _
-    | exact multi.T.size_lt_P_right _ _
-
 theorem UC_fund_omega (k : Nat) : ∀ (s : multi.T),
     Dim (k + 3) s → Recursive s → RecursiveWF (k + 3) s → UC k s → domF s = .omega →
     ∀ n : Nat, UC k (T.fund s (ofNatD (k + 3) n))

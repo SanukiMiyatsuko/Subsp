@@ -79,8 +79,6 @@ theorem lt_psi_self_iff {v a : Term} (hw : wf (psi v a) = true) :
   · intro h
     exact lt_psi_of_H hw a hw'.2.2.1 hw'.2.2.2 h
 
-theorem allLt_nil (b : Term) : allLt [] b = true := rfl
-
 theorem allLt_append_intro {l₁ l₂ : List Term} {b : Term} (h₁ : allLt l₁ b = true)
     (h₂ : allLt l₂ b = true) : allLt (l₁ ++ l₂) b = true := by
   unfold allLt at *

@@ -87,7 +87,6 @@ theorem H_principal_precise (u : Term) (k : Nat) (xs : List Term) {z : Term}
     · exact Or.inr (direct (k + 1) (by omega) hz)
   · exact Or.inr (direct i (by omega) hz)
 
-
 theorem H_convert_coefficient (k : Nat) (u : Term) : ∀ (s : multi.T) {z : Term},
     z ∈ Term.H u (convert (k + 3) (code s)) →
     z = .zero ∨ ∃ a, Coefficient (k + 3) a s ∧
@@ -221,7 +220,6 @@ theorem H_assemble_right (u p t : Term) {z : Term} (hz : z ∈ Term.H u t) :
   by_cases ht : t = .zero
   · rw [ht, Term.H] at hz; cases hz
   · rw [ite_eq_right ht, Term.H]; exact List.mem_append_right _ hz
-
 
 theorem Coefficient.image_mem_H_omega (k : Nat) {a s : multi.T}
     (h : Coefficient (k + 3) a s)
@@ -551,7 +549,6 @@ theorem lower_regular_update (j m : Nat) (xs ys : List Term) (a c t : Term)
       rw [hy, lower_succ, hyt]
       exact lower_zero_wf m ys _ hzero
         (step_wf_of_omega_closed m _ t (context_above hnewctx) hnew ht hHt)
-
 
 theorem fund_regular_recursiveWF (k m : Nat) (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hv : V.fnz xs = some (m + 1)) (hdom : domF (V.get0 xs (m + 1)) = .one) (t : multi.T)
@@ -1276,11 +1273,6 @@ theorem hOne_positive_cut (cut : Nat) (hc : 0 < cut) : Term.hOne (.inacc cut .ze
   simp [Term.hOne, Term.predR, Term.le, Term.lt, Term.bigOmega,
     kumakuma.CountableTarget.lt_zero, show 0 < cut from hc]
 
-theorem no_coeff_eq_nil {α : Type} (xs : List α) (h : ∀ z, z ∈ xs → False) : xs = [] := by
-  cases xs with
-  | nil => rfl
-  | cons x ys => exact False.elim (h x List.mem_cons_self)
-
 theorem lower_clear_above_cut (j cut : Nat) (hcut : 0 < cut) (hj : cut ≤ j) (xs : List Term)
     (hz : ∀ i, cut ≤ i → i < j → xs[i]?.getD .zero = .zero) : lower j xs .zero = lower cut xs .zero := by
   induction j with
@@ -1427,7 +1419,6 @@ theorem lower_zero_relative_support (v : Term)
       rw [← he (j + 1) (by omega) (by omega)] at hz
       exact ih (by omega) _ (step_shape _ (context_above ha))
         (fun i hi hij => he i hi (by omega)) hw hz
-
 
 open multi in
 theorem Dim_of_oplus {d : Nat} : ∀ {s t : multi.T}, Dim d (s + t) → Dim d s
@@ -1693,7 +1684,6 @@ theorem lower_replace_relative_wf (j cut : Nat) (hj : cut < j)
       exact lower_zero_wf cut ys _ hzero
         (step_replace_relative_wf cut a c t (context_above hctx) hc ht hdrop hrel hstep)
 
-
 open multi in
 theorem principal_replace_relative_recursiveWF (k : Nat)
     (xs : V multi.T) (i : Nat) (hib : i ≤ k + 1) (hsD : Dim (k + 3) (.P xs .Z))
@@ -1848,7 +1838,6 @@ theorem lower_zero_nonzero (j : Nat) (xs : List Term) (a : Term) (ha : a ≠ .ze
     rw [lower_succ, hz j (by omega)]
     simp only [step, ha, ↓reduceIte]
     exact ih (fun i hi => hz i (by omega))
-
 
 open multi in
 theorem convert_positive_layers (k : Nat) (xs : V multi.T)
@@ -2049,7 +2038,6 @@ open kumakuma.GeneralImageHeadCuts kumakuma.GeneralImageOmegaContext kumakuma.Ge
 open kumakuma.GeneralImageSharedTopPair kumakuma.BinaryTranslation kumakuma.TargetArithmetic kumakuma.GeneralImageCoefficients
 open kumakuma.SourceFundOrder kumakuma.SourceRecursiveDescending kumakuma.GeneralImageOmegaCoefficients
 open kumakuma.SourceOmegaInvariant
-
 
 open multi in
 theorem pairCut_image_pred (k : Nat) (h : multi.T) (hne : h ≠ .Z)

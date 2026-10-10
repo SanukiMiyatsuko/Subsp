@@ -267,9 +267,6 @@ theorem lt_psi_of_arg {l : Nat} {v' e : Term} (h : wf (psi (inacc l v') e) = tru
     lt v' (psi (inacc l v') e) = true :=
   (sub_lt v').2 l e h
 
-theorem lt_psi_index_of_wf {u b : Term} (h : wf (psi u b) = true) : lt (psi u b) u = true :=
-  lt_psi_index (wf_psi h).1 b
-
 /-! ### Predecessors and coefficients -/
 
 theorem head_of_isPrin {x : Term} (h : isPrin x = true) : head x = x := by
@@ -671,8 +668,6 @@ theorem regular_succT {c : Term} (wc : wf c = true) :
     wf (inacc 0 (succT c)) = true ∧ isRT (inacc 0 (succT c)) = true := by
   obtain ⟨w, s, f, _⟩ := succT_spec c wc
   exact ⟨wf_inacc_intro w (Nat.le_of_eq f), isRT_inacc_succT s⟩
-
-theorem nr_zero : nr zero = bigOmega := rfl
 
 theorem nr_add (a b : Term) : nr (add a b) = nr a := rfl
 

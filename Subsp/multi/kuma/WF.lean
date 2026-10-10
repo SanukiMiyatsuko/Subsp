@@ -661,7 +661,6 @@ theorem assemble_indices {k : Nat} (a b : Term)
   · rw [ite_eq_right hb] at h
     exact h
 
-
 theorem argsWidth_coordinates (xs : V multi.T) (n : Nat)
     (h : ∀ i, width (code (V.get0 xs i)) ≤ n) : argsWidth (codes xs) ≤ n := by
   induction xs with
@@ -853,7 +852,6 @@ theorem H_mul_principal_support (d : Nat) (xs : V multi.T) (lam : Nat) (u : Term
       simpa only [OT2.assemble, ↓reduceIte] using hz
     · exact H_mul_principal_support d xs lam u n hz
 
-
 theorem H_subset_omega (u t : Term) (ht : Term.wf t = true) {z : Term}
     (hz : z ∈ Term.H u t) : z ∈ Term.H Term.bigOmega t := by
   induction t with
@@ -924,7 +922,6 @@ theorem H_drop_bound_of_omega (u t : Term) (ht : Term.wf t = true)
     apply (Term.allLt_iff _ _).mpr
     intro z hz
     exact (Term.allLt_iff _ _).mp hH z (H_subset_omega u t ht hz)
-
 
 def topNode (k : Nat) (a : multi.T) : multi.T := .P (lastVec (k + 2) a) .Z
 
@@ -1317,14 +1314,6 @@ theorem fund_add_one {w : V multi.T} (hw : ∀ i, V.get0 w i = .Z) :
   | .P xs b, t => by
     show T.fund (.P xs (b + .P w .Z)) t = .P xs b
     rw [fund_tail xs (add_one_ne_zero w b), fund_add_one hw b t]
-
-theorem domF_add_one {w : V multi.T} (hw : ∀ i, V.get0 w i = .Z) :
-    ∀ c : multi.T, domF (c + .P w .Z) = .one
-  | .Z => domF_none (fnz_eq_none hw)
-  | .P xs b => by
-    show domF (.P xs (b + .P w .Z)) = .one
-    rw [domF_tail xs (add_one_ne_zero w b)]
-    exact domF_add_one hw b
 
 theorem lt_add_one_iff {w : V multi.T} (hw : ∀ i, V.get0 w i = .Z) :
     ∀ z c : multi.T, z < c + .P w .Z ↔ z ≤ c
@@ -1871,7 +1860,6 @@ theorem lt_inacc_drop (n : Nat) (a : Term)
   · rw [dropOne_of_head_ne hh] at hi ⊢
     exact OCF.Jaeger.Term.lt_inacc_self hi
 
-
 theorem no_diagonal_highest (k : Nat)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hs : RecursiveWF (k + 3) (.P xs .Z))
@@ -2027,7 +2015,6 @@ theorem lower_zero_predecessor (j : Nat) (hj : 0 < j) (xs ys : List Term) (a c :
       rw [← hxy]
       exact ih (by omega) _ (step_shape _ (context_above ha))
         (fun i hi hij => he i hi (by omega)) hw
-
 
 theorem zero_coordinate_predecessor (k : Nat) (xs : V multi.T) (b : multi.T)
     (hsD : Dim (k + 3) (.P xs .Z))

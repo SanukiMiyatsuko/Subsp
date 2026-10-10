@@ -121,8 +121,6 @@ theorem psi_ne_of_isRT {u v b : Term} (h : isRT u = true) : u ≠ psi v b := by
   rw [e] at h
   simp [isRT] at h
 
-theorem fT_psi (v b : Term) : fT (psi v b) = fT v := rfl
-
 /-! ### Asymmetry -/
 
 theorem lt_asymm_aux (N : Nat) : ∀ x y : Term, size x + size y ≤ N →

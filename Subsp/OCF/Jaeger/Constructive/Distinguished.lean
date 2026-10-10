@@ -54,11 +54,6 @@ theorem le_trans {a b c : Term} (wa : wf a = true) (wb : wf b = true) (wc : wf c
     exact h2
   · exact le_of_lt (lt_of_lt_of_le wa wb wc h h2)
 
-theorem nr_le_nr {α β : Term} (wα : wf α = true) (wβ : wf β = true) (h : le α β = true) :
-    le (nr α) (nr β) = true := by
-  have hβ := nr_spec β wβ
-  exact nr_least α wα (nr β) hβ.1 hβ.2.1 (lt_of_le_of_lt wα wβ hβ.1 h hβ.2.2)
-
 /-! ### Hulls -/
 
 theorem Hull.wf_of {α : Term} {X : Term → Prop} {β : Term} (h : Hull α X β) : wf β = true := by

@@ -255,7 +255,6 @@ theorem lower_zero_block (j : Nat) (hj : 0 < j) (xs : List Term) (a : Term)
   · rw [ite_eq_right ha]
     exact lower_keep j xs a ha hzero
 
-
 theorem principal_insertion_context (k m : Nat) (hm : m ≤ k)
     (xs : V multi.T) (hsD : Dim (k + 3) (.P xs .Z))
     (hzero : ∀ i, i < m + 1 → V.get0 xs i = .Z) :
@@ -1691,13 +1690,6 @@ inductive OmegaLabelPath (q : V multi.T) : multi.T → Prop
   | tail (xs : V multi.T) (b : multi.T) (hb : b ≠ .Z)
       (hc : OmegaLabelPath q b) : OmegaLabelPath q (.P xs b)
 
-theorem OmegaLabelPath.domain {q : V multi.T} {s : multi.T}
-    (hp : OmegaLabelPath q s) : domF s = .Omega q := by
-  induction hp with
-  | regular hq => exact regularVector_dom hq
-  | inherit xs i hf hdq hnd hc ih => exact domF_nondiag hf hdq hnd
-  | tail xs b hb hc ih => rw [domF_tail xs hb]; exact ih
-
 theorem OmegaLabelPath.of_domain : ∀ (s : multi.T) {q : V multi.T},
     domF s = .Omega q → OmegaLabelPath q s
   | .Z, _, hd => by rw [domF_Z] at hd; cases hd
@@ -1888,7 +1880,6 @@ theorem Omega_iter_coefficient_support_at_label_cut
       · exact Or.inl (Omega_cut_dominated_below_label k s hsD hr hs hd cut hc v hvR hv hOmega hVL z he)
 
 end kumakuma.GeneralImageParametricCut
-
 
 namespace kumakuma.GeneralImageEmptyCutDiagonal
 
